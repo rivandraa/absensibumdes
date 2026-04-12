@@ -722,17 +722,13 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     if (currentLat === 0) return;
 
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}\n`;
-    
-    // Jika akurasi masih buruk (saat animasi)
-    if (acc && acc > MAX_ACCURACY) {
-        displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n` +
-               `Sedang meningkatkan akurasi${".".repeat(accDots)}\n`;
-    } else {
-        displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
-    }
-	
-    // BARIS 3: Logika Jarak / Status
-    if (status === "Hadir" || status === "WFH") {
+    displayText += `Tingkat Akurasi : ${displayAcc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
+
+    if (displayAcc > MAX_ACCURACY) {
+        displayText += `Sedang meningkatkan akurasi${".".repeat(accDots)}`;
+        lastInsideArea = false; 
+    }  
+    else if (status === "Hadir" || status === "WFH") {
         const teksKordinat = elNama ? elNama.value : "";
 
         if (targetLocation && targetLocation.lat && targetLocation.lon) {
@@ -741,21 +737,17 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             lastInsideArea = insideArea;
 
             displayText += insideArea
-                ? `✅ Berada dalam area radius`
-                : `❌ Di luar area\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT}m)`;
+                ? `✅ Berada dalam area/radius ${namaLokasi}`
+                : `❌ Di luar area | 📏 Jarak ${distance.toFixed(0)}m (Max. ${RADIUS_LIMIT}m)`;
         } 
         else if (isFetchingLocation && teksKordinat !== "-") {
-            // Tampilan saat sedang fetch
-            displayText += `\nMenghitung jarak ke lokasi baru...`;
+            displayText += `Silakan Tunggu :\n- Sedang Update lokasi...\n- Sedang Menghitung jarak anda...`;
             lastInsideArea = false;
         } 
         else {
-            // Hilangkan pesan jika koordinat "-" atau kosong
+            // Jika koordinat "-", izinkan absen tanpa pesan tunggu
             lastInsideArea = (teksKordinat === "-"); 
         }
-    } else {
-        displayText += `\n-`;
-        lastInsideArea = true;
     }
 
     // Update tampilan utama
