@@ -1572,7 +1572,7 @@ async function submitAbsensiForm() {
     }
 
 // 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
-    if (useCamera && status === "hadir" || status === "wfh")) {
+    if (useCamera && (status === "hadir" || status === "wfh")) {
         
         // Cek apakah targetLocation ada (koordinat kantor tersedia)
         if (targetLocation && targetLocation.lat && targetLocation.lon) {
