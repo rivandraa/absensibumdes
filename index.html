@@ -1538,7 +1538,6 @@ async function submitAbsensiForm() {
     if (!statusRaw) {
         showPopup("Silakan pilih status terlebih dahulu!", "warning");
         vibrateAlertShort();
-        document.getElementById('status').focus();
         isSubmitting = false;
         return;
     }
@@ -1548,7 +1547,6 @@ async function submitAbsensiForm() {
     if (ketWajib && !keterangan) {
         showPopup("Keterangan wajib diisi untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
-        document.getElementById('keterangan').focus();
         isSubmitting = false;
         return;
     }
@@ -1562,51 +1560,38 @@ async function submitAbsensiForm() {
         return;
     }
 
-    // 🔥 SATU SUMBER GPS
-    const gpsFinal = fotoData?.gps || gpsData;
+    // 🔥 TENTUKAN SUMBER GPS
+    const gpsFinal = (useCamera && fotoData && fotoData.gps) ? fotoData.gps : gpsData;
 
-// 📍 Validasi GPS
+    // 📍 VALIDASI GPS KETAT (Mencegah submit jika GPS belum siap)
     const gpsWajib = !["izin", "sakit"].includes(status);
     if (gpsWajib) {
-        if (!gpsFinal || (gpsFinal[0] === 0 && gpsFinal[1] === 0)) {
-            showPopup("GPS belum aktif atau tidak valid.", "error");
+        // 1. Cek apakah GPS nol (mati)
+        const isGpsZero = !gpsFinal || (gpsFinal[0] === 0 && gpsFinal[1] === 0);
+        
+        // 2. Cek apakah sistem sedang mencari atau meningkatkan akurasi
+        // Pastikan variabel 'animatingGPS' dan 'improvingAccuracy' tersedia secara global
+        if (isGpsZero || (typeof animatingGPS !== 'undefined' && animatingGPS) || (typeof improvingAccuracy !== 'undefined' && improvingAccuracy)) {
+            showPopup("⚠️ Lokasi belum siap!<br><small>GPS sedang mencari sinyal atau meningkatkan akurasi. Mohon tunggu tanda lokasi berwarna hijau.</small>", "warning");
             vibrateAlertShort();
             isSubmitting = false;
             return;
         }
     }
 
-  //  VALIDASI GPS & RADIUS
-  if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
-    showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
-    vibrateAlertShort();
-    isSubmitting = false;
-    return;
-  }
-
-// 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
-    if (useCamera && (status === "hadir" || status === "wfh")) {
-        
-        // Cek apakah targetLocation ada (koordinat kantor tersedia)
+    // 📏 Validasi Radius (Menjadi Opsional)
+    if (status === "hadir" || status === "wfh") {
         if (targetLocation && targetLocation.lat && targetLocation.lon) {
-            
             const [lat, lon] = gpsFinal;
             const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
             const insideArea = distance <= RADIUS_LIMIT;
 
             if (!insideArea) {
-                showPopup(`⚠️ Anda berada di luar area absensi!<br>Jarak: ${distance.toFixed(0)}m (Max: ${RADIUS_LIMIT}m)`, "error");
+                showPopup(`⚠️ Anda berada di luar area!<br>Jarak: ${distance.toFixed(0)}m (Maks: ${RADIUS_LIMIT}m)`, "error");
                 vibrateAlertShort();
                 isSubmitting = false; 
-                return; // Blokir hanya jika user TERBUKTI di luar radius
+                return;
             }
-            
-            console.log("Lokasi valid, jarak: " + distance.toFixed(0) + "m");
-            
-        } else {
-            // JIKA targetLocation tidak ada, kode TIDAK AKAN return.
-            // Ini akan membiarkan proses berlanjut ke pengiriman data (Bebas Lokasi).
-            console.log("Target lokasi tidak ditentukan, menggunakan mode Bebas Lokasi.");
         }
     }
 
