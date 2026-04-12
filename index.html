@@ -1040,6 +1040,8 @@ function stopWebcam() {
 async function startWebcam() {
 	if (!useCamera) {
         $('#cameraContainer').hide(); // Sembunyikan kontainer kamera jika ada
+		$('#restartCamera').hide(); // Sembunyikan kontainer kamera jika ada
+		$('#containerTombolFoto').hide(); // Sembunyikan kontainer kamera jika ada
         return; 
     }
 	
