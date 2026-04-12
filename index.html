@@ -1573,13 +1573,14 @@ async function submitAbsensiForm() {
         return;
     }
 
-  	if (status === "Hadir" || status === "WFH") {
-    if (koordinatValue === "Sedang mengambil data..." || titikkoordinatValue === "Sedang menghitung jarak anda dengan titik koordinat absensi") {
-        showPopup("⚠️ Menunggu koordinat absensi...", "warning");
-		vibrateAlertShort();
-		isSubmitting = false;
-        return;
-	}
+	// Menggunakan operator && untuk menggabungkan pengecekan status dan kondisi koordinat
+	if ((status === "Hadir" || status === "WFH") && 
+	    (koordinatValue === "Sedang mengambil data..." || titikkoordinatValue === "Sedang menghitung jarak anda dengan titik koordinat absensi")) {
+	    
+	    showPopup("⚠️ Menunggu koordinat absensi...", "warning");
+	    vibrateAlertShort();
+	    isSubmitting = false;
+	    return;
 	}
 
     // 🔥 TENTUKAN SUMBER GPS
