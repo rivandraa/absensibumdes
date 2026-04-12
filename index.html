@@ -1542,10 +1542,6 @@ async function submitAbsensiForm() {
     const statusRaw = ($('#status').val() || "").trim();
     const keterangan = ($('#keterangan').val() || "").trim();
     const status = statusRaw.toLowerCase();
-	const tampil = document.getElementById("titikKoordinatTampil");
-  	const koordinatValue = tampil ? tampil.value : "";
-	const titiktampil = document.getElementById("titikKoordinat");
-  	const titikkoordinatValue = titiktampil ? tampil.value : "";
 
     // 📋 Validasi Status
     if (!statusRaw) {
@@ -1574,13 +1570,29 @@ async function submitAbsensiForm() {
     }
 
 	// Menggunakan operator && untuk menggabungkan pengecekan status dan kondisi koordinat
-	if ((status === "Hadir" || status === "WFH") && 
-	    (koordinatValue === "Sedang mengambil data..." || titikkoordinatValue === "Sedang menghitung jarak anda dengan titik koordinat absensi")) {
-	    
-	    showPopup("⚠️ Menunggu koordinat absensi...", "warning");
-	    vibrateAlertShort();
-	    isSubmitting = false;
-	    return;
+	const tampil = document.getElementById("titikKoordinatTampil");
+	// Gunakan trim() untuk membuang spasi liar di awal/akhir teks
+	const koordinatValue = tampil ? (tampil.value || tampil.innerText).trim() : "";
+	
+	const titiktampil = document.getElementById("titikKoordinat");
+	// PERBAIKAN: Ambil dari titiktampil, bukan tampil
+	const titikkoordinatValue = titiktampil ? (titiktampil.value || titiktampil.innerText).trim() : "";
+	
+	// Debugging: Munculkan di console untuk memastikan isinya benar
+	console.log("Koordinat:", koordinatValue);
+	console.log("Titik:", titikkoordinatValue);
+	
+	if (status === "Hadir" || status === "WFH") {
+	    // Gunakan .includes() agar lebih aman jika ada perbedaan jumlah titik (...)
+	    const sedangLoading = koordinatValue.includes("Sedang mengambil") || 
+	                          titikkoordinatValue.includes("Sedang menghitung");
+	
+	    if (sedangLoading) {
+	        showPopup("⚠️ Menunggu koordinat absensi...", "warning");
+	        vibrateAlertShort();
+	        isSubmitting = false;
+	        return; // Menghentikan eksekusi
+	    }
 	}
 
     // 🔥 TENTUKAN SUMBER GPS
