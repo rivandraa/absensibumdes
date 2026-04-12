@@ -721,20 +721,18 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 
     if (currentLat === 0) return;
 
-    // Baris 1: Lokasi
+    // Baris 1 & 2: Lokasi dan Akurasi
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
-    
-    // Baris 2: Akurasi
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // Baris 3: Animasi Akurasi (Hanya muncul jika akurasi buruk)
+    // Baris 2.5: Animasi Akurasi (Hanya muncul jika akurasi buruk)
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
 
     // LOGIKA BARIS JARAK
     if (status === "Hadir" || status === "WFH") {
-        // Jika koordinat target SUDAH ADA
+        // KONDISI 1: Data Koordinat Target Sudah Ada
         if (targetLocation && targetLocation.lat && targetLocation.lat !== 0) {
             const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
             const insideArea = distance <= RADIUS_LIMIT;
@@ -742,14 +740,19 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 
             displayText += insideArea
                 ? `\n✅ Berada dalam area radius`
-                : `\n❌ Di luar area | Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+                : `\n❌ Di luar area | Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT}m)`;
         } 
-        // Jika koordinat target BELUM ADA (Sedang Fetching/Loading)
-        else {
+        // KONDISI 2: Data sedang di-fetch (Indikatornya: Nama lokasi berubah tapi koordinat belum masuk)
+        else if (namaLokasi !== "Area Absensi") {
             displayText += `\nMenghitung jarak ke lokasi baru...`;
+            lastInsideArea = false;
+        }
+        // KONDISI 3: Data memang tidak ada (Abaikan baris ini, jangan tulis Menghitung...)
+        else {
             lastInsideArea = false; 
         }
     } else {
+        // Status selain Hadir/WFH
         displayText += `\n-`;
         lastInsideArea = true;
     }
