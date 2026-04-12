@@ -750,8 +750,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
                 displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
             }
         } 
-        else if (typeof isFetchingTarget !== 'undefined' && isFetchingTarget === true) {
-            // Tampilan saat sedang fetch (rapat tanpa baris kosong)
+        else if (namaLokasi !== "-") {
             displayText += `\nMenghitung jarak ke lokasi baru...`;
             lastInsideArea = false;
         }
