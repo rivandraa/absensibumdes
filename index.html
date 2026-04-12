@@ -718,6 +718,9 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // 1. Ambil koordinat & akurasi (Gunakan fallback agar tidak undefined)
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
+
+	// Sekarang displayAcc HANYA mengambil nilai dari sensor (acc)
+	const displayAcc = acc || 0;
     
     // Jika koordinat masih nol, jangan lanjut (tunggu fix GPS)
     if (currentLat === 0) return;
