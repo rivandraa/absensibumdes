@@ -721,7 +721,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     
     // Gunakan parameter acc jika ada, jika tidak (manual call) gunakan gpsData[2]
     // Ini mencegah akurasi jadi 0 saat refreshTargetLocation dipanggil
-    const displayAcc = (acc !== undefined) ? acc : (gpsData[2] || 0);
+    //const displayAcc = (acc !== undefined) ? acc : (gpsData[2] || 0);
 
     // Jika GPS benar-benar belum aktif, jangan lanjut
     if (currentLat === 0) return;
@@ -838,7 +838,7 @@ async function refreshTargetLocation(callback, isSilent = false) {
         }
 
         // PAKSA UI UPDATE INSTAN (Agar pesan "Silakan Tunggu" langsung hilang)
-        forceUpdateDistanceUI();
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], null);
 
     } catch (error) {
         console.error("Gagal refresh:", error);
