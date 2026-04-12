@@ -541,7 +541,7 @@ async function loginUser() {
             setTimeout(() => {
                 startIdleTimer();
                 startGPS();
-                startWebcam();
+                //startWebcam();
             }, 500);
             
         } else {
@@ -2042,8 +2042,8 @@ function logout(fromIdle = false){
     popupActive = false;
 
     stopGPSMonitoring();
-    resetFoto();
-    stopWebcam(); // Hentikan Kamera
+    //resetFoto();
+    //stopWebcam(); // Hentikan Kamera
     
     sessionStorage.removeItem('userData'); 
     sessionStorage.removeItem('page');
@@ -2138,7 +2138,7 @@ $(document).ready(function() {
 
         fotoData = null; // Selalu reset foto saat refresh halaman absensi
         startGPS();
-        startWebcam(); 
+        //startWebcam(); 
         startIdleTimer();
 
     } else { 
