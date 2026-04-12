@@ -1609,13 +1609,14 @@ async function submitAbsensiForm() {
         keterangan: keterangan,
         statusPegawai: userData.statusPegawai,
         spreadsheetId: userData.spreadsheetId,
+		foto: (useCamera && fotoData) ? fotoData : "",
         folderId: userData.folderId
     };
 
-    if (!["izin", "sakit"].includes(status)) {
-        payload.foto = fotoData; // Ini berisi {base64, name, type, dll}
-        payload.gps = gpsFinal;
-    }
+    //if (!["izin", "sakit"].includes(status)) {
+    //    payload.foto = fotoData; // Ini berisi {base64, name, type, dll}
+    //    payload.gps = gpsFinal;
+    //}
 
     // Kunci UI
     document.getElementById('snap').disabled = true;
