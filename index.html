@@ -1734,8 +1734,8 @@ async function showLaporan_Absensi() {
             <div class="mb-4 text-center">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <button id="homeBtn" class="btn btn-sm btn-danger shadow-sm">HOME</button>
-                    <select id="selectBulan" class="form-select form-select-sm w-auto shadow-sm">
-						<option value="">Pilih Bulan</option>
+                    <select id="selectBulan" class="form-select form-select-sm w-auto shadow-sm" style="border: 2px solid #dc3545;">
+                        <option value="">-- Pilih Bulan --</option>
                         <option value="JANUARI">Januari</option>
                         <option value="PEBRUARI">Februari</option>
                         <option value="MARET">Maret</option>
@@ -1756,7 +1756,13 @@ async function showLaporan_Absensi() {
             <div class="table-responsive">
                 <table id="Laporan-Absensi-Table" class="table table-sm table-bordered table-striped shadow-sm" style="font-size: 11px;">
                     <thead class="table-dark text-center"></thead>
-                    <tbody class="text-center"></tbody>
+                    <tbody class="text-center">
+                        <tr>
+                            <td colspan="8" class="p-4 text-muted">
+                                <i class="fas fa-arrow-up me-2"></i> Silakan pilih bulan terlebih dahulu untuk melihat data.
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -1765,13 +1771,23 @@ async function showLaporan_Absensi() {
     $('#InnerPage').html(html).show();
     $('#AbsensiPage').hide();
 
-    // Default load Januari
-    await loadLaporan_Absensi("JANUARI");
+    // --- BAGIAN INI DIHAPUS (Tidak load otomatis) ---
+    // await loadLaporan_Absensi("JANUARI"); 
 
     // Event saat bulan diganti
     $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
         const bulanDipilih = $(this).val();
-        await loadLaporan_Absensi(bulanDipilih);
+        
+        if (bulanDipilih !== "") {
+            // Hilangkan border merah jika sudah memilih
+            $(this).css("border", "1px solid #ced4da");
+            await loadLaporan_Absensi(bulanDipilih);
+        } else {
+            // Jika kembali pilih kosong, bersihkan tabel
+            $(this).css("border", "2px solid #dc3545");
+            $("#Laporan-Absensi-Table tbody").html('<tr><td colspan="8" class="p-4 text-muted">Silakan pilih bulan terlebih dahulu.</td></tr>');
+            $("#kopLaporan").html("LAPORAN ABSENSI");
+        }
     });
 
     $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
