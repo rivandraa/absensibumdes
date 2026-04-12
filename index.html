@@ -735,6 +735,7 @@ else if (status === "Hadir" || status === "WFH") {
     // 2. TENTUKAN STATUS PRIORITAS (Urutan ini kunci kecepatannya)
     if (isFetchingLocation && hasTarget) {
         // Jika sedang update, beri tahu user dulu agar tidak 'stuck' di angka lama
+        displayText += `⏳ Sedang menyelaraskan lokasi...`;
         lastInsideArea = false;
     } 
     else if (hasTarget) {
@@ -756,6 +757,10 @@ else if (status === "Hadir" || status === "WFH") {
         // Special case (koordinat kosong/'-')
         lastInsideArea = true; 
     }
+}
+	
+    // Update tampilan utama
+    updateGPSDisplay(displayText);
 }
 
 // =====================================================
