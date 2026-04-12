@@ -722,7 +722,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     if (currentLat === 0) return;
 
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}\n`;
-    displayText += `Tingkat Akurasi : ${displayAcc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
+    displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
 
     if (displayAcc > MAX_ACCURACY) {
         displayText += `Sedang meningkatkan akurasi${".".repeat(accDots)}`;
