@@ -718,10 +718,10 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // 1. Ambil koordinat & akurasi (Gunakan fallback agar tidak undefined)
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
-    
-    // 🔥 PERBAIKAN: Definisikan displayAcc di sini
-    const displayAcc = acc || (window.lastKnownAcc || 0);
 
+	// Sekarang displayAcc HANYA mengambil nilai dari sensor (acc)
+	const displayAcc = acc || 0;
+    
     // Jika koordinat masih nol, jangan lanjut (tunggu fix GPS)
     if (currentLat === 0) return;
 
@@ -735,27 +735,35 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         displayText += `Sedang meningkatkan akurasi${".".repeat(accDots)}`;
         lastInsideArea = false; 
     }  
-    else if (status === "Hadir" || status === "WFH") {
-        // B. Jika Akurasi sudah Bagus
-        if (targetLocation) {
-            const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
-            const insideArea = distance <= RADIUS_LIMIT;
-            lastInsideArea = insideArea;
-
-            displayText += insideArea
-                ? `✅ Berada dalam area/radius ${namaLokasi}`
-                : `❌ Di luar area | 📏 Jarak ${distance.toFixed(0)}m (Max. ${RADIUS_LIMIT}m)`;
-        } else {
-            // Tampilan saat fetch data kantor (Tanpa \n di awal agar tidak ada baris kosong)
-            displayText += `Silakan Tunggu :\n- Sedang Update lokasi...\n- Sedang Menghitung jarak anda...`;
-            lastInsideArea = false;
-        }
-    }  
-    else if (["Dinas", "Izin", "Sakit"].includes(status)) {
-        displayText += ``;
-        lastInsideArea = true;
-    }  
-
+	else if (status === "Hadir" || status === "WFH") {
+	        
+	        // 1. Jika koordinat target ada dan valid, hitung jarak
+	        if (targetLocation && targetLocation.lat && targetLocation.lon) {
+	            const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
+	            const insideArea = distance <= RADIUS_LIMIT;
+	            lastInsideArea = insideArea;
+	
+	            displayText += insideArea
+	                ? `✅ Berada dalam area/radius ${namaLokasi}`
+	                : `❌ Di luar area | 📏 Jarak ${distance.toFixed(0)}m (Max. ${RADIUS_LIMIT}m)`;
+	        } 
+	        // 2. Jika sedang proses ambil data (isFetchingLocation true), tampilkan pesan tunggu
+	        else if (isFetchingLocation) {
+	            displayText += `Silakan Tunggu :\n- Sedang Update lokasi...\n- Sedang Menghitung jarak anda...`;
+	            lastInsideArea = false;
+	        } 
+	        // 3. Jika tidak sedang fetch DAN koordinat tetap tidak ada, maka DIAM (pesan hilang)
+	        else {
+	            lastInsideArea = false; 
+	            // Bagian ini sengaja dikosongkan agar displayText tidak bertambah
+	        }
+	    }
+		else if (["Dinas", "Izin", "Sakit"].includes(status)) {
+		        // C. Status non-lokasi
+		        displayText += ``;
+		        lastInsideArea = true;
+		}
+	
     // Update tampilan utama
     updateGPSDisplay(displayText);
 }
@@ -839,6 +847,7 @@ async function refreshTargetLocation(callback, isSilent = false) {
         forceUpdateDistanceUI();
         if (typeof callback === "function") callback();
     }
+}
     
 // =====================================================
 // CALCULATION LOGIC
