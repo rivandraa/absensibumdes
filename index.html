@@ -715,56 +715,56 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     const elNama = document.getElementById("titikKoordinatTampil");
     const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
 
-    // 1. Ambil koordinat & akurasi (Gunakan fallback agar tidak undefined)
+    // 1. Koordinat & Akurasi (Gunakan parameter atau fallback ke data sensor aktif)
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
-
-	// Sekarang displayAcc HANYA mengambil nilai dari sensor (acc)
-	const displayAcc = acc || 0;
     
-    // Jika koordinat masih nol, jangan lanjut (tunggu fix GPS)
+    // Gunakan parameter acc jika ada, jika tidak (manual call) gunakan gpsData[2]
+    // Ini mencegah akurasi jadi 0 saat refreshTargetLocation dipanggil
+    //const displayAcc = (acc !== undefined) ? acc : (gpsData[2] || 0);
+
+    // Jika GPS benar-benar belum aktif, jangan lanjut
     if (currentLat === 0) return;
 
-    // BARIS 1 & 2 (Selalu muncul)
+    // BARIS 1: Lokasi
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}\n`;
+    
+    // BARIS 2: Akurasi (Logika Animasi)
     displayText += `Tingkat Akurasi : ${displayAcc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
-
-    // BARIS 3 (Logika Kondisional)
     if (displayAcc > MAX_ACCURACY) {
-        // A. Jika Akurasi masih buruk
-        displayText += `Sedang meningkatkan akurasi${".".repeat(accDots)}`;
-        lastInsideArea = false; 
-    }  
-	else if (status === "Hadir" || status === "WFH") {
-	        // Ambil isi tulisan di input kordinat secara langsung
-	        const teksKordinat = elNama ? elNama.value : "";
-	
-	        if (targetLocation && targetLocation.lat && targetLocation.lon) {
-	            // A. KONDISI ADA LOKASI: Hitung jarak
-	            const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
-	            const insideArea = distance <= RADIUS_LIMIT;
-	            lastInsideArea = insideArea;
-	
-	            displayText += insideArea
-	                ? `✅ Berada dalam area/radius ${namaLokasi}`
-	                : `❌ Di luar area | 📏 Jarak ${distance.toFixed(0)}m (Max. ${RADIUS_LIMIT}m)`;
-	        } 
-	        else if (isFetchingLocation && teksKordinat !== "-") {
-	            // B. KONDISI SEDANG LOADING: Hanya muncul jika teks bukan "-"
-	            displayText += `Silakan Tunggu :\n- Sedang Update lokasi...\n- Sedang Menghitung jarak anda...`;
-	            lastInsideArea = false;
-	        } 
-	        else {
-	            // C. KONDISI TIDAK ADA LOKASI ATAU TEKS "-": Diam (Pesan Hilang)
-	            lastInsideArea = (teksKordinat === "-"); 
-	        }
-	    }
-		else if (["Dinas", "Izin", "Sakit"].includes(status)) {
-		        // C. Status non-lokasi
-		        displayText += ``;
-		        lastInsideArea = true;
-		}
-	
+        displayText += `Sedang meningkatkan akurasi${".".repeat(accDots)}\n`;
+        lastInsideArea = false;
+    }
+
+    // BARIS 3: Logika Jarak / Status
+    if (status === "Hadir" || status === "WFH") {
+        const teksKordinat = elNama ? elNama.value : "";
+
+        if (targetLocation && targetLocation.lat && targetLocation.lon) {
+            // A. JIKA ADA LOKASI: Hitung jarak
+            const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
+            const insideArea = distance <= RADIUS_LIMIT;
+            lastInsideArea = insideArea;
+
+            displayText += insideArea
+                ? `✅ Berada dalam area radius`
+                : `❌ Di luar area\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT}m)`;
+        } 
+        else if (isFetchingLocation && teksKordinat !== "-") {
+            // B. JIKA SEDANG FETCH: Muncul pesan tunggu (Kecuali jika kordinat sudah "-")
+            displayText += `\nMenghitung jarak ke lokasi baru...`;
+            lastInsideArea = false;
+        } 
+        else {
+            // C. JIKA LOKASI "-" ATAU KOSONG: Hilangkan pesan
+            lastInsideArea = (teksKordinat === "-"); 
+        }
+    } else {
+        // Status Dinas/Izin/Sakit
+        displayText += `\n-`;
+        lastInsideArea = true;
+    }
+
     // Update tampilan utama
     updateGPSDisplay(displayText);
 }
