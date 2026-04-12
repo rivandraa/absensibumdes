@@ -1509,6 +1509,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Submit Absensi
 // ================================
 let isSubmitting = false;
+const wajibFoto = false; // TRUE JIKA WAJIB FOTO
 	
 async function submitAbsensiForm() {
     if (typeof hideAlerts === "function") hideAlerts();
