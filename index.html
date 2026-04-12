@@ -713,7 +713,6 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     const statusInput = document.getElementById("status");
     const status = statusInput ? statusInput.value : "";
     
-    // Variabel yang sempat hilang saya kembalikan di sini
     const elNama = document.getElementById("titikKoordinatTampil");
     const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
 
@@ -724,7 +723,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}\n`;
     
-    // Baris Akurasi (Animasi accDots tetap ada)
+    // Baris Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n` +
                        `Sedang meningkatkan akurasi${".".repeat(accDots)}\n`;
@@ -732,20 +731,27 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
     }
 
-    // Logika Baris Ketiga (Jarak / Status)
+    // LOGIKA JARAK (DIPERBAIKI)
     if (status === "Hadir" || status === "WFH") {
         if (targetLocation && targetLocation.lat && targetLocation.lon) {
+            // KONDISI 1: Data Ada -> Hitung Jarak
             const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
             const insideArea = distance <= RADIUS_LIMIT;
             lastInsideArea = insideArea;
 
             displayText += insideArea
-                ? `✅ Berada dalam area/radius ${namaLokasi}`
+                ? `✅ Berada dalam area radius`
                 : `❌ Di luar area\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT}m)`;
-        } else {
-            // 🔥 TAMPILAN SAAT SEDANG FETCH DATA KANTOR
-            // Pesan ini tetap muncul, lastInsideArea dikunci false agar user tidak colong start
+        } 
+        else if (window.isFetchingTarget) { 
+            // KONDISI 2: Sedang Fetch (butuh flag/variable penanda sedang loading)
             displayText += `\nMenghitung jarak ke lokasi baru...`;
+            lastInsideArea = false;
+        }
+        else {
+            // KONDISI 3: Data Memang Tidak Ada/Belum Ditentukan
+            // Abaikan saja, tampilkan strip agar tidak membingungkan
+            displayText += `\n-`;
             lastInsideArea = false; 
         }
     } else {
