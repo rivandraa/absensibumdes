@@ -1570,22 +1570,23 @@ async function submitAbsensiForm() {
     }
 
 // --- TAMBAHKAN BARIS INI UNTUK MENGAMBIL NILAI TERBARU DARI ELEMENT ---
-    const elTampil = document.getElementById("titikKoordinatTampil");
-    const elTitik = document.getElementById("titikKoordinat");
-    
-    // Ambil teksnya, jika elemen tidak ada beri string kosong
-    const kValue = (elTampil ? (elTampil.value || elTampil.innerText) : "").toLowerCase();
-    const tKValue = (elTitik ? (elTitik.value || elTitik.innerText) : "").toLowerCase();
-    
-    // Validasi Sedang Mengambil Data
-    if (status === "hadir" || status === "wfh") {
-        if (kValue.includes("sedang") || tKValue.includes("sedang") || kValue === "" || tKValue === "") {
-            showPopup("⚠️ Menunggu koordinat absensi...", "warning");
-            vibrateAlertShort();
-            isSubmitting = false;
-            return; // Berhenti di sini
-        }
-    }
+// 1. Ambil nilai terbaru
+	const elTampil = document.getElementById("titikKoordinatTampil");
+	const elTitik = document.getElementById("titikKoordinat");
+	
+	const kValue = (elTampil ? (elTampil.value || elTampil.innerText || "") : "").toLowerCase();
+	const tKValue = (elTitik ? (elTitik.value || elTitik.innerText || "") : "").toLowerCase();
+	
+	// 2. VALIDASI KHUSUS: Hanya blokir jika masih "sedang"
+	if (status === "hadir" || status === "wfh") {
+	    // Jika masih ada kata "sedang", baru kita stop (return)
+	    if (kValue.includes("sedang") || tKValue.includes("sedang")) {
+	        showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat...", "warning");
+	        vibrateAlertShort();
+	        isSubmitting = false; 
+	        return; 
+	    }
+	}
 
     // 🔥 TENTUKAN SUMBER GPS
     const gpsFinal = fotoData?.gps || gpsData;
