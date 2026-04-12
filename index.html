@@ -721,40 +721,43 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 
     if (currentLat === 0) return;
 
-    // Baris 1 & 2: Lokasi dan Akurasi
+    // Baris 1: Lokasi
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
+    
+    // Baris 2: Akurasi
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // Baris 2.5: Animasi Akurasi (Hanya muncul jika akurasi buruk)
+    // Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
 
-    // LOGIKA BARIS JARAK
+    // LOGIKA BARIS JARAK & STATUS
     if (status === "Hadir" || status === "WFH") {
-        // KONDISI 1: Data Koordinat Target Sudah Ada
-        if (targetLocation && targetLocation.lat && targetLocation.lat !== 0) {
+        const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
+
+        if (hasTargetData) {
             const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
             const insideArea = distance <= RADIUS_LIMIT;
             lastInsideArea = insideArea;
 
-            displayText += insideArea
-                ? `\n✅ Berada dalam area radius`
-                : `\n❌ Di luar area | Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT}m)`;
+            if (insideArea) {
+                // Tampilan jika di DALAM radius
+                displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
+            } else {
+                // Tampilan jika di LUAR radius (2 baris sesuai permintaanmu)
+                displayText += `\n❌ Di luar area ${namaLokasi}`;
+                displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+            }
         } 
-        // KONDISI 2: Data sedang di-fetch (Indikatornya: Nama lokasi berubah tapi koordinat belum masuk)
-        else if (namaLokasi !== "-") {
+        else if (typeof isFetchingTarget !== 'undefined' && isFetchingTarget === true) {
+            // Tampilan saat sedang fetch (rapat tanpa baris kosong)
             displayText += `\nMenghitung jarak ke lokasi baru...`;
             lastInsideArea = false;
         }
-        // KONDISI 3: Data memang tidak ada (Abaikan baris ini, jangan tulis Menghitung...)
-        else {
-			displayText += ``;
-            lastInsideArea = false; 
-        }
+        // Jika data benar-benar kosong, baris ketiga tidak akan muncul sama sekali
     } else {
-        // Status selain Hadir/WFH
-        displayText += ``;
+        displayText += `\n-`;
         lastInsideArea = true;
     }
 
