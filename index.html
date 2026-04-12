@@ -729,19 +729,12 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         lastInsideArea = false; 
     }  
 else if (status === "Hadir" || status === "WFH") {
-    // 1. Tentukan "Special Case" langsung dari data koordinat, bukan dari teks UI
-    // Jika targetLocation kosong atau 0, berarti ini mode bebas atau lokasi belum siap
-    const hasTargetLocation = targetLocation && targetLocation.lat !== 0 && targetLocation.lon !== 0;
-    const isSpecialCase = !hasTargetLocation; 
+    const tLat = targetLocation?.lat;
+    const tLon = targetLocation?.lon;
 
-    // 2. Jika sedang loading DAN lokasinya memang harus dihitung (bukan special case)
-    if (isFetchingLocation && !isSpecialCase) {
-        displayText += `Silakan Tunggu :\n- Sedang Update lokasi...\n- Sedang Menghitung jarak anda...`;
-        lastInsideArea = false;
-    } 
-    // 3. Jika data siap, langsung hitung jarak
-    else if (hasTargetLocation) {
-        const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
+    // 1. Jika koordinat valid, lakukan perhitungan (Proses Utama)
+    if (tLat && tLon && tLat !== 0) {
+        const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, tLat, tLon);
         const insideArea = distance <= RADIUS_LIMIT;
         lastInsideArea = insideArea;
 
@@ -749,10 +742,16 @@ else if (status === "Hadir" || status === "WFH") {
             ? `✅ Berada dalam area/radius ${namaLokasi}`
             : `❌ Di luar area | 📏 Jarak ${distance.toFixed(0)}m (Max. ${RADIUS_LIMIT}m)`;
     } 
-    // 4. Jika koordinat memang tidak ada (misal di database nilainya "-" atau 0)
-    else {
-        lastInsideArea = true; // Izinkan absen jika tidak ada target koordinat
+    // 2. Jika tidak ada koordinat (Special Case / "-"), lompati semua update & pesan tunggu
+    else if (!tLat || tLat === 0) {
+        lastInsideArea = true; 
+        // displayText dibiarkan kosong atau hanya teks identitas tanpa pesan "Sedang Update"
     }
+    // 3. Hanya tampilkan pesan tunggu jika koordinat ADA tapi data belum siap (Fetching)
+    else if (isFetchingLocation) {
+        displayText += `Silakan Tunggu :\n- Sedang Update lokasi...\n- Sedang Menghitung jarak anda...`;
+        lastInsideArea = false;
+    } 
 }
     // Update tampilan utama
     updateGPSDisplay(displayText);
