@@ -594,6 +594,8 @@ async function isGPSEnabledUniversal() {
     } catch { return true; }
 }
 
+const useCamera = false;
+	
 // =====================================================
 // GPS STATE
 // =====================================================
@@ -1036,6 +1038,11 @@ function stopWebcam() {
 }
 
 async function startWebcam() {
+	if (!useCamera) {
+        $('#webcam-container').hide(); // Sembunyikan kontainer kamera jika ada
+        return; 
+    }
+	
   if (isStarting) return;
   isStarting = true;
 
@@ -1518,9 +1525,9 @@ async function submitAbsensiForm() {
         return;
     }
 
-    const statusRaw = $('#status').val().trim();
+    const statusRaw = ($('#status').val() || "").trim();
+    const keterangan = ($('#keterangan').val() || "").trim();
     const status = statusRaw.toLowerCase();
-    const keterangan = $('#keterangan').val().trim();
 
     // 📋 Validasi Status
     if (!statusRaw) {
@@ -1543,8 +1550,8 @@ async function submitAbsensiForm() {
 
     // 📸 Validasi Foto
     const wajibFoto = ["hadir", "dinas", "wfh"].includes(status);
-    if (wajibFoto && !fotoData) {
-        showPopup("Foto Kehadiran wajib untuk status " + statusRaw + "!", "warning");
+    if (useCamera && wajibFoto && !fotoData) {
+        showPopup("Foto Kehadiran wajib untuk status " +  + "statusRaw", "warning");
         vibrateAlertShort();
         isSubmitting = false;
         return;
