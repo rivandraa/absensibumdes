@@ -1565,9 +1565,9 @@ async function submitAbsensiForm() {
     }
 
     // 📏 Validasi Radius (BAGIAN YANG DIPERBAIKI)
-    if (status === "hadir" || status === "wfh") {
+   /* if (status === "hadir" || status === "wfh") {
         if (!targetLocation) {
-            showPopup("⚠️ Koordinat kantor belum dimuat. Tunggu sebentar atau pilih ulang status.", "warning");
+            showPopup("⚠️ Koordinat belum dimuat. Tunggu sebentar atau pilih ulang status.", "warning");
             isSubmitting = false;
             return;
         }
@@ -1582,7 +1582,7 @@ async function submitAbsensiForm() {
             isSubmitting = false;
             return;
         }
-    }
+    } */
 
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
