@@ -719,9 +719,6 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
     
-    // 🔥 PERBAIKAN: Definisikan displayAcc di sini
-    const displayAcc = acc || (window.lastKnownAcc || 0);
-
     // Jika koordinat masih nol, jangan lanjut (tunggu fix GPS)
     if (currentLat === 0) return;
 
@@ -1566,14 +1563,24 @@ async function submitAbsensiForm() {
     // 📍 VALIDASI GPS KETAT (Mencegah submit jika GPS belum siap)
     const gpsWajib = !["izin", "sakit"].includes(status);
     if (gpsWajib) {
-        // 1. Cek apakah GPS nol (mati)
+        
+        // 1. Cek apakah koordinat nol
         const isGpsZero = !gpsFinal || (gpsFinal[0] === 0 && gpsFinal[1] === 0);
         
-        // 2. Cek apakah sistem sedang mencari atau meningkatkan akurasi
-        // Pastikan variabel 'animatingGPS' dan 'improvingAccuracy' tersedia secara global
-        if (isGpsZero || (typeof animatingGPS !== 'undefined' && animatingGPS) || (typeof improvingAccuracy !== 'undefined' && improvingAccuracy)) {
-            showPopup("⚠️ Lokasi belum siap!<br><small>GPS sedang mencari sinyal atau meningkatkan akurasi. Mohon tunggu tanda lokasi berwarna hijau.</small>", "warning");
+        // 2. Cek apakah sinyal sedang hilang/dimatikan (animatingGPS biasanya true jika mencari)
+        // Atau jika akurasi meledak jadi sangat besar (tanda GPS mati/lemah)
+        const gpsMati = (typeof animatingGPS !== 'undefined' && animatingGPS);
+
+        if (isGpsZero || gpsMati) {
+            showPopup("⚠️ GPS Terputus!<br><small>Pastikan GPS tetap menyala. Tunggu hingga sinyal stabil (ikon hijau) sebelum menekan tombol absen.</small>", "error");
             vibrateAlertShort();
+            isSubmitting = false;
+            return;
+        }
+
+        // 3. Tambahan: Proteksi jika akurasi terlalu rendah (Optional)
+        if (typeof accuracy !== 'undefined' && accuracy > 100) { // Jika akurasi > 100 meter
+            showPopup("⚠️ Akurasi GPS buruk!<br><small>Sinyal GPS lemah atau dimatikan. Cari tempat terbuka.</small>", "warning");
             isSubmitting = false;
             return;
         }
