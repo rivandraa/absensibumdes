@@ -715,33 +715,26 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     const elNama = document.getElementById("titikKoordinatTampil");
     const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
 
-    // 1. Koordinat & Akurasi (Gunakan parameter atau fallback ke data sensor aktif)
+    // Gunakan koordinat dari parameter atau dari memory
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
-    
-    // Gunakan parameter acc jika ada, jika tidak (manual call) gunakan gpsData[2]
-    // Ini mencegah akurasi jadi 0 saat refreshTargetLocation dipanggil
-    //const displayAcc = (acc !== undefined) ? acc : (gpsData[2] || 0);
 
-    // Jika GPS benar-benar belum aktif, jangan lanjut
     if (currentLat === 0) return;
 
-    // BARIS 1: Lokasi
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}\n`;
     
-    // BARIS 2: Akurasi (Logika Animasi)
-    displayText += `Tingkat Akurasi : ${displayAcc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
-    if (displayAcc > MAX_ACCURACY) {
-        displayText += `Sedang meningkatkan akurasi${".".repeat(accDots)}\n`;
-        lastInsideArea = false;
+    // Jika akurasi masih buruk (saat animasi)
+    if (acc && acc > MAX_ACCURACY) {
+        displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n` +
+               `Sedang meningkatkan akurasi${".".repeat(accDots)}\n`;
+    } else {
+        displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
     }
 
-    // BARIS 3: Logika Jarak / Status
+// 2. Logika Baris Ketiga (Jarak / Status)
     if (status === "Hadir" || status === "WFH") {
-        const teksKordinat = elNama ? elNama.value : "";
-
-        if (targetLocation && targetLocation.lat && targetLocation.lon) {
-            // A. JIKA ADA LOKASI: Hitung jarak
+        if (targetLocation) {
+            // Jika data target sudah siap, hitung jarak
             const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
             const insideArea = distance <= RADIUS_LIMIT;
             lastInsideArea = insideArea;
@@ -749,15 +742,10 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             displayText += insideArea
                 ? `✅ Berada dalam area radius`
                 : `❌ Di luar area\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT}m)`;
-        } 
-        else if (isFetchingLocation && teksKordinat !== "-") {
-            // B. JIKA SEDANG FETCH: Muncul pesan tunggu (Kecuali jika kordinat sudah "-")
+        } else {
+            // 🔥 TAMPILAN SAAT SEDANG FETCH DATA KANTOR
             displayText += `\nMenghitung jarak ke lokasi baru...`;
-            lastInsideArea = false;
-        } 
-        else {
-            // C. JIKA LOKASI "-" ATAU KOSONG: Hilangkan pesan
-            lastInsideArea = (teksKordinat === "-"); 
+            lastInsideArea = false; // Kunci tombol kamera dulu
         }
     } else {
         // Status Dinas/Izin/Sakit
@@ -796,7 +784,7 @@ async function refreshTargetLocation(callback, isSilent = false) {
     // =========================================================
 
     if (!currentStatus || currentStatus === "Pilih Status...") {
-        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+        if (tampil) tampil.value = "⚠️ Pilih Status";
         return;
     }
     
@@ -811,42 +799,38 @@ async function refreshTargetLocation(callback, isSilent = false) {
 
     if (isFetchingLocation) return;
 
-	try {
+    try {
         isFetchingLocation = true;
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
         const response = await fetch(url);
         const loc = await response.json();
 
+        // Validasi agar data yang telat tidak menimpa status yang sudah berubah
         if (document.getElementById("status")?.value !== currentStatus) return;
 
-        // CEK APAKAH DATA ADA ATAU TIDAK
-        if (loc && loc.lat && loc.lat !== "-" && loc.lon && loc.lon !== "-") {
+        if (loc && loc.lat && loc.lon) {
             const newLocation = { lat: parseFloat(loc.lat), lon: parseFloat(loc.lon) };
+            
+            // Update memori
             targetLocation = newLocation;
             lastTargetLocation = newLocation;
 
+            // Update Tampilan (Tanpa kedip karena isSilent menangani ini)
             const koordinatMurni = `${newLocation.lat.toFixed(6)}, ${newLocation.lon.toFixed(6)}`;
             if (tampil) tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
             if (hidden) hidden.value = koordinatMurni;
-        } 
-        else {
-            // JIKA DATA KOSONG / "-" / TIDAK DITEMUKAN
+
+            if (gpsData[0] !== 0) {
+            forceUpdateDistanceUI(gpsData[0], gpsData[1], null);
+			}
+        } else {
             targetLocation = null;
-            lastTargetLocation = null;
-            if (tampil) tampil.value = "-"; // Langsung set strip
-            if (hidden) hidden.value = "-";
+            if (tampil) tampil.value = "Titik tidak ditemukan";
         }
-
-        // PAKSA UI UPDATE INSTAN (Agar pesan "Silakan Tunggu" langsung hilang)
-        // Di dalam refreshTargetLocation, panggil seperti ini:
-		forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsData[2]);
-
     } catch (error) {
         console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
-        // Panggil lagi UI update setelah isFetchingLocation jadi false
-        forceUpdateDistanceUI();
         if (typeof callback === "function") callback();
     }
 }
