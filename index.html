@@ -595,6 +595,13 @@ async function isGPSEnabledUniversal() {
 }
 
 // =====================================================
+// GLOBAL STATE
+// =====================================================
+const useCamera = false;
+
+// =====================================================
+
+// =====================================================
 // GPS STATE
 // =====================================================
 let gpsWatcherId = null;
@@ -1016,7 +1023,7 @@ document.addEventListener("DOMContentLoaded", () => {
 /* =========================================================================================================
     BAGIAN KODE KAMERA & FOTO DOKUMENTASI (REVISI GITHUB PAGES)
 ========================================================================================================= */
-/* let stream = null; 
+let stream = null; 
 let gpsSaatFoto = [0, 0];
 let fotoData = null;
 let isStarting = false; 
@@ -1036,6 +1043,11 @@ function stopWebcam() {
 }
 
 async function startWebcam() {
+  if (!useCamera) {
+        $('#webcam-container').hide(); // Sembunyikan kontainer kamera jika ada
+        return; 
+    }
+	
   if (isStarting) return;
   isStarting = true;
 
@@ -1424,12 +1436,12 @@ document.getElementById('snap').addEventListener('click', async () => {
         showPopup("❌ Gagal memproses foto/waktu!", "error");
         isSnapping = false;
     }
-}); */
+});
 
 /* =========================================================================================================
 Fungsi untuk menyembunyikan, lokasi dan kamera
 ========================================================================================================= */
-/* document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     const statusSelect = document.getElementById('status');
     const koordinatSection = document.getElementById('titikKoordinatTampil').closest('.form-group');
     const gpsSection = document.getElementById('gps').closest('.form-group');
@@ -1475,7 +1487,7 @@ Fungsi untuk menyembunyikan, lokasi dan kamera
 
     statusSelect.addEventListener('change', updateUI);
     updateUI(); 
-}); */
+});
 
 /* =========================================================================================================
     SUBMIT ABSENSI
@@ -1543,7 +1555,7 @@ async function submitAbsensiForm() {
 
     // 📸 Validasi Foto
     const wajibFoto = ["hadir", "dinas", "wfh"].includes(status);
-    if (wajibFoto && !fotoData) {
+    if (useCamera && wajibFoto && !fotoData) {
         showPopup("Foto Kehadiran wajib untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
         isSubmitting = false;
