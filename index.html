@@ -1519,7 +1519,7 @@ async function submitAbsensiForm() {
         vibrateAlertShort();
         return;
     }
-    //isSubmitting = true;
+    isSubmitting = true;
 
     const perangkatVal = $('#perangkatData').val()?.trim() || "";
     const val = perangkatVal ? perangkatVal.split('|') : [];
@@ -1540,7 +1540,7 @@ async function submitAbsensiForm() {
         showPopup("Silakan pilih status terlebih dahulu!", "warning");
         vibrateAlertShort();
         document.getElementById('status').focus();
-        //isSubmitting = false;
+        isSubmitting = false;
         return;
     }
 
@@ -1550,7 +1550,7 @@ async function submitAbsensiForm() {
         showPopup("Keterangan wajib diisi untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
         document.getElementById('keterangan').focus();
-        //isSubmitting = false;
+        isSubmitting = false;
         return;
     }
 
@@ -1559,7 +1559,7 @@ async function submitAbsensiForm() {
     if (useCamera && wajibFoto && !fotoData) {
         showPopup("Foto Kehadiran wajib untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
-        //isSubmitting = false;
+        isSubmitting = false;
         return;
     }
 
@@ -1573,7 +1573,7 @@ async function submitAbsensiForm() {
         if (!gpsFinal || (gpsFinal[0] === 0 && gpsFinal[1] === 0)) {
             showPopup("GPS belum aktif atau tidak valid.", "error");
             vibrateAlertShort();
-            //isSubmitting = false;
+            isSubmitting = false;
             return;
         }
     }
@@ -1598,7 +1598,7 @@ async function submitAbsensiForm() {
         }
     } */
 
-	isSubmitting = true; // KUNCI TOMBOL
+	//isSubmitting = true; // KUNCI TOMBOL
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
     // ======================================
