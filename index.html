@@ -781,7 +781,7 @@ async function refreshTargetLocation(callback, isSilent = false) {
     // =========================================================
 
     if (!currentStatus || currentStatus === "Pilih Status...") {
-        if (tampil) tampil.value = "⚠️ Pilih Status";
+        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
         return;
     }
     
@@ -796,38 +796,41 @@ async function refreshTargetLocation(callback, isSilent = false) {
 
     if (isFetchingLocation) return;
 
-    try {
+	try {
         isFetchingLocation = true;
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
         const response = await fetch(url);
         const loc = await response.json();
 
-        // Validasi agar data yang telat tidak menimpa status yang sudah berubah
         if (document.getElementById("status")?.value !== currentStatus) return;
 
-        if (loc && loc.lat && loc.lon) {
+        // CEK APAKAH DATA ADA ATAU TIDAK
+        if (loc && loc.lat && loc.lat !== "-" && loc.lon && loc.lon !== "-") {
             const newLocation = { lat: parseFloat(loc.lat), lon: parseFloat(loc.lon) };
-            
-            // Update memori
             targetLocation = newLocation;
             lastTargetLocation = newLocation;
 
-            // Update Tampilan (Tanpa kedip karena isSilent menangani ini)
             const koordinatMurni = `${newLocation.lat.toFixed(6)}, ${newLocation.lon.toFixed(6)}`;
             if (tampil) tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
             if (hidden) hidden.value = koordinatMurni;
-
-            if (gpsData[0] !== 0) {
-            forceUpdateDistanceUI(gpsData[0], gpsData[1], null);
-			}
-        } else {
+        } 
+        else {
+            // JIKA DATA KOSONG / "-" / TIDAK DITEMUKAN
             targetLocation = null;
-            if (tampil) tampil.value = "Titik tidak ditemukan";
+            lastTargetLocation = null;
+            if (tampil) tampil.value = "-"; // Langsung set strip
+            if (hidden) hidden.value = "-";
         }
+
+        // PAKSA UI UPDATE INSTAN (Agar pesan "Silakan Tunggu" langsung hilang)
+        forceUpdateDistanceUI();
+
     } catch (error) {
         console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
+        // Panggil lagi UI update setelah isFetchingLocation jadi false
+        forceUpdateDistanceUI();
         if (typeof callback === "function") callback();
     }
 }
