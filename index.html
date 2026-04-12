@@ -838,7 +838,8 @@ async function refreshTargetLocation(callback, isSilent = false) {
         }
 
         // PAKSA UI UPDATE INSTAN (Agar pesan "Silakan Tunggu" langsung hilang)
-        forceUpdateDistanceUI(gpsData[0], gpsData[1], null);
+        // Di dalam refreshTargetLocation, panggil seperti ini:
+		forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsData[2]);
 
     } catch (error) {
         console.error("Gagal refresh:", error);
