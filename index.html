@@ -595,13 +595,6 @@ async function isGPSEnabledUniversal() {
 }
 
 // =====================================================
-// GLOBAL STATE
-// =====================================================
-const useCamera = false;
-
-// =====================================================
-
-// =====================================================
 // GPS STATE
 // =====================================================
 let gpsWatcherId = null;
@@ -1043,11 +1036,6 @@ function stopWebcam() {
 }
 
 async function startWebcam() {
-  if (!useCamera) {
-        $('#webcam-container').hide(); // Sembunyikan kontainer kamera jika ada
-        return; 
-    }
-	
   if (isStarting) return;
   isStarting = true;
 
@@ -1189,7 +1177,7 @@ document.getElementById('snap').addEventListener('click', async () => {
   }
  
    // VALIDASI FOTO
-  if (useCamera && fotoData) {
+  if (fotoData) {
     showPopup("⚠️ Tekan tombol Reset dahulu.", "warning");
     vibrateAlertShort();
     isSnapping = false;
@@ -1509,7 +1497,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // Submit Absensi
 // ================================
 let isSubmitting = false;
-const wajibFoto = false; // TRUE JIKA WAJIB FOTO
 	
 async function submitAbsensiForm() {
     if (typeof hideAlerts === "function") hideAlerts();
@@ -1519,7 +1506,7 @@ async function submitAbsensiForm() {
         vibrateAlertShort();
         return;
     }
-    //isSubmitting = true;
+    isSubmitting = true;
 
     const perangkatVal = $('#perangkatData').val()?.trim() || "";
     const val = perangkatVal ? perangkatVal.split('|') : [];
@@ -1540,7 +1527,7 @@ async function submitAbsensiForm() {
         showPopup("Silakan pilih status terlebih dahulu!", "warning");
         vibrateAlertShort();
         document.getElementById('status').focus();
-        //isSubmitting = false;
+        isSubmitting = false;
         return;
     }
 
@@ -1555,17 +1542,17 @@ async function submitAbsensiForm() {
     }
 
     // 📸 Validasi Foto
-    const wajibFoto = ["hadir", "dinas", "wfh"].includes(status);
-    if (useCamera && wajibFoto && !fotoData) {
+    /* const wajibFoto = ["hadir", "dinas", "wfh"].includes(status);
+    if (wajibFoto && !fotoData) {
         showPopup("Foto Kehadiran wajib untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
         isSubmitting = false;
         return;
-    }
+    } */
 
     // 🔥 SATU SUMBER GPS
-    //const gpsFinal = fotoData?.gps || gpsData; // ENABLE FOTO
-	const gpsFinal = (useCamera && fotoData && fotoData.gps) ? fotoData.gps : gpsData;
+   // const gpsFinal = fotoData?.gps || gpsData;
+	const gpsFinal = gpsData;
 
 // 📍 Validasi GPS
     const gpsWajib = !["izin", "sakit"].includes(status);
@@ -1582,7 +1569,7 @@ async function submitAbsensiForm() {
     /* if (status === "hadir" || status === "wfh") {
         if (!targetLocation) {
             showPopup("⚠️ Koordinat kantor belum dimuat. Tunggu sebentar atau pilih ulang status.", "warning");
-            //isSubmitting = false;
+            isSubmitting = false;
             return;
         }
 
@@ -1593,12 +1580,11 @@ async function submitAbsensiForm() {
         if (!insideArea) {
             showPopup(`⚠️ Anda berada di luar area absensi!<br>Jarak: ${distance.toFixed(0)}m (Max: ${RADIUS_LIMIT}m)`, "error");
             vibrateAlertShort();
-            //isSubmitting = false;
+            isSubmitting = false;
             return;
         }
     } */
 
-	isSubmitting = true; // KUNCI TOMBOL
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
     // ======================================
@@ -1610,14 +1596,13 @@ async function submitAbsensiForm() {
         keterangan: keterangan,
         statusPegawai: userData.statusPegawai,
         spreadsheetId: userData.spreadsheetId,
-		foto: (useCamera && fotoData) ? fotoData : "",
         folderId: userData.folderId
     };
 
-    //if (!["izin", "sakit"].includes(status)) {
-    //    payload.foto = fotoData; // Ini berisi {base64, name, type, dll}
-    //    payload.gps = gpsFinal;
-    //}
+    if (!["izin", "sakit"].includes(status)) {
+        payload.foto = fotoData; // Ini berisi {base64, name, type, dll}
+        payload.gps = gpsFinal;
+    }
 
     // Kunci UI
     document.getElementById('snap').disabled = true;
