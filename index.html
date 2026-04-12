@@ -827,7 +827,7 @@ async function refreshTargetLocation(callback, isSilent = false) {
             if (gpsData[0] !== 0) forceUpdateDistanceUI();
         } else {
             targetLocation = null;
-            if (tampil) tampil.value = "Titik tidak ditemukan";
+            if (tampil) tampil.value = "-";
         }
     } catch (error) {
         console.error("Gagal refresh:", error);
