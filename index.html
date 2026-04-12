@@ -712,53 +712,51 @@ function stopGPSLoading() {
 function forceUpdateDistanceUI(lat, lon, acc) {
     const statusInput = document.getElementById("status");
     const status = statusInput ? statusInput.value : "";
+    
+    // Variabel yang sempat hilang saya kembalikan di sini
     const elNama = document.getElementById("titikKoordinatTampil");
     const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
 
-    // Gunakan koordinat dari parameter atau dari memory
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
     if (currentLat === 0) return;
 
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}\n`;
-    displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
-
+    
+    // Baris Akurasi (Animasi accDots tetap ada)
     if (acc && acc > MAX_ACCURACY) {
-        displayText += `Sedang meningkatkan akurasi${".".repeat(accDots)}`;
-        lastInsideArea = false; 
-    }  
-else if (status === "Hadir" || status === "WFH") {
-    // 1. Tentukan "Special Case" langsung dari data koordinat, bukan dari teks UI
-    // Jika targetLocation kosong atau 0, berarti ini mode bebas atau lokasi belum siap
-    const hasTargetLocation = targetLocation && targetLocation.lat !== 0 && targetLocation.lon !== 0;
-    const isSpecialCase = !hasTargetLocation; 
-
-    // 2. Jika sedang loading DAN lokasinya memang harus dihitung (bukan special case)
-    if (isFetchingLocation && !isSpecialCase) {
-        displayText += `Silakan Tunggu :\n- Sedang Update lokasi...\n- Sedang Menghitung jarak anda...`;
-        lastInsideArea = false;
-    } 
-    // 3. Jika data siap, langsung hitung jarak
-    else if (hasTargetLocation) {
-        const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
-        const insideArea = distance <= RADIUS_LIMIT;
-        lastInsideArea = insideArea;
-
-        displayText += insideArea
-            ? `✅ Berada dalam area/radius ${namaLokasi}`
-            : `❌ Di luar area | 📏 Jarak ${distance.toFixed(0)}m (Max. ${RADIUS_LIMIT}m)`;
-    } 
-    // 4. Jika koordinat memang tidak ada (misal di database nilainya "-" atau 0)
-    else {
-        lastInsideArea = true; // Izinkan absen jika tidak ada target koordinat
+        displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n` +
+                       `Sedang meningkatkan akurasi${".".repeat(accDots)}\n`;
+    } else {
+        displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
     }
-}
-	
-    // Update tampilan utama
+
+    // Logika Baris Ketiga (Jarak / Status)
+    if (status === "Hadir" || status === "WFH") {
+        if (targetLocation && targetLocation.lat && targetLocation.lon) {
+            const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
+            const insideArea = distance <= RADIUS_LIMIT;
+            lastInsideArea = insideArea;
+
+            displayText += insideArea
+                ? `✅ Berada dalam area/radius ${namaLokasi}`
+                : `❌ Di luar area\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT}m)`;
+        } else {
+            // 🔥 TAMPILAN SAAT SEDANG FETCH DATA KANTOR
+            // Pesan ini tetap muncul, lastInsideArea dikunci false agar user tidak colong start
+            displayText += `\nMenghitung jarak ke lokasi baru...`;
+            lastInsideArea = false; 
+        }
+    } else {
+        // Status Dinas/Izin/Sakit
+        displayText += `\n-`;
+        lastInsideArea = true;
+    }
+
     updateGPSDisplay(displayText);
 }
-
+	
 // =====================================================
 // REFRESH TARGET LOCATION
 // =====================================================
