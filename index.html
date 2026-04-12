@@ -202,7 +202,7 @@ body.locked {
         </div>
 
         <!-- Kamera -->
-        <div class="form-group mb-3">
+        <!-- <div class="form-group mb-3">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <label style="margin:0;">📸 Dokumentasi</label>
                 <button type="button" id="restartCamera" class="btn-gps">
@@ -214,10 +214,10 @@ body.locked {
                 <video id="video" autoplay playsinline muted></video>
                 <img id="fotoPreview" style="display:none;">
             </div>
-        </div>
+        </div> -->
 
         <!-- Tombol Foto -->
-        <div class="mt-3 d-flex justify-content-between text-center" id="containerTombolFoto">
+        <!--<div class="mt-3 d-flex justify-content-between text-center" id="containerTombolFoto">
             <button type="button" class="btn btn-secondary flex-fill mx-1" id="reset">
                 Reset Foto
             </button>
@@ -225,7 +225,7 @@ body.locked {
             <button type="button" class="btn btn-primary flex-fill mx-1" id="snap">
                 Ambil Foto
             </button>
-        </div>
+        </div> -->
 
         <hr>
 
@@ -1570,6 +1570,14 @@ async function submitAbsensiForm() {
             return;
         }
     }
+
+  //  VALIDASI GPS & RADIUS
+  if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
+    showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
+    vibrateAlertShort();
+    isSubmitting = false;
+    return;
+  }
 
 // 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
     if (useCamera && (status === "hadir" || status === "wfh")) {
