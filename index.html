@@ -732,8 +732,8 @@ else if (status === "Hadir" || status === "WFH") {
     const tLat = targetLocation?.lat;
     const tLon = targetLocation?.lon;
 
-    // 1. Jika koordinat valid, lakukan perhitungan (Proses Utama)
-    if (tLat && tLon && tLat !== 0) {
+    // PRIORITAS 1: Jika koordinat ada, LANGSUNG HITUNG (Jangan tunggu apa pun)
+    if (tLat && tLat !== 0 && tLon && tLon !== 0) {
         const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, tLat, tLon);
         const insideArea = distance <= RADIUS_LIMIT;
         lastInsideArea = insideArea;
@@ -742,16 +742,16 @@ else if (status === "Hadir" || status === "WFH") {
             ? `✅ Berada dalam area/radius ${namaLokasi}`
             : `❌ Di luar area | 📏 Jarak ${distance.toFixed(0)}m (Max. ${RADIUS_LIMIT}m)`;
     } 
-    // 2. Jika tidak ada koordinat (Special Case / "-"), lompati semua update & pesan tunggu
-    else if (!tLat || tLat === 0) {
+    // PRIORITAS 2: Jika koordinat memang kosong (Mode Bebas / "-")
+    else if (!isFetchingLocation && (!tLat || tLat === 0)) {
         lastInsideArea = true; 
-        // displayText dibiarkan kosong atau hanya teks identitas tanpa pesan "Sedang Update"
+        // Tanpa displayText tambahan agar UI bersih
     }
-    // 3. Hanya tampilkan pesan tunggu jika koordinat ADA tapi data belum siap (Fetching)
+    // PRIORITAS 3: Hanya jika benar-benar tidak ada data DAN sedang mencari
     else if (isFetchingLocation) {
         displayText += `Silakan Tunggu :\n- Sedang Update lokasi...\n- Sedang Menghitung jarak anda...`;
         lastInsideArea = false;
-    } 
+    }
 }
     // Update tampilan utama
     updateGPSDisplay(displayText);
