@@ -1527,7 +1527,7 @@ async function submitAbsensiForm() {
     // 🔐 Validasi Session
     if (!userData || val.length < 2 || !val[0] || !val[1]) {
         showPopup("Sesi login berakhir. Silakan login ulang.", "error");
-        isSubmitting = false;
+        //isSubmitting = false;
         return;
     }
 
@@ -1540,7 +1540,7 @@ async function submitAbsensiForm() {
         showPopup("Silakan pilih status terlebih dahulu!", "warning");
         vibrateAlertShort();
         document.getElementById('status').focus();
-        isSubmitting = false;
+        //isSubmitting = false;
         return;
     }
 
@@ -1550,7 +1550,7 @@ async function submitAbsensiForm() {
         showPopup("Keterangan wajib diisi untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
         document.getElementById('keterangan').focus();
-        isSubmitting = false;
+        //isSubmitting = false;
         return;
     }
 
@@ -1559,7 +1559,7 @@ async function submitAbsensiForm() {
     if (useCamera && wajibFoto && !fotoData) {
         showPopup("Foto Kehadiran wajib untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
-        isSubmitting = false;
+        //isSubmitting = false;
         return;
     }
 
@@ -1573,16 +1573,16 @@ async function submitAbsensiForm() {
         if (!gpsFinal || (gpsFinal[0] === 0 && gpsFinal[1] === 0)) {
             showPopup("GPS belum aktif atau tidak valid.", "error");
             vibrateAlertShort();
-            isSubmitting = false;
+            //isSubmitting = false;
             return;
         }
     }
 
     // 📏 Validasi Radius (BAGIAN YANG DIPERBAIKI)
-    if (status === "hadir" || status === "wfh") {
+    /* if (status === "hadir" || status === "wfh") {
         if (!targetLocation) {
             showPopup("⚠️ Koordinat kantor belum dimuat. Tunggu sebentar atau pilih ulang status.", "warning");
-            isSubmitting = false;
+            //isSubmitting = false;
             return;
         }
 
@@ -1593,10 +1593,10 @@ async function submitAbsensiForm() {
         if (!insideArea) {
             showPopup(`⚠️ Anda berada di luar area absensi!<br>Jarak: ${distance.toFixed(0)}m (Max: ${RADIUS_LIMIT}m)`, "error");
             vibrateAlertShort();
-            isSubmitting = false;
+            //isSubmitting = false;
             return;
         }
-    }
+    } */
 
 	isSubmitting = true; // KUNCI TOMBOL
     // ======================================
