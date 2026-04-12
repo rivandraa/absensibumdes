@@ -1569,31 +1569,23 @@ async function submitAbsensiForm() {
         return;
     }
 
-	// Menggunakan operator && untuk menggabungkan pengecekan status dan kondisi koordinat
-	const tampil = document.getElementById("titikKoordinatTampil");
-	// Gunakan trim() untuk membuang spasi liar di awal/akhir teks
-	const koordinatValue = tampil ? (tampil.value || tampil.innerText).trim() : "";
-	
-	const titiktampil = document.getElementById("titikKoordinat");
-	// PERBAIKAN: Ambil dari titiktampil, bukan tampil
-	const titikkoordinatValue = titiktampil ? (titiktampil.value || titiktampil.innerText).trim() : "";
-	
-	// Debugging: Munculkan di console untuk memastikan isinya benar
-	console.log("Koordinat:", koordinatValue);
-	console.log("Titik:", titikkoordinatValue);
-	
-	if (status === "Hadir" || status === "WFH") {
-	    // Gunakan .includes() agar lebih aman jika ada perbedaan jumlah titik (...)
-	    const sedangLoading = koordinatValue.includes("Sedang mengambil") || 
-	                          titikkoordinatValue.includes("Sedang menghitung");
-	
-	    if (sedangLoading) {
-	        showPopup("⚠️ Menunggu koordinat absensi...", "warning");
-	        vibrateAlertShort();
-	        isSubmitting = false;
-	        return; // Menghentikan eksekusi
-	    }
-	}
+// --- TAMBAHKAN BARIS INI UNTUK MENGAMBIL NILAI TERBARU DARI ELEMENT ---
+    const elTampil = document.getElementById("titikKoordinatTampil");
+    const elTitik = document.getElementById("titikKoordinat");
+    
+    // Ambil teksnya, jika elemen tidak ada beri string kosong
+    const kValue = (elTampil ? (elTampil.value || elTampil.innerText) : "").toLowerCase();
+    const tKValue = (elTitik ? (elTitik.value || elTitik.innerText) : "").toLowerCase();
+    
+    // Validasi Sedang Mengambil Data
+    if (status === "hadir" || status === "wfh") {
+        if (kValue.includes("sedang") || tKValue.includes("sedang") || kValue === "" || tKValue === "") {
+            showPopup("⚠️ Menunggu koordinat absensi...", "warning");
+            vibrateAlertShort();
+            isSubmitting = false;
+            return; // Berhenti di sini
+        }
+    }
 
     // 🔥 TENTUKAN SUMBER GPS
     const gpsFinal = fotoData?.gps || gpsData;
