@@ -721,36 +721,36 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 
     if (currentLat === 0) return;
 
-    // Baris 1: Lokasi Anda
+    // Baris 1: Lokasi
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     
-    // Baris 2: Tingkat Akurasi
+    // Baris 2: Akurasi
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // Baris Tambahan: Hanya muncul jika akurasi buruk
+    // Baris 3: Animasi Akurasi (Hanya muncul jika akurasi buruk)
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
 
-    // Baris Terakhir: Logika Jarak / Status
+    // LOGIKA BARIS JARAK
     if (status === "Hadir" || status === "WFH") {
-        if (targetLocation && targetLocation.lat && targetLocation.lon) {
+        // Jika koordinat target SUDAH ADA
+        if (targetLocation && targetLocation.lat && targetLocation.lat !== 0) {
             const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
             const insideArea = distance <= RADIUS_LIMIT;
             lastInsideArea = insideArea;
 
             displayText += insideArea
                 ? `\n✅ Berada dalam area radius`
-                : `\n❌ Di luar area | Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT}m)`;
+                : `\n❌ Di luar area | Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
         } 
-        else if (window.isFetchingTarget) {
-            // Muncul tepat di bawah akurasi/status tanpa jeda baris kosong
+        // Jika koordinat target BELUM ADA (Sedang Fetching/Loading)
+        else {
             displayText += `\nMenghitung jarak ke lokasi baru...`;
-            lastInsideArea = false;
+            lastInsideArea = false; 
         }
-        // Jika data tidak ada dan tidak sedang fetching, tidak menambah baris apa-apa
     } else {
-        displayText += ``;
+        displayText += `\n-`;
         lastInsideArea = true;
     }
 
