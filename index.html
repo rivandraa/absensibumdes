@@ -1599,7 +1599,7 @@ async function submitAbsensiForm() {
     };
 
     if (!["izin", "sakit"].includes(status)) {
-        payload.foto = fotoData; // Ini berisi {base64, name, type, dll}
+       // payload.foto = fotoData; // Ini berisi {base64, name, type, dll}
         payload.gps = gpsFinal;
     }
 
@@ -1633,8 +1633,8 @@ async function submitAbsensiForm() {
             // Reset Form
             $('#status').val('');
             $('#keterangan').val('');
-            fotoData = null;
-            resetFoto();
+           // fotoData = null;
+           // resetFoto();
 
         } else if (res.status === "sudah_absen") {
             const waktuID = formatIndonesia(res.waktu);
