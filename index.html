@@ -755,7 +755,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 	        } 
 	        else {
 	            // 3. Jika data kosong/strip atau refresh interval sedang jalan tapi sudah ada data lama
-	            lastInsideArea = (targetLocation == null); 
+	            lastInsideArea = true; 
 	        }
 	    }
 		else if (["Dinas", "Izin", "Sakit"].includes(status)) {
