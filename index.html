@@ -202,7 +202,7 @@ body.locked {
         </div>
 
         <!-- Kamera -->
-      <!--  <div class="form-group mb-3">
+        <div class="form-group mb-3">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <label style="margin:0;">📸 Dokumentasi</label>
                 <button type="button" id="restartCamera" class="btn-gps">
@@ -214,10 +214,10 @@ body.locked {
                 <video id="video" autoplay playsinline muted></video>
                 <img id="fotoPreview" style="display:none;">
             </div>
-        </div> -->
+        </div>
 
         <!-- Tombol Foto -->
-       <!-- <div class="mt-3 d-flex justify-content-between text-center" id="containerTombolFoto">
+        <div class="mt-3 d-flex justify-content-between text-center" id="containerTombolFoto">
             <button type="button" class="btn btn-secondary flex-fill mx-1" id="reset">
                 Reset Foto
             </button>
@@ -225,7 +225,7 @@ body.locked {
             <button type="button" class="btn btn-primary flex-fill mx-1" id="snap">
                 Ambil Foto
             </button>
-        </div> -->
+        </div>
 
         <hr>
 
@@ -541,7 +541,7 @@ async function loginUser() {
             setTimeout(() => {
                 startIdleTimer();
                 startGPS();
-                //startWebcam();
+                startWebcam();
             }, 500);
             
         } else {
@@ -1006,7 +1006,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	    	});
 		}
 	});
-
+	
 /* =========================================================================================================
     BAGIAN KODE KAMERA & FOTO DOKUMENTASI (REDESAIN + ERROR MAPPING)
     - Live view: mirror (selfie) di video saja
@@ -1424,7 +1424,7 @@ document.getElementById('snap').addEventListener('click', async () => {
         showPopup("❌ Gagal memproses foto/waktu!", "error");
         isSnapping = false;
     }
-});
+}); */
 
 /* =========================================================================================================
 Fungsi untuk menyembunyikan, lokasi dan kamera
@@ -1475,7 +1475,7 @@ Fungsi untuk menyembunyikan, lokasi dan kamera
 
     statusSelect.addEventListener('change', updateUI);
     updateUI(); 
-});
+}); */
 
 /* =========================================================================================================
     SUBMIT ABSENSI
@@ -1542,7 +1542,7 @@ async function submitAbsensiForm() {
     }
 
     // 📸 Validasi Foto
-  const wajibFoto = ["hadir", "dinas", "wfh"].includes(status);
+    const wajibFoto = ["hadir", "dinas", "wfh"].includes(status);
     if (wajibFoto && !fotoData) {
         showPopup("Foto Kehadiran wajib untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
@@ -1551,7 +1551,7 @@ async function submitAbsensiForm() {
     }
 
     // 🔥 SATU SUMBER GPS
-    //const gpsFinal = fotoData?.gps || gpsData;
+    const gpsFinal = fotoData?.gps || gpsData;
 
 // 📍 Validasi GPS
     const gpsWajib = !["izin", "sakit"].includes(status);
@@ -1565,9 +1565,9 @@ async function submitAbsensiForm() {
     }
 
     // 📏 Validasi Radius (BAGIAN YANG DIPERBAIKI)
-   if (status === "hadir" || status === "wfh") {
+    if (status === "hadir" || status === "wfh") {
         if (!targetLocation) {
-            showPopup("⚠️ Koordinat belum dimuat. Tunggu sebentar atau pilih ulang status.", "warning");
+            showPopup("⚠️ Koordinat kantor belum dimuat. Tunggu sebentar atau pilih ulang status.", "warning");
             isSubmitting = false;
             return;
         }
@@ -1598,7 +1598,7 @@ async function submitAbsensiForm() {
         folderId: userData.folderId
     };
 
-   if (!["izin", "sakit", "hadir", "dinas"].includes(status)) {
+    if (!["izin", "sakit"].includes(status)) {
         payload.foto = fotoData; // Ini berisi {base64, name, type, dll}
         payload.gps = gpsFinal;
     }
@@ -1633,8 +1633,8 @@ async function submitAbsensiForm() {
             // Reset Form
             $('#status').val('');
             $('#keterangan').val('');
-            //fotoData = null;
-            //resetFoto();
+            fotoData = null;
+            resetFoto();
 
         } else if (res.status === "sudah_absen") {
             const waktuID = formatIndonesia(res.waktu);
@@ -2042,8 +2042,8 @@ function logout(fromIdle = false){
     popupActive = false;
 
     stopGPSMonitoring();
-    //resetFoto();
-    //stopWebcam(); // Hentikan Kamera
+    resetFoto();
+    stopWebcam(); // Hentikan Kamera
     
     sessionStorage.removeItem('userData'); 
     sessionStorage.removeItem('page');
@@ -2138,7 +2138,7 @@ $(document).ready(function() {
 
         fotoData = null; // Selalu reset foto saat refresh halaman absensi
         startGPS();
-        //startWebcam(); 
+        startWebcam(); 
         startIdleTimer();
 
     } else { 
