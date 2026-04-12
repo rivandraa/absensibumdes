@@ -1564,7 +1564,8 @@ async function submitAbsensiForm() {
     }
 
     // 🔥 SATU SUMBER GPS
-    const gpsFinal = fotoData?.gps || gpsData;
+    //const gpsFinal = fotoData?.gps || gpsData; // ENABLE FOTO
+	const gpsFinal = (useCamera && fotoData && fotoData.gps) ? fotoData.gps : gpsData;
 
 // 📍 Validasi GPS
     const gpsWajib = !["izin", "sakit"].includes(status);
