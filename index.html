@@ -1542,17 +1542,16 @@ async function submitAbsensiForm() {
     }
 
     // 📸 Validasi Foto
-    /* const wajibFoto = ["hadir", "dinas", "wfh"].includes(status);
+    const wajibFoto = ["hadir", "dinas", "wfh"].includes(status);
     if (wajibFoto && !fotoData) {
         showPopup("Foto Kehadiran wajib untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
         isSubmitting = false;
         return;
-    } */
+    }
 
     // 🔥 SATU SUMBER GPS
-   // const gpsFinal = fotoData?.gps || gpsData;
-	const gpsFinal = gpsData;
+    const gpsFinal = fotoData?.gps || gpsData;
 
 // 📍 Validasi GPS
     const gpsWajib = !["izin", "sakit"].includes(status);
@@ -1566,7 +1565,7 @@ async function submitAbsensiForm() {
     }
 
     // 📏 Validasi Radius (BAGIAN YANG DIPERBAIKI)
-    /* if (status === "hadir" || status === "wfh") {
+    if (status === "hadir" || status === "wfh") {
         if (!targetLocation) {
             showPopup("⚠️ Koordinat kantor belum dimuat. Tunggu sebentar atau pilih ulang status.", "warning");
             isSubmitting = false;
@@ -1583,7 +1582,7 @@ async function submitAbsensiForm() {
             isSubmitting = false;
             return;
         }
-    } */
+    }
 
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
