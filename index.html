@@ -1562,6 +1562,17 @@ async function submitAbsensiForm() {
     // 🔥 TENTUKAN SUMBER GPS
     const gpsFinal = (useCamera && fotoData && fotoData.gps) ? fotoData.gps : gpsData;
 
+	// 📍 Validasi GPS
+    const gpsWajib = !["izin", "sakit"].includes(status);
+    if (gpsWajib) {
+        if (!gpsFinal || (gpsFinal[0] === 0 && gpsFinal[1] === 0)) {
+            showPopup("GPS belum aktif atau tidak valid.", "error");
+            vibrateAlertShort();
+            isSubmitting = false;
+            return;
+        }
+    }
+
   //  VALIDASI GPS & RADIUS
   if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
     showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
