@@ -1725,128 +1725,102 @@ let isshowLaporan = false;
  * Tampilkan halaman Laporan Absensi
  */
 async function showLaporan_Absensi() {
-    if (isshowLaporan) {
-        showTempPopup("⏳ Sedang memuat halaman, harap tunggu...", "warning");
-        return;
-    }
+    if (isshowLaporan) return;
     isshowLaporan = true;
 
     sessionStorage.setItem('page', 'Laporan_Absensi');
-    if (typeof resetFoto === "function") resetFoto();
+    const html = `
+        <div class="container mt-3">
+            <div class="mb-4 text-center">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button id="homeBtn" class="btn btn-sm btn-danger shadow-sm">HOME</button>
+                    <select id="selectBulan" class="form-select form-select-sm w-auto shadow-sm">
+                        <option value="JANUARI">Januari</option>
+                        <option value="PEBRUARI">Februari</option>
+                        <option value="MARET">Maret</option>
+                        <option value="APRIL">April</option>
+                        <option value="MEI">Mei</option>
+                        <option value="JUNI">Juni</option>
+                        <option value="JULI">Juli</option>
+                        <option value="AGUSTUS">Agustus</option>
+                        <option value="SEPTEMBER">September</option>
+                        <option value="OKTOBER">Oktober</option>
+                        <option value="NOPEMBER">November</option>
+                        <option value="DESEMBER">Desember</option>
+                    </select>
+                </div>
+                <h6 id="kopLaporan" class="fw-bold mb-0 text-uppercase p-1">LAPORAN ABSENSI</h6>
+            </div>
 
-    showPopup("Memuat halaman Laporan Absensi...", "loading");
+            <div class="table-responsive">
+                <table id="Laporan-Absensi-Table" class="table table-sm table-bordered table-striped shadow-sm" style="font-size: 11px;">
+                    <thead class="table-dark text-center"></thead>
+                    <tbody class="text-center"></tbody>
+                </table>
+            </div>
+        </div>
+    `;
 
-    try {
-        // Kerangka HTML Laporan (Sesuai aslinya, tapi dipindah ke sini)
-		const html = `
-		    <div class="container mt-3">
-		        
-		        <div class="mb-4 text-center">
-		            
-		            <div class="mb-3">
-		                <button id="homeBtn" class="btn btn-sm btn-danger px-4 shadow-sm">
-		                    HOME
-		                </button>
-		            </div>
-		
-		            <h6 id="kopLaporan" class="fw-bold mb-0 text-uppercase w-100 p-1" style="letter-spacing: 1px;">
-		                LAPORAN ABSENSI
-		            </h6>
-		
-		        </div>
-		
-		        <div class="table-responsive">
-		            <table id="Laporan-Absensi-Table" class="table table-sm table-bordered table-striped shadow-sm" style="font-size: 11px;">
-		                <thead class="table-dark text-center">
-		                </thead>
-		                <tbody class="text-center">
-		                </tbody>
-		            </table>
-		        </div>
-		    </div>
-		`;
+    $('#InnerPage').html(html).show();
+    $('#AbsensiPage').hide();
 
-        // Tampilkan kerangka
-        $('#InnerPage').html(html).show();
-        $('#AbsensiPage').hide();
+    // Default load Januari
+    await loadLaporan_Absensi("JANUARI");
 
-        // Load Data
-        await loadLaporan_Absensi();
+    // Event saat bulan diganti
+    $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
+        const bulanDipilih = $(this).val();
+        await loadLaporan_Absensi(bulanDipilih);
+    });
 
-        // Event Tombol Tutup
-        $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
-
-    } catch (err) {
-        showPopup("Gagal memuat laporan", "error");
-    } finally {
-        isshowLaporan = false;
-    }
+    $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
+    isshowLaporan = false;
 }
 
 /**
  * Ambil data dari GAS dan render ke tabel
  */
-async function loadLaporan_Absensi() {
-    const tbody = $("#InnerPage").find("#Laporan-Absensi-Table tbody");
-    const thead = $("#InnerPage").find("#Laporan-Absensi-Table thead");
+async function loadLaporan_Absensi(bulan) {
+    const tbody = $("#Laporan-Absensi-Table tbody");
+    const thead = $("#Laporan-Absensi-Table thead");
+    const kop = $("#kopLaporan");
+
+    tbody.html('<tr><td colspan="8">Sedang mengambil data ' + bulan + '...</td></tr>');
     
-    tbody.html('<tr><td colspan="8">Sedang mengambil data...</td></tr>');
-    showPopup("Mengambil data Laporan...", "loading");
-
-    const spreadsheetId = userData && userData.spreadsheetId ? userData.spreadsheetId : null;
-
-    if (!spreadsheetId) {
-        showPopup("Sesi berakhir, silakan login ulang", "error");
-        tbody.html('<tr><td colspan="8">User belum login.</td></tr>');
-        return;
-    }
+    const spreadsheetId = userData?.spreadsheetId;
+    if (!spreadsheetId) return showPopup("Sesi berakhir", "error");
 
     try {
-        // 🔥 Ganti google.script.run menjadi fetch GET
-        const response = await fetch(`${GAS_URL}?action=getLaporan_Absensi&spreadsheetId=${spreadsheetId}`);
+        // Kirim parameter bulan ke GAS
+        const response = await fetch(`${GAS_URL}?action=getLaporan_Absensi&spreadsheetId=${spreadsheetId}&namaBulan=${bulan}`);
         const res = await response.json();
 
-        if (res) {
-            showPopup("Data berhasil dimuat", "success", 1000);
+        if (res.status === "success") {
+            kop.html(res.kop);
             
-            // 1. Render Kop
-			$("#kopLaporan").html(`
-			    LAPORAN ABSENSI<br>
-			    ${res.kop || ""}
-			`);
+            // Render Header
+            thead.html(`<tr>${res.header.map(h => `<th class="align-middle">${h}</th>`).join('')}</tr>`);
 
-            // 2. Render Header
-            let theadHtml = "<tr>";
-            res.header.forEach(h => {
-                theadHtml += `<th class="align-middle">${h}</th>`;
-            });
-            theadHtml += "</tr>";
-            thead.html(theadHtml);
-
-            // 3. Render Baris Data
-            let tbodyHtml = "";
-            if (res.rows && res.rows.length > 0) {
-                res.rows.forEach(r => {
-                    tbodyHtml += `
-                        <tr>
-                            <td>${r.no}</td>
-                            <td class="text-start">${r.nama}</td>
-                            <td class="text-start">${r.jabatan}</td>
-                            <td class="fw-bold text-success">${r.hadir}</td>
-                            <td class="text-warning">${r.izin}</td>
-                            <td class="text-danger">${r.sakit}</td>
-                            <td class="text-info">${r.dinas}</td>
-                            <td class="bg-light">${r.tanpaKeterangan}</td>
-                        </tr>`;
-                });
-            } else {
-                tbodyHtml = '<tr><td colspan="8">Tidak ada data.</td></tr>';
-            }
-            tbody.html(tbodyHtml);
+            // Render Data
+            let tbodyHtml = res.rows.map(r => `
+                <tr>
+                    <td>${r.no}</td>
+                    <td class="text-start">${r.nama}</td>
+                    <td class="text-start">${r.jabatan}</td>
+                    <td class="fw-bold text-success">${r.hadir}</td>
+                    <td class="text-warning">${r.izin}</td>
+                    <td class="text-danger">${r.sakit}</td>
+                    <td class="text-info">${r.dinas}</td>
+                    <td class="bg-light">${r.tanpaKeterangan}</td>
+                </tr>
+            `).join('');
+            
+            tbody.html(tbodyHtml || '<tr><td colspan="8">Data bulan ini masih kosong.</td></tr>');
+        } else {
+            tbody.html(`<tr><td colspan="8" class="text-danger">${res.message}</td></tr>`);
         }
     } catch (err) {
-        showPopup("Gagal mengambil data dari server", "error");
-        tbody.html('<tr><td colspan="8">Koneksi bermasalah.</td></tr>');
+        tbody.html('<tr><td colspan="8">Gagal memuat data.</td></tr>');
     }
 }
 
