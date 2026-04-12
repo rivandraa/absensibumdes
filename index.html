@@ -736,9 +736,11 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         lastInsideArea = false; 
     }  
 	else if (status === "Hadir" || status === "WFH") {
-	        
-	        // 1. Jika koordinat target ada dan valid, hitung jarak
+	        // Ambil isi tulisan di input kordinat secara langsung
+	        const teksKordinat = elNama ? elNama.value : "";
+	
 	        if (targetLocation && targetLocation.lat && targetLocation.lon) {
+	            // A. KONDISI ADA LOKASI: Hitung jarak
 	            const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
 	            const insideArea = distance <= RADIUS_LIMIT;
 	            lastInsideArea = insideArea;
@@ -747,15 +749,14 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 	                ? `✅ Berada dalam area/radius ${namaLokasi}`
 	                : `❌ Di luar area | 📏 Jarak ${distance.toFixed(0)}m (Max. ${RADIUS_LIMIT}m)`;
 	        } 
-	        // 2. Jika sedang proses ambil data (isFetchingLocation true), tampilkan pesan tunggu
-	        else if (isFetchingLocation) {
+	        else if (isFetchingLocation && teksKordinat !== "-") {
+	            // B. KONDISI SEDANG LOADING: Hanya muncul jika teks bukan "-"
 	            displayText += `Silakan Tunggu :\n- Sedang Update lokasi...\n- Sedang Menghitung jarak anda...`;
 	            lastInsideArea = false;
 	        } 
-	        // 3. Jika tidak sedang fetch DAN koordinat tetap tidak ada, maka DIAM (pesan hilang)
 	        else {
-	            lastInsideArea = false; 
-	            // Bagian ini sengaja dikosongkan agar displayText tidak bertambah
+	            // C. KONDISI TIDAK ADA LOKASI ATAU TEKS "-": Diam (Pesan Hilang)
+	            lastInsideArea = (teksKordinat === "-"); 
 	        }
 	    }
 		else if (["Dinas", "Izin", "Sakit"].includes(status)) {
