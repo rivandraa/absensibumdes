@@ -749,11 +749,12 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         }
         // KONDISI 3: Data memang tidak ada (Abaikan baris ini, jangan tulis Menghitung...)
         else {
+			displayText += ``;
             lastInsideArea = false; 
         }
     } else {
         // Status selain Hadir/WFH
-        displayText += `\n-`;
+        displayText += ``;
         lastInsideArea = true;
     }
 
