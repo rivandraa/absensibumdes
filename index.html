@@ -743,7 +743,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
                 : `\n❌ Di luar area | Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT}m)`;
         } 
         // KONDISI 2: Data sedang di-fetch (Indikatornya: Nama lokasi berubah tapi koordinat belum masuk)
-        else if (namaLokasi !== "Area Absensi") {
+        else if (namaLokasi !== "-") {
             displayText += `\nMenghitung jarak ke lokasi baru...`;
             lastInsideArea = false;
         }
