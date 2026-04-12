@@ -1189,7 +1189,7 @@ document.getElementById('snap').addEventListener('click', async () => {
   }
  
    // VALIDASI FOTO
-  if (fotoData) {
+  if (useCamera && fotoData) {
     showPopup("⚠️ Tekan tombol Reset dahulu.", "warning");
     vibrateAlertShort();
     isSnapping = false;
