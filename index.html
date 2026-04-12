@@ -1542,8 +1542,8 @@ async function submitAbsensiForm() {
     const statusRaw = ($('#status').val() || "").trim();
     const keterangan = ($('#keterangan').val() || "").trim();
     const status = statusRaw.toLowerCase();
-	const tampil = document.getElementById("titikKoordinatTampil");
-  	const koordinatValue = tampil ? tampil.value : "";
+//	const tampil = document.getElementById("titikKoordinatTampil");
+ /// 	const koordinatValue = tampil ? tampil.value : "";
 	const titiktampil = document.getElementById("titikKoordinat");
   	const titikkoordinatValue = titiktampil ? tampil.value : "";
 
@@ -1573,7 +1573,7 @@ async function submitAbsensiForm() {
         return;
     }
 
-  if (status === "Hadir" || status === "WFH") {
+  	if (status === "Hadir" || status === "WFH") {
     if (koordinatValue === "Sedang mengambil data...") {
         showPopup("⚠️ Menunggu koordinat absensi...", "warning");
 		vibrateAlertShort();
@@ -1581,7 +1581,7 @@ async function submitAbsensiForm() {
         return;
     }
 
-  if (status === "Hadir" || status === "WFH") {
+  	if (status === "Hadir" || status === "WFH") {
     if (titikkoordinatValue === "Sedang menghitung jarak anda dengan titik koordinat absensi") {
         showPopup("⚠️ Menunggu koordinat absensi...", "warning");
 		vibrateAlertShort();
