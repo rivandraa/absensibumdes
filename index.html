@@ -758,7 +758,12 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 	            // Bagian ini sengaja dikosongkan agar displayText tidak bertambah
 	        }
 	    }
-
+		else if (["Dinas", "Izin", "Sakit"].includes(status)) {
+		        // C. Status non-lokasi
+		        displayText += ``;
+		        lastInsideArea = true;
+		}
+	
     // Update tampilan utama
     updateGPSDisplay(displayText);
 }
