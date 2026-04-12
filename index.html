@@ -1560,7 +1560,7 @@ async function submitAbsensiForm() {
     }
 
     // 🔥 TENTUKAN SUMBER GPS
-    const gpsFinal = (useCamera && fotoData && fotoData.gps) ? fotoData.gps : gpsData;
+    const gpsFinal = fotoData?.gps || gpsData;
 
 	// 📍 Validasi GPS
     const gpsWajib = !["izin", "sakit"].includes(status);
