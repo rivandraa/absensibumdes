@@ -1572,7 +1572,7 @@ async function submitAbsensiForm() {
 // --- TAMBAHKAN BARIS INI UNTUK MENGAMBIL NILAI TERBARU DARI ELEMENT ---
 // 1. Ambil nilai terbaru
 	const elTampil = document.getElementById("titikKoordinatTampil");
-	const elTitik = document.getElementById("titikKoordinat");
+	const elTitik = document.getElementById("gps");
 	
 	const kValue = (elTampil ? (elTampil.value || elTampil.innerText || "") : "").toLowerCase();
 	const tKValue = (elTitik ? (elTitik.value || elTitik.innerText || "") : "").toLowerCase();
