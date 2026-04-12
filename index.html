@@ -730,11 +730,12 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     } else {
         displayText += `Tingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter\n`;
     }
-
-// 2. Logika Baris Ketiga (Jarak / Status)
+	
+    // BARIS 3: Logika Jarak / Status
     if (status === "Hadir" || status === "WFH") {
-        if (targetLocation) {
-            // Jika data target sudah siap, hitung jarak
+        const teksKordinat = elNama ? elNama.value : "";
+
+        if (targetLocation && targetLocation.lat && targetLocation.lon) {
             const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
             const insideArea = distance <= RADIUS_LIMIT;
             lastInsideArea = insideArea;
@@ -742,13 +743,17 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             displayText += insideArea
                 ? `✅ Berada dalam area radius`
                 : `❌ Di luar area\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT}m)`;
-        } else {
-            // 🔥 TAMPILAN SAAT SEDANG FETCH DATA KANTOR
+        } 
+        else if (isFetchingLocation && teksKordinat !== "-") {
+            // Tampilan saat sedang fetch
             displayText += `\nMenghitung jarak ke lokasi baru...`;
-            lastInsideArea = false; // Kunci tombol kamera dulu
+            lastInsideArea = false;
+        } 
+        else {
+            // Hilangkan pesan jika koordinat "-" atau kosong
+            lastInsideArea = (teksKordinat === "-"); 
         }
     } else {
-        // Status Dinas/Izin/Sakit
         displayText += `\n-`;
         lastInsideArea = true;
     }
