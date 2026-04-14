@@ -787,8 +787,8 @@ async function refreshTargetLocation(callback, isSilent = false) {
     // =========================
     // RESET UI (ANTI KEDIP)
     // =========================
-    if (!isSilent) {
-        targetLocation = null;
+    if (!isSilent && !targetLocation) {
+        //targetLocation = null;
         if (tampil) tampil.value = "Sedang mengambil data...";
         if (hidden) hidden.value = "";
     }
@@ -836,7 +836,7 @@ async function refreshTargetLocation(callback, isSilent = false) {
             };
 
             targetLocation = newLocation;
-            lastTargetLocation = newLocation;
+            //lastTargetLocation = newLocation;
 
             const koordinatMurni = `${newLocation.lat.toFixed(6)}, ${newLocation.lon.toFixed(6)}`;
 
@@ -1597,23 +1597,13 @@ async function submitAbsensiForm() {
     }
 
 // --- TAMBAHKAN BARIS INI UNTUK MENGAMBIL NILAI TERBARU DARI ELEMENT ---
-// 1. Ambil nilai terbaru
-	const elTampil = document.getElementById("titikKoordinatTampil");
-	const elTitik = document.getElementById("gps");
-	
-	const kValue = (elTampil ? (elTampil.value || elTampil.innerText || "") : "").toLowerCase();
-	const tKValue = (elTitik ? (elTitik.value || elTitik.innerText || "") : "").toLowerCase();
-	
-	// 2. VALIDASI KHUSUS: Hanya blokir jika masih "sedang"
-	if (status === "hadir" || status === "wan") {
-	    // Jika masih ada kata "sedang", baru kita stop (return)
-	    if (kValue.includes("sedang") || tKValue.includes("sedang menghitung")) {
-	        showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat/sedang menghitung jarak.", "warning");
-	        vibrateAlertShort();
-	        isSubmitting = false; 
-	        return; 
-	    }
-	}
+if (status === "hadir" || status === "wan") {
+    // 1. Cek apakah masih ambil data dari server (targetLocation)
+    if (!targetLocation) {
+        showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat absensi.", "warning");
+        isSubmitting = false;
+        return;
+    }
 
 	//  VALIDASI GPS & RADIUS
   	if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
