@@ -1595,33 +1595,41 @@ async function submitAbsensiForm() {
 // 📏 Validasi Radius & Kesiapan Data
 if (status === "hadir" || status === "wan") {
     
-    // Ambil koordinat terbaru dari variabel global Anda (misal: gpsData)
-    const currentLat = gpsData[0];
-    const currentLon = gpsData[1];
-    
-    // 1. Cek apakah koordinat user SUDAH ADA (tidak nol)
-    // Jika currentLat masih 0, berarti GPS benar-benar belum dapat data sama sekali
-    if (!currentLat || currentLat === 0) {
-        showPopup("⚠️ Koordinat GPS Anda belum tersedia. Mohon tunggu sebentar.", "warning");
-        vibrateAlertShort();
-        isSubmitting = false;
-        return;
-    }
+    // Ambil Nama Lokasi untuk mengecek apakah ini lokasi "Bebas"
+    const elNama = document.getElementById("titikKoordinatTampil");
+    const namaLokasi = (elNama && elNama.value) ? elNama.value : "-";
 
-    // 2. Cek apakah data target (lokasi kantor) sudah ada
-    const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
-    if (!hasTargetData) {
-        showPopup("⚠️ Data lokasi tujuan belum dimuat. Mohon tunggu.", "warning");
-        isSubmitting = false;
-        return;
-    }
+    // 1. Jika namaLokasi adalah "-", maka BYPASS (langsung lolos validasi radius)
+    if (namaLokasi === "-" || namaLokasi === "") {
+        // Biarkan proses berlanjut ke submit
+        console.log("Lokasi tidak ditentukan, bypass validasi radius.");
+    } 
+    else {
+        // 2. Jika ada nama lokasinya, lakukan pengecekan ketat:
+        
+        // Cek Koordinat User
+        const currentLat = gpsData[0];
+        if (!currentLat || currentLat === 0) {
+            showPopup("⚠️ Koordinat GPS Anda belum tersedia.", "warning");
+            isSubmitting = false;
+            return;
+        }
 
-    // 3. Cek apakah sudah dalam radius (menggunakan variabel yang diupdate di forceUpdateDistanceUI)
-    if (!lastInsideArea) {
-        showPopup("❌ Anda berada di luar radius area absensi!", "danger");
-        vibrateAlertShort();
-        isSubmitting = false;
-        return;
+        // Cek Data Target
+        const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
+        if (!hasTargetData) {
+            showPopup("⚠️ Data lokasi tujuan belum dimuat. Mohon tunggu.", "warning");
+            isSubmitting = false;
+            return;
+        }
+
+        // Cek Radius
+        if (!lastInsideArea) {
+            showPopup("❌ Anda berada di luar radius area absensi!", "danger");
+            vibrateAlertShort();
+            isSubmitting = false;
+            return;
+        }
     }
 }
 
