@@ -716,14 +716,9 @@ function stopGPSLoading() {
 function forceUpdateDistanceUI(lat, lon, acc) {
     const statusInput = document.getElementById("status");
     const status = statusInput ? statusInput.value : "";
-    const statusLower = status.toLowerCase();
     
     const elNama = document.getElementById("titikKoordinatTampil");
-    // Ambil nama lokasi, jika isinya masih pesan loading, gunakan default "Area Absensi"
-    let namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
-    if (namaLokasi.includes("Sedang") || namaLokasi === "-") {
-        namaLokasi = "Area Absensi";
-    }
+    const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
 
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
@@ -734,18 +729,25 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     
     // Baris 2: Akurasi
-    displayText += `\nTingkat Akurasi : ${acc ? acc.toFixed(0) : 0} Meter | > ${MAX_ACCURACY} Meter`;
-	
-    // Baris Tambahan: Animasi Akurasi
+    displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
+
+    // Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
 
     // LOGIKA BARIS JARAK & STATUS
-    if (statusLower === "hadir" || statusLower === "wan") {
-        const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
+    if (status === "Hadir" || status === "WFH") {
+        // PRIORITAS: Cek apakah targetLocation sudah valid atau belum
+        const isTargetInvalid = !targetLocation || targetLocation.lat === 0 || targetLocation.lat === null;
 
-        if (hasTargetData) {
+        if (namaLokasi !== "-" && isTargetInvalid) {
+            // TAMPILKAN INI DULU jika koordinat belum siap
+            displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
+            lastInsideArea = false;
+        } 
+        else if (!isTargetInvalid) {
+            // JIKA KOORDINAT SUDAH ADA, BARU HITUNG JARAK
             const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
             const insideArea = distance <= RADIUS_LIMIT;
             lastInsideArea = insideArea;
@@ -756,12 +758,10 @@ function forceUpdateDistanceUI(lat, lon, acc) {
                 displayText += `\n❌ Di luar area ${namaLokasi}`;
                 displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
             }
-        } 
-        else if (isFetchingLocation || !isTargetLoaded) {
-            // Menggunakan tanda panah atau icon agar lebih jelas ini adalah proses loading
-            displayText += `\n⏳ Sedang menghitung jarak ke titik absensi...`;
-            lastInsideArea = false;
         }
+        // Jika namaLokasi === "-" dan koordinat kosong, baris ketiga otomatis tidak muncul
+    } else {
+        lastInsideArea = true;
     }
 
     updateGPSDisplay(displayText);
