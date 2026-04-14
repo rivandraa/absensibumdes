@@ -772,7 +772,8 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 // =====================================================
 let isFetchingLocation = false;
 
-async function refreshTargetLocation(callback) {
+// Tambahkan parameter 'isSilent' untuk membedakan interval dan manual
+async function refreshTargetLocation(callback, isSilent = false) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     const userRequesting = userObj ? userObj.username : null;
     if (!userRequesting) return;
@@ -781,6 +782,16 @@ async function refreshTargetLocation(callback) {
     const currentStatus = statusInput ? statusInput.value : "";
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
+
+    // =========================================================
+    // LOGIKA ANTI-KEDIP (Hanya reset jika BUKAN dari interval)
+    // =========================================================
+    if (!isSilent) {
+        targetLocation = null; 
+        if (tampil) tampil.value = "Sedang update koordinat...";
+        if (hidden) hidden.value = "";
+    }
+    // =========================================================
 
     if (!currentStatus || currentStatus === "Pilih Status...") {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
@@ -814,7 +825,7 @@ async function refreshTargetLocation(callback) {
             targetLocation = newLocation;
             lastTargetLocation = newLocation;
 
-            // Update Tampilan
+            // Update Tampilan (Tanpa kedip karena isSilent menangani ini)
             const koordinatMurni = `${newLocation.lat.toFixed(6)}, ${newLocation.lon.toFixed(6)}`;
             if (tampil) tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
             if (hidden) hidden.value = koordinatMurni;
