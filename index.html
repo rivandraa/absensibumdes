@@ -714,56 +714,49 @@ function stopGPSLoading() {
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
-    // 1. Ambil input secepat mungkin
-    const status = (document.getElementById("status")?.value || "").toLowerCase();
+    const statusInput = document.getElementById("status");
+    const status = (statusInput ? statusInput.value : "").toLowerCase();
+    
     const elNama = document.getElementById("titikKoordinatTampil");
-    const namaLokasi = elNama?.value || "Area Absensi";
+    const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
 
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
-    // Jika GPS belum aktif, jangan proses apa pun
-    if (!currentLat || currentLat === 0) return;
+    if (currentLat === 0) return;
 
-    // 2. Bangun teks dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // 3. Logika Prioritas Tinggi (Status Absensi)
+    if (acc && acc > MAX_ACCURACY) {
+        displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
+    }
+
+    // --- LOGIKA JARAK & STATUS (VERSI BERSIH) ---
     if (status === "hadir" || status === "wan") {
-        
-        // JIKA LOKASI BEBAS: Langsung keluar dari fungsi (Sangat Cepat)
-        if (namaLokasi === "-") {
-            lastInsideArea = true;
-            updateGPSDisplay(displayText);
-            return; 
-        }
+        const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
 
-        // JIKA DATA TARGET BELUM ADA: Tampilkan loading dan langsung berhenti di sini
-        const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
-        
-        if (!hasTargetData) {
-            lastInsideArea = false;
-            displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
-            updateGPSDisplay(displayText);
-            return; // Berhenti di sini agar tidak memproses kode di bawahnya
-        }
+        if (hasTargetData && namaLokasi !== "-") {
+            // Jika data siap, hitung jarak
+            const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
+            const insideArea = distance <= RADIUS_LIMIT;
+            lastInsideArea = insideArea;
 
-        // JIKA DATA SUDAH FIX: Hitung jarak
-        const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
-        lastInsideArea = distance <= RADIUS_LIMIT;
-
-        if (lastInsideArea) {
-            displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
+            if (insideArea) {
+                displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
+            } else {
+                displayText += `\n❌ Di luar area ${namaLokasi}`;
+                displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+            }
         } else {
-            displayText += `\n❌ Di luar area ${namaLokasi}`;
-            displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+            // Jika data target belum ada, atau namaLokasi "-", anggap "Lolos" agar bisa submit
+            // Atau set ke false jika Anda ingin melarang submit sampai data muncul
+            lastInsideArea = (namaLokasi === "-"); 
         }
     } else {
         lastInsideArea = true;
     }
 
-    // 4. Update UI
     updateGPSDisplay(displayText);
 }
 	
@@ -1487,7 +1480,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 2. Reset tampilan ke state "Loading"
             // Untuk Input menggunakan .value
-            if (inputKoordinat) inputKoordinat.value = "bbbbbbbbbbbbbbbbbbbbbbbb";
+            //if (inputKoordinat) inputKoordinat.value = "";
             
             // Untuk elemen display (div/span) menggunakan .innerText
             //if (displayGps) displayGps.innerText = "Sedang mencari lokasi...";
