@@ -1625,15 +1625,16 @@ async function submitAbsensiForm() {
 
 if (status === "hadir" || status === "WAN") {
 
-    const isLoading = isFetchingLocation || isCalculatingDistance;
+    const isLoading = (isFetchingLocation || isCalculatingDistance) && !isSilent;
 
-    if ( isLoading) {
+    if (isLoading) {
         showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
         vibrateAlertShort();
         isSubmitting = false;
         return;
     }
 }
+
 
 
 	// 📏 Validasi Radius (Opsional)
