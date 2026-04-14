@@ -715,7 +715,7 @@ function stopGPSLoading() {
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
     const statusInput = document.getElementById("status");
-    const status = (statusInput ? statusInput.value : "").toLowerCase();
+    const status = statusInput ? statusInput.value : "";
     
     const elNama = document.getElementById("titikKoordinatTampil");
     const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
@@ -725,9 +725,13 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 
     if (currentLat === 0) return;
 
+    // Baris 1: Lokasi
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
+    
+    // Baris 2: Akurasi
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
+    // Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
