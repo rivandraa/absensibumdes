@@ -732,10 +732,13 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     
     // Baris 2: Akurasi
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
+	
+	isCalculatingDistance = false;
 
     // Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
+		isCalculatingDistance = false;
     }
 
     // LOGIKA BARIS JARAK & STATUS
