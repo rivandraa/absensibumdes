@@ -737,32 +737,26 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     }
 
     // LOGIKA BARIS JARAK & STATUS
-    if (status === "Hadir" || status === "WFH") {
-        // PRIORITAS: Cek apakah targetLocation sudah valid atau belum
-        const isTargetInvalid = !targetLocation || targetLocation.lat === 0 || targetLocation.lat === null;
-
-        if (namaLokasi !== "-" && isTargetInvalid) {
-            // TAMPILKAN INI DULU jika koordinat belum siap
-            displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
-            lastInsideArea = false;
-        } 
-        else if (!isTargetInvalid) {
-            // JIKA KOORDINAT SUDAH ADA, BARU HITUNG JARAK
-            const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
-            const insideArea = distance <= RADIUS_LIMIT;
-            lastInsideArea = insideArea;
-
-            if (insideArea) {
-                displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
-            } else {
-                displayText += `\n❌ Di luar area ${namaLokasi}`;
-                displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
-            }
-        }
-        // Jika namaLokasi === "-" dan koordinat kosong, baris ketiga otomatis tidak muncul
-    } else {
-        lastInsideArea = true;
-    }
+	if (status === "Hadir" || status === "wan") {
+	    // Cek apakah targetLocation tersedia
+	    const isTargetInvalid = !targetLocation || targetLocation.lat === 0 || targetLocation.lat === null;
+	
+	    if (namaLokasi !== "-" && isTargetInvalid) {
+	        // Ini akan tampil pertama kali saat status berpindah ke Hadir/WFH 
+	        // sebelum koordinat target selesai dimuat/diverifikasi
+	        displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
+	        lastInsideArea = false;
+	    } 
+	    else if (!isTargetInvalid) {
+	        // Proses hitung jarak seperti biasa
+	        const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
+	        // ... sisa logika jarak ...
+	    }
+	} else {
+	    // Saat status dipindah ke selain Hadir/WFH (misal: Izin/Sakit)
+	    // Kita reset status area agar saat balik ke 'Hadir' dia trigger ulang dari awal
+	    lastInsideArea = true; 
+	}
 
     updateGPSDisplay(displayText);
 }
@@ -1015,13 +1009,12 @@ document.addEventListener("DOMContentLoaded", () => {
         statusEl.addEventListener("change", () => {
 	    // 1. Tandai bahwa data target belum siap
 	    isTargetLoaded = false;
-		targetLocation = null;
 	    
 	    // 2. Jalankan fetch data baru
 	    refreshTargetLocation(null, false);
 	    
 	    // 3. Paksa update UI agar teks "Sedang menghitung..." langsung muncul
-	    forceUpdateDistanceUI(); 
+	    forceUpdateDistanceUI(gpsData[0], gpsData[1], lastAccuracy);
         });
     }
     
