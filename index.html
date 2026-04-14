@@ -762,6 +762,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         // Jika status terpenuhi tapi tidak ada nama lokasi dan data, baris 3 kosong
     } else {
         lastInsideArea = true;
+		targetLocation = { lat: 0, lon: 0 };
     }
 
     updateGPSDisplay(displayText);
@@ -1591,15 +1592,38 @@ async function submitAbsensiForm() {
     	return;
   	}
 
-	// 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
- 	if (status === "hadir" || status === "wan") {
-    	if (isFetchingLocation) {
-        	showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
-        	vibrateAlertShort();
-        	isSubmitting = false;
-        	return;
-		}
- 	}
+// 📏 Validasi Radius & Kesiapan Data
+if (status === "hadir" || status === "wan") {
+    
+    // Ambil koordinat terbaru dari variabel global Anda (misal: gpsData)
+    const currentLat = gpsData[0];
+    const currentLon = gpsData[1];
+    
+    // 1. Cek apakah koordinat user SUDAH ADA (tidak nol)
+    // Jika currentLat masih 0, berarti GPS benar-benar belum dapat data sama sekali
+    if (!currentLat || currentLat === 0) {
+        showPopup("⚠️ Koordinat GPS Anda belum tersedia. Mohon tunggu sebentar.", "warning");
+        vibrateAlertShort();
+        isSubmitting = false;
+        return;
+    }
+
+    // 2. Cek apakah data target (lokasi kantor) sudah ada
+    const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
+    if (!hasTargetData) {
+        showPopup("⚠️ Data lokasi tujuan belum dimuat. Mohon tunggu.", "warning");
+        isSubmitting = false;
+        return;
+    }
+
+    // 3. Cek apakah sudah dalam radius (menggunakan variabel yang diupdate di forceUpdateDistanceUI)
+    if (!lastInsideArea) {
+        showPopup("❌ Anda berada di luar radius area absensi!", "danger");
+        vibrateAlertShort();
+        isSubmitting = false;
+        return;
+    }
+}
 
 	// 📏 Validasi Radius (Opsional)
 	if (status === "hadir" || status === "wan") {
