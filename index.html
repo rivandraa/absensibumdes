@@ -713,8 +713,6 @@ function stopGPSLoading() {
 // =====================================================
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
-let isCalculatingDistance = false;
-	
 function forceUpdateDistanceUI(lat, lon, acc) {
     const statusInput = document.getElementById("status");
     const status = statusInput ? statusInput.value : "";
@@ -750,17 +748,14 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             if (insideArea) {
                 // Tampilan jika di DALAM radius
                 displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
-				isCalculatingDistance = false;
             } else {
                 // Tampilan jika di LUAR radius (2 baris sesuai permintaanmu)
                 displayText += `\n❌ Di luar area ${namaLokasi}`;
                 displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
-				isCalculatingDistance = false;
             }
         } 
         else if (namaLokasi !== "-") {
             displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
-			isCalculatingDistance = true;
             lastInsideArea = false;
         }
         // Jika data benar-benar kosong, baris ketiga tidak akan muncul sama sekali
@@ -1551,7 +1546,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ================================
 let isSubmitting = false;
 	
-async function submitAbsensiForm(isSilent = false) {
+async function submitAbsensiForm() {
     if (typeof hideAlerts === "function") hideAlerts();
 
     if (isSubmitting) {
@@ -1601,7 +1596,34 @@ async function submitAbsensiForm(isSilent = false) {
         return;
     }
 
-    // 🔥 TENTUKAN SUMBER GPS
+// --- TAMBAHKAN BARIS INI UNTUK MENGAMBIL NILAI TERBARU DARI ELEMENT ---
+// 1. Ambil nilai terbaru
+	const elTampil = document.getElementById("titikKoordinatTampil");
+	const elTitik = document.getElementById("gps");
+	
+	const kValue = (elTampil ? (elTampil.value || elTampil.innerText || "") : "").toLowerCase();
+	const tKValue = (elTitik ? (elTitik.value || elTitik.innerText || "") : "").toLowerCase();
+	
+	// 2. VALIDASI KHUSUS: Hanya blokir jika masih "sedang"
+	if (status === "hadir" || status === "wfh") {
+	    // Jika masih ada kata "sedang", baru kita stop (return)
+	    if (kValue.includes("sedang") || tKValue.includes("sedang menghitung")) {
+	        showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat/sedang menghitung jarak.", "warning");
+	        vibrateAlertShort();
+	        isSubmitting = false; 
+	        return; 
+	    }
+	}
+
+	//  VALIDASI GPS & RADIUS
+  	if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
+    	showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
+    	vibrateAlertShort();
+    	isSubmitting = false;
+    	return;
+  	}
+	
+	// 🔥 TENTUKAN SUMBER GPS
     const gpsFinal = fotoData?.gps || gpsData;
 
 	// 📍 Validasi GPS
@@ -1614,28 +1636,6 @@ async function submitAbsensiForm(isSilent = false) {
             return;
         }
     }
-
-	//  VALIDASI GPS & RADIUS
-  	if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
-    	showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
-    	vibrateAlertShort();
-    	isSubmitting = false;
-    	return;
-  	}
-
-if (status === "hadir" || status === "WAN") {
-
-    const isLoading = (isFetchingLocation || isCalculatingDistance) && !isSilent;
-
-    if (isLoading) {
-        showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
-        vibrateAlertShort();
-        isSubmitting = false;
-        return;
-    }
-}
-
-
 
 	// 📏 Validasi Radius (Opsional)
 	if (status === "hadir" || status === "WAN") {
