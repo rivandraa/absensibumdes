@@ -1014,7 +1014,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (statusEl) {
         statusEl.addEventListener("change", () => {
 	    // 1. Tandai bahwa data target belum siap
-	    isTargetLoaded = false; 
+	    isTargetLoaded = false;
+		targetLocation = null;
 	    
 	    // 2. Jalankan fetch data baru
 	    refreshTargetLocation(null, false);
