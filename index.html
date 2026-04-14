@@ -1605,7 +1605,7 @@ async function submitAbsensiForm() {
 	const tKValue = (elTitik ? (elTitik.value || elTitik.innerText || "") : "").toLowerCase();
 	
 	// 2. VALIDASI KHUSUS: Hanya blokir jika masih "sedang"
-	if (status === "hadir" || status === "wfh") {
+	if (status === "hadir" || status === "WAN") {
 	    // Jika masih ada kata "sedang", baru kita stop (return)
 	    if (kValue.includes("sedang") || tKValue.includes("sedang menghitung")) {
 	        showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat/sedang menghitung jarak.", "warning");
