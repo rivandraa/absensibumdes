@@ -166,7 +166,7 @@ body.locked {
         <!-- Titik Koordinat -->
         <div class="form-group mb-3">
             <label for="titikKoordinatTampil">📍 Titik Koordinat Absensi</label>
-            <input type="text" id="titikKoordinatTampil" class="form-control" value="aaaaaaaaaaaaaaaaaaaaaaaaa" readonly>
+            <input type="text" id="titikKoordinatTampil" class="form-control" value="Sedang mengambil data..." readonly>
             <input type="hidden" id="titikKoordinat">
         </div>
 
@@ -781,7 +781,7 @@ async function refreshTargetLocation(callback, isSilent = false) {
     // =========================================================
     if (!isSilent) {
         targetLocation = null; 
-        if (tampil) tampil.value = "xxxxxxxxxxxxxxxxxxxxx";
+        if (tampil) tampil.value = "Sedang mengambil data...";
         if (hidden) hidden.value = "";
     }
     // =========================================================
@@ -986,12 +986,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusEl = document.getElementById("status");
     const restartBtn = document.getElementById("restartGPS");
 
-    if (statusEl) {
-        statusEl.addEventListener("change", () => {
-	    forceUpdateDistanceUI();    
-	    refreshTargetLocation(null, false);
-        });
-    }
+	if (statusEl) {
+	    statusEl.addEventListener("change", () => {
+	        const elNama = document.getElementById("titikKoordinatTampil");
+	        
+	        if (elNama) {
+	            // Set value agar forceUpdateDistanceUI mendeteksi perubahan lokasi
+	            elNama.value = "Sedang mengambil data..."; 
+	        }
+	
+	        // Panggil update UI agar teks "Sedang menghitung..." langsung muncul
+	        forceUpdateDistanceUI();    
+	        
+	        // Ambil data lokasi yang sebenarnya dari server
+	        refreshTargetLocation(null, false);
+	    });
+	}
     
     // === restart gps ===
 	if (restartBtn) {
