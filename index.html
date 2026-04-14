@@ -771,8 +771,8 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 // REFRESH TARGET LOCATION
 // =====================================================
 let isFetchingLocation = false;
-let isTargetLoaded = false; // Flag penting untuk validasi submit
 
+// Tambahkan parameter 'isSilent' untuk membedakan interval dan manual
 async function refreshTargetLocation(callback, isSilent = false) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     const userRequesting = userObj ? userObj.username : null;
@@ -780,79 +780,61 @@ async function refreshTargetLocation(callback, isSilent = false) {
 
     const statusInput = document.getElementById("status");
     const currentStatus = statusInput ? statusInput.value : "";
-
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
 
-    // =========================
-    // RESET UI (ANTI KEDIP)
-    // =========================
-    // Kita hanya tampilkan "Sedang mengambil..." jika ini BUKAN silent update 
-    // DAN data memang belum ada sama sekali.
-    if (!isSilent && !targetLocation) {
-        isTargetLoaded = false; // Reset status jika ganti tipe absen secara manual
+    // =========================================================
+    // LOGIKA ANTI-KEDIP (Hanya reset jika BUKAN dari interval)
+    // =========================================================
+    if (!isSilent) {
+        targetLocation = null; 
         if (tampil) tampil.value = "Sedang mengambil data...";
         if (hidden) hidden.value = "";
     }
+    // =========================================================
 
     if (!currentStatus || currentStatus === "Pilih Status...") {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-        isTargetLoaded = false;
         return;
     }
-
-    // Status non lokasi
+    
+    // Jika status non-lokasi, langsung set dan berhenti
     if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
         if (tampil) tampil.value = "-";
         if (hidden) hidden.value = "-";
         targetLocation = null;
         lastTargetLocation = null;
-        isTargetLoaded = true; // Selesai, karena memang tidak butuh lokasi
-        return;
+        return; 
     }
 
     if (isFetchingLocation) return;
 
     try {
         isFetchingLocation = true;
-
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
         const response = await fetch(url);
         const loc = await response.json();
 
-        // RACE CONDITION GUARD
-        const latestStatus = document.getElementById("status")?.value;
-        if (latestStatus !== currentStatus) return;
+        // Validasi agar data yang telat tidak menimpa status yang sudah berubah
+        if (document.getElementById("status")?.value !== currentStatus) return;
 
-        // =========================
-        // VALIDASI DATA DARI SERVER
-        // =========================
-        if (loc && loc.lat != null && loc.lon != null) {
-            const newLocation = {
-                lat: parseFloat(loc.lat),
-                lon: parseFloat(loc.lon)
-            };
-
+        if (loc && loc.lat && loc.lon) {
+            const newLocation = { lat: parseFloat(loc.lat), lon: parseFloat(loc.lon) };
+            
+            // Update memori
             targetLocation = newLocation;
-            const koordinatMurni = `${newLocation.lat.toFixed(6)}, ${newLocation.lon.toFixed(6)}`;
+            lastTargetLocation = newLocation;
 
-            if (tampil) {
-                tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
-            }
+            // Update Tampilan (Tanpa kedip karena isSilent menangani ini)
+            const koordinatMurni = `${newLocation.lat.toFixed(6)}, ${newLocation.lon.toFixed(6)}`;
+            if (tampil) tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
             if (hidden) hidden.value = koordinatMurni;
 
-            if (gpsData && gpsData[0] !== 0) {
-                forceUpdateDistanceUI();
-            }
+            if (gpsData[0] !== 0) forceUpdateDistanceUI();
         } else {
-            // Jika server mengembalikan kosong (User boleh absen tanpa radius)
             targetLocation = null;
             if (tampil) tampil.value = "-";
-            if (hidden) hidden.value = "-";
         }
-
-        isTargetLoaded = true; // KUNCI: Menandakan fetch berhasil selesai
-
     } catch (error) {
         console.error("Gagal refresh:", error);
     } finally {
@@ -1013,14 +995,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (statusEl) {
         statusEl.addEventListener("change", () => {
-	    // 1. Tandai bahwa data target belum siap
-	    isTargetLoaded = false;
-	    
-	    // 2. Jalankan fetch data baru
+	    forceUpdateDistanceUI();    
 	    refreshTargetLocation(null, false);
-	    
-	    // 3. Paksa update UI agar teks "Sedang menghitung..." langsung muncul
-	    forceUpdateDistanceUI();
         });
     }
     
