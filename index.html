@@ -737,7 +737,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     }
 
     // LOGIKA BARIS JARAK & STATUS
-    if (status === "Hadir" || status === "WFH") {
+    if (status === "Hadir" || status === "WAN") {
         const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
 
         // --- PERUBAHAN DI SINI: Prioritas pengecekan nama lokasi ---
