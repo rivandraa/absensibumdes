@@ -731,32 +731,38 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // Baris 2: Akurasi
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // Baris Tambahan (Opsional): Animasi Akurasi
+    // Baris Tambahan: Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
 
     // LOGIKA BARIS JARAK & STATUS
-	if (status === "Hadir" || status === "wan") {
-	    // Cek apakah targetLocation tersedia
-	    const isTargetInvalid = !targetLocation || targetLocation.lat === 0 || targetLocation.lat === null;
-	
-	    if (namaLokasi !== "-" && isTargetInvalid) {
-	        // Ini akan tampil pertama kali saat status berpindah ke Hadir/WFH 
-	        // sebelum koordinat target selesai dimuat/diverifikasi
-	        displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
-	        lastInsideArea = false;
-	    } 
-	    else if (!isTargetInvalid) {
-	        // Proses hitung jarak seperti biasa
-	        const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
-	        // ... sisa logika jarak ...
-	    }
-	} else {
-	    // Saat status dipindah ke selain Hadir/WFH (misal: Izin/Sakit)
-	    // Kita reset status area agar saat balik ke 'Hadir' dia trigger ulang dari awal
-	    lastInsideArea = true; 
-	}
+    if (status === "Hadir" || status === "WFH") {
+        const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
+
+        // --- PERUBAHAN DI SINI: Prioritas pengecekan nama lokasi ---
+        if (namaLokasi !== "-" && !hasTargetData) {
+            // Jika nama lokasi sudah berubah/ada tapi data koordinat belum sinkron
+            displayText += `\nMenghitung jarak ke lokasi baru...`;
+            lastInsideArea = false;
+        } 
+        else if (hasTargetData) {
+            // Jika data koordinat sudah tersedia, hitung jarak seperti biasa
+            const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
+            const insideArea = distance <= RADIUS_LIMIT;
+            lastInsideArea = insideArea;
+
+            if (insideArea) {
+                displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
+            } else {
+                displayText += `\n❌ Di luar area ${namaLokasi}`;
+                displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+            }
+        }
+        // Jika status terpenuhi tapi tidak ada nama lokasi dan data, baris 3 kosong
+    } else {
+        lastInsideArea = true;
+    }
 
     updateGPSDisplay(displayText);
 }
@@ -1014,7 +1020,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	    refreshTargetLocation(null, false);
 	    
 	    // 3. Paksa update UI agar teks "Sedang menghitung..." langsung muncul
-	    forceUpdateDistanceUI(gpsData[0], gpsData[1], lastAccuracy);
+	    forceUpdateDistanceUI();
         });
     }
     
