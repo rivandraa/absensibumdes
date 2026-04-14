@@ -1518,6 +1518,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Submit Absensi
 // ================================
 let isSubmitting = false;
+let isFetchingLocation = false;
+let isCalculatingDistance = false;
 	
 async function submitAbsensiForm() {
     if (typeof hideAlerts === "function") hideAlerts();
@@ -1611,31 +1613,14 @@ async function submitAbsensiForm() {
   }
 
 // 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
-    if (useCamera && (status === "hadir" || status === "wfh")) {
-        
-        // Cek apakah targetLocation ada (koordinat kantor tersedia)
-        if (targetLocation && targetLocation.lat && targetLocation.lon) {
-            
-            const [lat, lon] = gpsFinal;
-            const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
-            const insideArea = distance <= RADIUS_LIMIT;
-
-            if (!insideArea) {
-                showPopup(`⚠️ Anda berada di luar area absensi!<br>Jarak: ${distance.toFixed(0)}m (Max: ${RADIUS_LIMIT}m)`, "error");
-                vibrateAlertShort();
-                isSubmitting = false; 
-                return; // Blokir hanya jika user TERBUKTI di luar radius
-            }
-            
-            console.log("Lokasi valid, jarak: " + distance.toFixed(0) + "m");
-            
-        } else {
-            // JIKA targetLocation tidak ada, kode TIDAK AKAN return.
-            // Ini akan membiarkan proses berlanjut ke pengiriman data (Bebas Lokasi).
-            console.log("Target lokasi tidak ditentukan, menggunakan mode Bebas Lokasi.");
-        }
+if (status === "hadir" || status === "wfh") {
+    if (isFetchingLocation || isCalculatingDistance) {
+        showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat...", "warning");
+        vibrateAlertShort();
+        isSubmitting = false;
+        return;
     }
-
+}
 
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
