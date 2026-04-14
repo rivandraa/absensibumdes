@@ -1592,8 +1592,8 @@ async function submitAbsensiForm() {
   	}
 
 	// 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
- 	if (status === "hadir" || status === "wfh") {
-    	if (isFetchingLocation || isCalculatingDistance) {
+ 	if (status === "hadir" || status === "wan") {
+    	if (isFetchingLocation) {
         	showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
         	vibrateAlertShort();
         	isSubmitting = false;
@@ -1602,7 +1602,7 @@ async function submitAbsensiForm() {
  	}
 
 	// 📏 Validasi Radius (Opsional)
-	if (status === "hadir" || status === "wfh") {
+	if (status === "hadir" || status === "wan") {
 	    
 	    if (targetLocation && targetLocation.lat && targetLocation.lon) {
 	        
