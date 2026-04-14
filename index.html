@@ -1640,6 +1640,20 @@ async function submitAbsensiForm() {
         payload.gps = gpsFinal;
     }
 
+    // Kunci UI
+    document.getElementById('snap').disabled = true;
+    document.getElementById('reset').disabled = true;
+    showPopup("Memproses absensi...", "loading");
+
+    try {
+        // 🔥 KIRIM DATA KE GAS MENGGUNAKAN FETCH (POST)
+        const response = await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+
+        const res = await response.json();
+
         // Buka Kunci UI
         document.getElementById('snap').disabled = false;
         document.getElementById('reset').disabled = false;
