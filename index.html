@@ -166,7 +166,7 @@ body.locked {
         <!-- Titik Koordinat -->
         <div class="form-group mb-3">
             <label for="titikKoordinatTampil">📍 Titik Koordinat Absensi</label>
-            <input type="text" id="titikKoordinatTampil" class="form-control" value="Sedang mengambil data..." readonly>
+            <input type="text" id="titikKoordinatTampil" class="form-control" readonly>
             <input type="hidden" id="titikKoordinat">
         </div>
 
@@ -748,10 +748,9 @@ function forceUpdateDistanceUI(lat, lon, acc) {
                 displayText += `\n❌ Di luar area ${namaLokasi}`;
                 displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
             }
-        } else {
-            // Jika data target belum ada, atau namaLokasi "-", anggap "Lolos" agar bisa submit
-            // Atau set ke false jika Anda ingin melarang submit sampai data muncul
-            lastInsideArea = (namaLokasi === "-"); 
+        else if (namaLokasi !== "-") {
+            displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
+            lastInsideArea = false;
         }
     } else {
         lastInsideArea = true;
