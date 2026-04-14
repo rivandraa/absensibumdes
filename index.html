@@ -733,12 +733,9 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // Baris 2: Akurasi
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 	
-	isCalculatingDistance = false;
-
     // Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
-		isCalculatingDistance = false;
     }
 
     // LOGIKA BARIS JARAK & STATUS
@@ -788,66 +785,93 @@ async function refreshTargetLocation(callback, isSilent = false) {
 
     const statusInput = document.getElementById("status");
     const currentStatus = statusInput ? statusInput.value : "";
+
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
 
-    // =========================================================
-    // LOGIKA ANTI-KEDIP (Hanya reset jika BUKAN dari interval)
-    // =========================================================
+    // =========================
+    // RESET UI (ANTI KEDIP)
+    // =========================
     if (!isSilent) {
-        targetLocation = null; 
+        targetLocation = null;
         if (tampil) tampil.value = "Sedang mengambil data...";
         if (hidden) hidden.value = "";
     }
-    // =========================================================
 
     if (!currentStatus || currentStatus === "Pilih Status...") {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
         return;
     }
-    
-    // Jika status non-lokasi, langsung set dan berhenti
+
+    // Status non lokasi
     if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
         if (tampil) tampil.value = "-";
         if (hidden) hidden.value = "-";
         targetLocation = null;
         lastTargetLocation = null;
-        return; 
+        return;
     }
 
+    // Anti request dobel
     if (isFetchingLocation) return;
 
     try {
         isFetchingLocation = true;
+
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
         const response = await fetch(url);
         const loc = await response.json();
 
-        // Validasi agar data yang telat tidak menimpa status yang sudah berubah
-        if (document.getElementById("status")?.value !== currentStatus) return;
+        // =========================
+        // RACE CONDITION GUARD
+        // =========================
+        const latestStatus = document.getElementById("status")?.value;
+        if (latestStatus !== currentStatus) {
+            return;
+        }
 
-        if (loc && loc.lat && loc.lon) {
-            const newLocation = { lat: parseFloat(loc.lat), lon: parseFloat(loc.lon) };
-            
-            // Update memori
+        // =========================
+        // VALIDASI DATA
+        // =========================
+        if (loc && loc.lat != null && loc.lon != null) {
+
+            const newLocation = {
+                lat: parseFloat(loc.lat),
+                lon: parseFloat(loc.lon)
+            };
+
             targetLocation = newLocation;
             lastTargetLocation = newLocation;
 
-            // Update Tampilan (Tanpa kedip karena isSilent menangani ini)
             const koordinatMurni = `${newLocation.lat.toFixed(6)}, ${newLocation.lon.toFixed(6)}`;
-            if (tampil) tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
+
+            if (tampil) {
+                tampil.value = (loc.nama && loc.nama.trim() !== "")
+                    ? loc.nama
+                    : koordinatMurni;
+            }
+
             if (hidden) hidden.value = koordinatMurni;
 
-            if (gpsData[0] !== 0) forceUpdateDistanceUI();
+            // hanya update jika GPS sudah ready
+            if (gpsData && gpsData.length >= 2 && gpsData[0] && gpsData[1]) {
+                forceUpdateDistanceUI();
+            }
+
         } else {
             targetLocation = null;
             if (tampil) tampil.value = "-";
         }
+
     } catch (error) {
         console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
-        if (typeof callback === "function") callback();
+    }
+
+    // callback dipanggil setelah proses selesai
+    if (typeof callback === "function") {
+        callback();
     }
 }
     
