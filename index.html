@@ -715,7 +715,7 @@ function stopGPSLoading() {
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
     const statusInput = document.getElementById("status");
-    const status = (statusInput ? statusInput.value : "").toLowerCase(); // Samakan ke lowercase agar aman
+    const status = (statusInput ? statusInput.value : "").toLowerCase();
     
     const elNama = document.getElementById("titikKoordinatTampil");
     const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
@@ -725,14 +725,10 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 
     if (currentLat === 0) return;
 
-    // --- RESET & BANGUN ULANG DISPLAY TEXT ---
-    // Baris 1: Lokasi
+    // --- RESET DISPLAY TEXT ---
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
-    
-    // Baris 2: Akurasi
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // Baris Tambahan: Animasi Akurasi (Hanya muncul jika akurasi buruk)
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
@@ -740,16 +736,21 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // --- LOGIKA JARAK & STATUS ---
     if (status === "hadir" || status === "wan") {
         
-        // Kasus 1: Lokasi Bebas (Bypass)
+        // 1. Prioritas Pertama: Cek Lokasi Bebas
         if (namaLokasi === "-") {
             lastInsideArea = true;
-            // Tidak menambah teks apa pun di baris 3 & 4
         } 
         else {
-            const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
+            // 2. Prioritas Kedua: Cek ketersediaan data (LOADING STATE)
+            // Kita langsung kunci di sini agar pesan loading muncul duluan
+            const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
 
-            if (hasTargetData) {
-                // Kasus 2: Data Target Siap, Hitung Jarak
+            if (!hasTargetData) {
+                displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
+                lastInsideArea = false; // Kunci tombol submit
+            } 
+            else {
+                // 3. Prioritas Ketiga: Kalkulasi (DATA SUDAH FIX)
                 const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
                 const insideArea = distance <= RADIUS_LIMIT;
                 lastInsideArea = insideArea;
@@ -760,17 +761,10 @@ function forceUpdateDistanceUI(lat, lon, acc) {
                     displayText += `\n❌ Di luar area ${namaLokasi}`;
                     displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
                 }
-            } 
-            else {
-                // Kasus 3: Lokasi ditentukan tapi data target belum termuat (Loading)
-                displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
-                lastInsideArea = false;
             }
         }
     } else {
-        // Kasus 4: Status selain Hadir/WAN
         lastInsideArea = true;
-        // Secara otomatis displayText hanya berisi Baris 1 & 2 karena tidak ada += di sini
     }
 
     updateGPSDisplay(displayText);
@@ -1600,48 +1594,45 @@ async function submitAbsensiForm() {
     	return;
   	}
 
-// 📏 Validasi Radius & Kesiapan Data
-if (status === "hadir" || status === "wan") {
-    
-    const elNama = document.getElementById("titikKoordinatTampil");
-    const namaLokasi = (elNama && elNama.value) ? elNama.value : "-";
-
-    if (namaLokasi !== "-" && namaLokasi !== "") {
-        
-        // --- TAMBAHAN KUNCI LOADING ---
-        // Jika lastInsideArea masih false DAN teks sedang menghitung muncul
-        // maka blokir submit.
-        if (!lastInsideArea) {
-            // Kita cek apakah koordinat target memang benar-benar belum ada
-            const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
-            
-            if (!hasTargetData) {
-                showPopup("⚠️ Mohon tunggu, sedang menghitung jarak ke lokasi baru...", "warning");
-                isSubmitting = false;
-                return;
-            }
-        }
-        // ------------------------------
-
-        const [lat, lon] = gpsFinal;
-        if (!lat || lat === 0) {
-            showPopup("⚠️ Koordinat GPS belum siap. Mohon tunggu.", "warning");
-            isSubmitting = false;
-            return;
-        }
-
-        // Kalkulasi Ulang Jarak
-        const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
-        const insideArea = distance <= RADIUS_LIMIT;
-
-        if (!insideArea) {
-            showPopup(`❌ Di luar area ${namaLokasi}!<br>Jarak: ${distance.toFixed(0)}m (Maks: ${RADIUS_LIMIT}m)`, "danger");
-            vibrateAlertShort();
-            isSubmitting = false;
-            return;
-        }
-    } 
-}
+	// 📏 Validasi Radius & Kesiapan Data
+	if (status === "hadir" || status === "wan") {
+	    
+	    // 1. Ambil Nama Lokasi
+	    const elNama = document.getElementById("titikKoordinatTampil");
+	    const namaLokasi = (elNama && elNama.value) ? elNama.value : "-";
+	
+	    // 2. Jika lokasi ditentukan (bukan "-"), lakukan validasi ketat
+	    if (namaLokasi !== "-" && namaLokasi !== "") {
+	        
+	        // Cek apakah koordinat GPS sudah ada
+	        const [lat, lon] = gpsFinal; // Menggunakan gpsFinal sesuai kode Anda
+	        if (!lat || lat === 0) {
+	            showPopup("⚠️ Koordinat GPS belum siap. Mohon tunggu.", "warning");
+	            isSubmitting = false;
+	            return;
+	        }
+	
+	        // Cek apakah data target lokasi sudah dimuat
+	        const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
+	        if (!hasTargetData) {
+	            showPopup("⚠️ Data lokasi tujuan belum tersedia.", "warning");
+	            isSubmitting = false;
+	            return;
+	        }
+	
+	        // 3. Kalkulasi Ulang Jarak (Double Check saat Submit)
+	        const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
+	        const insideArea = distance <= RADIUS_LIMIT;
+	
+	        if (!insideArea) {
+	            showPopup(`❌ Di luar area ${namaLokasi}!<br>Jarak: ${distance.toFixed(0)}m (Maks: ${RADIUS_LIMIT}m)`, "danger");
+	            vibrateAlertShort();
+	            isSubmitting = false;
+	            return;
+	        }
+	    } 
+	    // Jika namaLokasi === "-", maka otomatis lolos ke proses submit berikutnya
+	}
 
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
