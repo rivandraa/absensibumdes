@@ -716,6 +716,7 @@ function stopGPSLoading() {
 function forceUpdateDistanceUI(lat, lon, acc) {
     const statusInput = document.getElementById("status");
     const status = statusInput ? statusInput.value : "";
+    const statusLower = status.toLowerCase();
     
     const elNama = document.getElementById("titikKoordinatTampil");
     const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
@@ -725,19 +726,15 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 
     if (currentLat === 0) return;
 
-    // Baris 1: Lokasi
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
+    displayText += `\nTingkat Akurasi : ${acc ? acc.toFixed(0) : 0} Meter | > ${MAX_ACCURACY} Meter`;
     
-    // Baris 2: Akurasi
-    displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
-	
-    // Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
 
     // LOGIKA BARIS JARAK & STATUS
-    if (status === "Hadir" || status === "WAN") {
+    if (statusLower === "hadir" || statusLower === "wan") {
         const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
 
         if (hasTargetData) {
@@ -746,21 +743,24 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             lastInsideArea = insideArea;
 
             if (insideArea) {
-                // Tampilan jika di DALAM radius
                 displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
             } else {
-                // Tampilan jika di LUAR radius (2 baris sesuai permintaanmu)
                 displayText += `\n❌ Di luar area ${namaLokasi}`;
                 displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
             }
         } 
-        else if (namaLokasi !== "-") {
-            displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
+        // MODIFIKASI DI SINI:
+        // Munculkan pesan "Sedang menghitung" jika data target sedang diambil 
+        // ATAU jika proses pemuatan target belum selesai (isTargetLoaded masih false)
+        else if (isFetchingLocation || !isTargetLoaded) {
+            displayText += `\n⏳ Sedang menghitung jarak anda dengan titik koordinat absensi...`;
             lastInsideArea = false;
         }
-        // Jika data benar-benar kosong, baris ketiga tidak akan muncul sama sekali
+        else {
+            // Jika sudah selesai fetch tapi memang hasilnya null/kosong ("-")
+            lastInsideArea = true; 
+        }
     } else {
-        displayText += ``;
         lastInsideArea = true;
     }
 
@@ -1013,8 +1013,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (statusEl) {
         statusEl.addEventListener("change", () => {
-            // 2. Refresh data target (untuk memproses tanda "-" atau koordinat baru)
-            refreshTargetLocation(null, false);
+	    // 1. Tandai bahwa data target belum siap
+	    isTargetLoaded = false; 
+	    
+	    // 2. Jalankan fetch data baru
+	    refreshTargetLocation(null, false);
+	    
+	    // 3. Paksa update UI agar teks "Sedang menghitung..." langsung muncul
+	    forceUpdateDistanceUI(); 
         });
     }
     
