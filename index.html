@@ -1612,14 +1612,15 @@ async function submitAbsensiForm() {
     return;
   }
 
-// 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
-if (status === "hadir" || status === "wfh") {
+ // 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
+ if (status === "hadir" || status === "wfh") {
     if (isFetchingLocation || isCalculatingDistance) {
         showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat...", "warning");
         vibrateAlertShort();
         isSubmitting = false;
         return;
-    }
+	}
+ }
 }
 
     // ======================================
