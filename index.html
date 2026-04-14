@@ -1588,7 +1588,7 @@ async function submitAbsensiForm() {
     }
 
     // 📸 Validasi Foto
-    const wajibFoto = ["hadir", "dinas", "WAN"].includes(status);
+    const wajibFoto = ["hadir", "dinas", "wan"].includes(status);
     if (useCamera && wajibFoto && !fotoData) {
         showPopup("Foto Kehadiran wajib untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
@@ -1605,7 +1605,7 @@ async function submitAbsensiForm() {
 	const tKValue = (elTitik ? (elTitik.value || elTitik.innerText || "") : "").toLowerCase();
 	
 	// 2. VALIDASI KHUSUS: Hanya blokir jika masih "sedang"
-	if (status === "hadir" || status === "WAN") {
+	if (status === "hadir" || status === "wan") {
 	    // Jika masih ada kata "sedang", baru kita stop (return)
 	    if (kValue.includes("sedang") || tKValue.includes("sedang menghitung")) {
 	        showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat/sedang menghitung jarak.", "warning");
@@ -1638,7 +1638,7 @@ async function submitAbsensiForm() {
     }
 
 	// 📏 Validasi Radius (Opsional)
-	if (status === "hadir" || status === "WAN") {
+	if (status === "hadir" || status === "wan") {
 	    
 	    if (targetLocation && targetLocation.lat && targetLocation.lon) {
 	        
