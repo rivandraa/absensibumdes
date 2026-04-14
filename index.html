@@ -988,17 +988,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	if (statusEl) {
 	    statusEl.addEventListener("change", () => {
+	        // 1. Ambil elemen nama lokasi
 	        const elNama = document.getElementById("titikKoordinatTampil");
-	        
+	
+	        // 2. RESET DATA SECARA PAKSA (Kunci utama agar teks lama hilang)
 	        if (elNama) {
-	            // Set value agar forceUpdateDistanceUI mendeteksi perubahan lokasi
 	            elNama.value = "Sedang mengambil data..."; 
 	        }
+	        
+	        // Kosongkan koordinat target lama agar 'hasTargetData' jadi false
+	        // Ini akan membuat baris status ✅/❌ hilang seketika saat UI di-update
+	        targetLocation = { lat: 0, lon: 0 }; 
+	        lastInsideArea = false; 
 	
-	        // Panggil update UI agar teks "Sedang menghitung..." langsung muncul
+	        // 3. Paksa update tampilan UI saat ini juga
+	        // Karena targetLocation sudah 0, baris ✅/❌ pasti hilang
 	        forceUpdateDistanceUI();    
 	        
-	        // Ambil data lokasi yang sebenarnya dari server
+	        // 4. Baru jalankan proses ambil data baru dari server
 	        refreshTargetLocation(null, false);
 	    });
 	}
