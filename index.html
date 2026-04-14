@@ -1584,23 +1584,42 @@ async function submitAbsensiForm() {
         }
     }
 
-  //  VALIDASI GPS & RADIUS
-  if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
-    showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
-    vibrateAlertShort();
-    isSubmitting = false;
-    return;
-  }
+	//  VALIDASI GPS & RADIUS
+  	if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
+    	showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
+    	vibrateAlertShort();
+    	isSubmitting = false;
+    	return;
+  	}
 
- // 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
- if (status === "hadir" || status === "wfh") {
-    if (isFetchingLocation || isCalculatingDistance) {
-        showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
-        vibrateAlertShort();
-        isSubmitting = false;
-        return;
+	// 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
+ 	if (status === "hadir" || status === "wfh") {
+    	if (isFetchingLocation || isCalculatingDistance) {
+        	showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
+        	vibrateAlertShort();
+        	isSubmitting = false;
+        	return;
+		}
+ 	}
+
+	// 📏 Validasi Radius (Opsional)
+	if (status === "hadir" || status === "wfh") {
+	    
+	    if (targetLocation && targetLocation.lat && targetLocation.lon) {
+	        
+	        const [lat, lon] = gpsFinal;
+	        const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
+	        const insideArea = distance <= RADIUS_LIMIT;
+	
+	        if (!insideArea) {
+	            showPopup(`⚠️ Anda berada di luar area " + statusRaw + "!"<br>Jarak: ${distance.toFixed(0)} Meter (Max: ${RADIUS_LIMIT} Meter)`, "error");
+	            vibrateAlertShort();
+	            isSubmitting = false; 
+	            return;
+	        }
+	
+	    }
 	}
- }
 
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
