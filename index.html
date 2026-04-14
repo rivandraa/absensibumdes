@@ -771,8 +771,8 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 // REFRESH TARGET LOCATION
 // =====================================================
 let isFetchingLocation = false;
+let isTargetLoaded = false; // Flag penting untuk validasi submit
 
-// Tambahkan parameter 'isSilent' untuk membedakan interval dan manual
 async function refreshTargetLocation(callback, isSilent = false) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     const userRequesting = userObj ? userObj.username : null;
@@ -787,14 +787,17 @@ async function refreshTargetLocation(callback, isSilent = false) {
     // =========================
     // RESET UI (ANTI KEDIP)
     // =========================
+    // Kita hanya tampilkan "Sedang mengambil..." jika ini BUKAN silent update 
+    // DAN data memang belum ada sama sekali.
     if (!isSilent && !targetLocation) {
-        //targetLocation = null;
+        isTargetLoaded = false; // Reset status jika ganti tipe absen secara manual
         if (tampil) tampil.value = "Sedang mengambil data...";
         if (hidden) hidden.value = "";
     }
 
     if (!currentStatus || currentStatus === "Pilih Status...") {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+        isTargetLoaded = false;
         return;
     }
 
@@ -804,10 +807,10 @@ async function refreshTargetLocation(callback, isSilent = false) {
         if (hidden) hidden.value = "-";
         targetLocation = null;
         lastTargetLocation = null;
+        isTargetLoaded = true; // Selesai, karena memang tidak butuh lokasi
         return;
     }
 
-    // Anti request dobel
     if (isFetchingLocation) return;
 
     try {
@@ -817,56 +820,44 @@ async function refreshTargetLocation(callback, isSilent = false) {
         const response = await fetch(url);
         const loc = await response.json();
 
-        // =========================
         // RACE CONDITION GUARD
-        // =========================
         const latestStatus = document.getElementById("status")?.value;
-        if (latestStatus !== currentStatus) {
-            return;
-        }
+        if (latestStatus !== currentStatus) return;
 
         // =========================
-        // VALIDASI DATA
+        // VALIDASI DATA DARI SERVER
         // =========================
         if (loc && loc.lat != null && loc.lon != null) {
-
             const newLocation = {
                 lat: parseFloat(loc.lat),
                 lon: parseFloat(loc.lon)
             };
 
             targetLocation = newLocation;
-            //lastTargetLocation = newLocation;
-
             const koordinatMurni = `${newLocation.lat.toFixed(6)}, ${newLocation.lon.toFixed(6)}`;
 
             if (tampil) {
-                tampil.value = (loc.nama && loc.nama.trim() !== "")
-                    ? loc.nama
-                    : koordinatMurni;
+                tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
             }
-
             if (hidden) hidden.value = koordinatMurni;
 
-            // hanya update jika GPS sudah ready
-            if (gpsData && gpsData.length >= 2 && gpsData[0] && gpsData[1]) {
+            if (gpsData && gpsData[0] !== 0) {
                 forceUpdateDistanceUI();
             }
-
         } else {
+            // Jika server mengembalikan kosong (User boleh absen tanpa radius)
             targetLocation = null;
             if (tampil) tampil.value = "-";
+            if (hidden) hidden.value = "-";
         }
+
+        isTargetLoaded = true; // KUNCI: Menandakan fetch berhasil selesai
 
     } catch (error) {
         console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
-    }
-
-    // callback dipanggil setelah proses selesai
-    if (typeof callback === "function") {
-        callback();
+        if (typeof callback === "function") callback();
     }
 }
     
@@ -1596,23 +1587,6 @@ async function submitAbsensiForm() {
         return;
     }
 
-// --- TAMBAHKAN BARIS INI UNTUK MENGAMBIL NILAI TERBARU DARI ELEMENT ---
-if (status === "hadir" || status === "wan") {
-    // 1. Cek apakah masih ambil data dari server (targetLocation)
-    if (!targetLocation) {
-        showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat absensi.", "warning");
-        isSubmitting = false;
-        return;
-    }
-
-	//  VALIDASI GPS & RADIUS
-  	if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
-    	showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
-    	vibrateAlertShort();
-    	isSubmitting = false;
-    	return;
-  	}
-	
 	// 🔥 TENTUKAN SUMBER GPS
     const gpsFinal = fotoData?.gps || gpsData;
 
@@ -1627,24 +1601,48 @@ if (status === "hadir" || status === "wan") {
         }
     }
 
-	// 📏 Validasi Radius (Opsional)
-	if (status === "hadir" || status === "wan") {
-	    
-	    if (targetLocation && targetLocation.lat && targetLocation.lon) {
-	        
-	        const [lat, lon] = gpsFinal;
-	        const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
-	        const insideArea = distance <= RADIUS_LIMIT;
-	
-	        if (!insideArea) {
-	            showPopup(`"⚠️ Anda berada di luar area " + statusRaw + "!"<br>Jarak: ${distance.toFixed(0)} Meter (Max: ${RADIUS_LIMIT} Meter)`, "error");
-	            vibrateAlertShort();
-	            isSubmitting = false; 
-	            return;
-	        }
-	
-	    }
-	}
+// --- BAGIAN VALIDASI DI DALAM submitAbsensiForm() ---
+
+const statusLower = statusRaw.toLowerCase();
+
+if (statusLower === "hadir" || statusLower === "wan") {
+    
+    // 1. Cek apakah proses ambil target sudah SELESAI
+    if (!isTargetLoaded || isFetchingLocation) {
+        // Hanya blokir jika targetLocation masih kosong
+        if (!targetLocation) {
+            showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat absensi.", "warning");
+            vibrateAlertShort();
+            isSubmitting = false;
+            return;
+        }
+    }
+
+    // 2. Cek apakah GPS HP user sudah mengunci (bukan 0,0)
+    if (animatingGPS || (gpsData[0] === 0 && gpsData[1] === 0)) {
+        showPopup("⚠️ Mohon tunggu, sedang mencari posisi GPS Anda.", "warning");
+        vibrateAlertShort();
+        isSubmitting = false;
+        return;
+    }
+
+    // 3. Validasi Radius (HANYA jika targetLocation ada isinya)
+    if (targetLocation && targetLocation.lat) {
+        const [userLat, userLon] = gpsFinal; // gpsFinal didapat dari fotoData atau gpsData
+        const distance = getDistanceFromLatLonInMeters(
+            userLat, userLon, 
+            targetLocation.lat, targetLocation.lon
+        );
+
+        if (distance > RADIUS_LIMIT) {
+            showPopup(`⚠️ Di luar radius!<br>Jarak: ${distance.toFixed(0)}m (Max: ${RADIUS_LIMIT}m)`, "error");
+            vibrateAlertShort();
+            isSubmitting = false;
+            return;
+        }
+    } 
+    // Jika targetLocation adalah null (tampilan "-"), maka validasi radius dilewati otomatis.
+}
 
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
