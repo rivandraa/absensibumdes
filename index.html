@@ -1570,25 +1570,6 @@ async function submitAbsensiForm() {
         return;
     }
 
-// --- TAMBAHKAN BARIS INI UNTUK MENGAMBIL NILAI TERBARU DARI ELEMENT ---
-// 1. Ambil nilai terbaru
-	const elTampil = document.getElementById("titikKoordinatTampil");
-	const elTitik = document.getElementById("gps");
-	
-	const kValue = (elTampil ? (elTampil.value || elTampil.innerText || "") : "").toLowerCase();
-	const tKValue = (elTitik ? (elTitik.value || elTitik.innerText || "") : "").toLowerCase();
-	
-	// 2. VALIDASI KHUSUS: Hanya blokir jika masih "sedang"
-	if (status === "hadir" || status === "wfh") {
-	    // Jika masih ada kata "sedang", baru kita stop (return)
-	    if (kValue.includes("sedang") || tKValue.includes("sedang")) {
-	        showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat...", "warning");
-	        vibrateAlertShort();
-	        isSubmitting = false; 
-	        return; 
-	    }
-	}
-
     // 🔥 TENTUKAN SUMBER GPS
     const gpsFinal = fotoData?.gps || gpsData;
 
@@ -1614,7 +1595,7 @@ async function submitAbsensiForm() {
  // 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
  if (status === "hadir" || status === "wfh") {
     if (isFetchingLocation || isCalculatingDistance) {
-        showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat...", "warning");
+        showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
         vibrateAlertShort();
         isSubmitting = false;
         return;
