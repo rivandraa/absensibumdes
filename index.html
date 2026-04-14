@@ -1600,45 +1600,48 @@ async function submitAbsensiForm() {
     	return;
   	}
 
-	// 📏 Validasi Radius & Kesiapan Data
-	if (status === "hadir" || status === "wan") {
-	    
-	    // 1. Ambil Nama Lokasi
-	    const elNama = document.getElementById("titikKoordinatTampil");
-	    const namaLokasi = (elNama && elNama.value) ? elNama.value : "-";
-	
-	    // 2. Jika lokasi ditentukan (bukan "-"), lakukan validasi ketat
-	    if (namaLokasi !== "-" && namaLokasi !== "") {
-	        
-	        // Cek apakah koordinat GPS sudah ada
-	        const [lat, lon] = gpsFinal; // Menggunakan gpsFinal sesuai kode Anda
-	        if (!lat || lat === 0) {
-	            showPopup("⚠️ Koordinat GPS belum siap. Mohon tunggu.", "warning");
-	            isSubmitting = false;
-	            return;
-	        }
-	
-	        // Cek apakah data target lokasi sudah dimuat
-	        const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
-	        if (!hasTargetData) {
-	            showPopup("⚠️ Data lokasi tujuan belum tersedia.", "warning");
-	            isSubmitting = false;
-	            return;
-	        }
-	
-	        // 3. Kalkulasi Ulang Jarak (Double Check saat Submit)
-	        const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
-	        const insideArea = distance <= RADIUS_LIMIT;
-	
-	        if (!insideArea) {
-	            showPopup(`❌ Di luar area ${namaLokasi}!<br>Jarak: ${distance.toFixed(0)}m (Maks: ${RADIUS_LIMIT}m)`, "danger");
-	            vibrateAlertShort();
-	            isSubmitting = false;
-	            return;
-	        }
-	    } 
-	    // Jika namaLokasi === "-", maka otomatis lolos ke proses submit berikutnya
-	}
+// 📏 Validasi Radius & Kesiapan Data
+if (status === "hadir" || status === "wan") {
+    
+    const elNama = document.getElementById("titikKoordinatTampil");
+    const namaLokasi = (elNama && elNama.value) ? elNama.value : "-";
+
+    if (namaLokasi !== "-" && namaLokasi !== "") {
+        
+        // --- TAMBAHAN KUNCI LOADING ---
+        // Jika lastInsideArea masih false DAN teks sedang menghitung muncul
+        // maka blokir submit.
+        if (!lastInsideArea) {
+            // Kita cek apakah koordinat target memang benar-benar belum ada
+            const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
+            
+            if (!hasTargetData) {
+                showPopup("⚠️ Mohon tunggu, sedang menghitung jarak ke lokasi baru...", "warning");
+                isSubmitting = false;
+                return;
+            }
+        }
+        // ------------------------------
+
+        const [lat, lon] = gpsFinal;
+        if (!lat || lat === 0) {
+            showPopup("⚠️ Koordinat GPS belum siap. Mohon tunggu.", "warning");
+            isSubmitting = false;
+            return;
+        }
+
+        // Kalkulasi Ulang Jarak
+        const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
+        const insideArea = distance <= RADIUS_LIMIT;
+
+        if (!insideArea) {
+            showPopup(`❌ Di luar area ${namaLokasi}!<br>Jarak: ${distance.toFixed(0)}m (Maks: ${RADIUS_LIMIT}m)`, "danger");
+            vibrateAlertShort();
+            isSubmitting = false;
+            return;
+        }
+    } 
+}
 
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
