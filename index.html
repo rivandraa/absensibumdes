@@ -719,16 +719,24 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     const statusLower = status.toLowerCase();
     
     const elNama = document.getElementById("titikKoordinatTampil");
-    const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
+    // Ambil nama lokasi, jika isinya masih pesan loading, gunakan default "Area Absensi"
+    let namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
+    if (namaLokasi.includes("Sedang") || namaLokasi === "-") {
+        namaLokasi = "Area Absensi";
+    }
 
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
     if (currentLat === 0) return;
 
+    // Baris 1: Lokasi
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
-    displayText += `\nTingkat Akurasi : ${acc ? acc.toFixed(0) : 0} Meter | > ${MAX_ACCURACY} Meter`;
     
+    // Baris 2: Akurasi
+    displayText += `\nTingkat Akurasi : ${acc ? acc.toFixed(0) : 0} Meter | > ${MAX_ACCURACY} Meter`;
+	
+    // Baris Tambahan: Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
@@ -749,19 +757,11 @@ function forceUpdateDistanceUI(lat, lon, acc) {
                 displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
             }
         } 
-        // MODIFIKASI DI SINI:
-        // Munculkan pesan "Sedang menghitung" jika data target sedang diambil 
-        // ATAU jika proses pemuatan target belum selesai (isTargetLoaded masih false)
         else if (isFetchingLocation || !isTargetLoaded) {
-            displayText += `\n⏳ Sedang menghitung jarak anda dengan titik koordinat absensi...`;
+            // Menggunakan tanda panah atau icon agar lebih jelas ini adalah proses loading
+            displayText += `\n⏳ Sedang menghitung jarak ke titik absensi...`;
             lastInsideArea = false;
         }
-        else {
-            // Jika sudah selesai fetch tapi memang hasilnya null/kosong ("-")
-            lastInsideArea = true; 
-        }
-    } else {
-        lastInsideArea = true;
     }
 
     updateGPSDisplay(displayText);
