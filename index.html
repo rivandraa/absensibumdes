@@ -997,7 +997,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	    statusEl.addEventListener("change", () => {
 	        // Kosongkan koordinat target lama agar 'hasTargetData' jadi false
 	        // Ini akan membuat baris status ✅/❌ hilang seketika saat UI di-update
-	        targetLocation = { lat: 0, lon: 0 }; 
+	        targetLocation = null;
 	        lastInsideArea = false; 
 			
 			// 1. Ambil elemen nama lokasi
