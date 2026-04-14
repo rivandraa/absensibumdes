@@ -1551,7 +1551,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ================================
 let isSubmitting = false;
 	
-async function submitAbsensiForm(isSilent = false) {
+async function submitAbsensiForm() {
     if (typeof hideAlerts === "function") hideAlerts();
 
     if (isSubmitting) {
@@ -1625,7 +1625,7 @@ async function submitAbsensiForm(isSilent = false) {
 
 	// 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
  	if (status === "hadir" || status === "WAN") {
-    	if (!isSilent && (isFetchingLocation || isCalculatingDistance)) {
+    	if (targetLocation || isCalculatingDistance) {
         	showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
         	vibrateAlertShort();
         	isSubmitting = false;
