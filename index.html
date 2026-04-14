@@ -788,7 +788,7 @@ async function refreshTargetLocation(callback, isSilent = false) {
     // =========================================================
     if (!isSilent) {
         targetLocation = null; 
-        if (tampil) tampil.value = "Sedang mengambil data...";
+        if (tampil) tampil.value = "Sedang update koordinat...";
         if (hidden) hidden.value = "";
     }
     // =========================================================
@@ -995,19 +995,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	if (statusEl) {
 	    statusEl.addEventListener("change", () => {
-	        // 1. Ambil elemen nama lokasi
-	        const elNama = document.getElementById("titikKoordinatTampil");
-	
-	        // 2. RESET DATA SECARA PAKSA (Kunci utama agar teks lama hilang)
-	        if (elNama) {
-	            elNama.value = "Sedang mengambil data..."; 
-	        }
-	        
 	        // Kosongkan koordinat target lama agar 'hasTargetData' jadi false
 	        // Ini akan membuat baris status ✅/❌ hilang seketika saat UI di-update
 	        targetLocation = { lat: 0, lon: 0 }; 
 	        lastInsideArea = false; 
+			
+			// 1. Ambil elemen nama lokasi
+	        const elNama = document.getElementById("titikKoordinatTampil");
 	
+	        // 2. RESET DATA SECARA PAKSA (Kunci utama agar teks lama hilang)
+	        if (elNama) {
+	            elNama.value = "Sedang update koordinat..."; 
+	        }
+	        
 	        // 3. Paksa update tampilan UI saat ini juga
 	        // Karena targetLocation sudah 0, baris ✅/❌ pasti hilang
 	        forceUpdateDistanceUI();    
