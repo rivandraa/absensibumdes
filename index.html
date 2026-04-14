@@ -1623,15 +1623,18 @@ async function submitAbsensiForm() {
     	return;
   	}
 
-	// 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
- 	if (status === "hadir" || status === "WAN") {
-    	if (targetLocation || isCalculatingDistance) {
-        	showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
-        	vibrateAlertShort();
-        	isSubmitting = false;
-        	return;
-		}
- 	}
+if (status === "hadir" || status === "WAN") {
+
+    const isLoading = isFetchingLocation || isCalculatingDistance;
+
+    if ( isLoading) {
+        showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
+        vibrateAlertShort();
+        isSubmitting = false;
+        return;
+    }
+}
+
 
 	// 📏 Validasi Radius (Opsional)
 	if (status === "hadir" || status === "WAN") {
