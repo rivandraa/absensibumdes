@@ -1551,7 +1551,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ================================
 let isSubmitting = false;
 	
-async function submitAbsensiForm() {
+async function submitAbsensiForm(isSilent = false) {
     if (typeof hideAlerts === "function") hideAlerts();
 
     if (isSubmitting) {
