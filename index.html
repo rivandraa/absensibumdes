@@ -1583,48 +1583,42 @@ async function submitAbsensiForm() {
         }
     }
 
-// --- BAGIAN VALIDASI DI DALAM submitAbsensiForm() ---
+	//  VALIDASI GPS & RADIUS
+	if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
+		showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
+    	vibrateAlertShort();
+    	isSubmitting = false;
+    	return;
+  	}
 
-const statusLower = statusRaw.toLowerCase();
+	// 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
+ 	if (status === "hadir" || status === "wfh") {
+    	if (isFetchingLocation || isCalculatingDistance) {
+        	showPopup("⚠️ Mohon tunggu, sedang mengecek koordinat...", "warning");
+        	vibrateAlertShort();
+        	isSubmitting = false;
+        	return;
+		}
+ 	}
 
-if (statusLower === "hadir" || statusLower === "wan") {
-    
-    // 1. Cek apakah proses ambil target sudah SELESAI
-    if (!isTargetLoaded || isFetchingLocation) {
-        // Hanya blokir jika targetLocation masih kosong
-        if (!targetLocation) {
-            showPopup("⚠️ Mohon tunggu, sedang mengambil koordinat absensi.", "warning");
-            vibrateAlertShort();
-            isSubmitting = false;
-            return;
-        }
-    }
-
-    // 2. Cek apakah GPS HP user sudah mengunci (bukan 0,0)
-    if (animatingGPS || (gpsData[0] === 0 && gpsData[1] === 0)) {
-        showPopup("⚠️ Mohon tunggu, sedang mencari posisi GPS Anda.", "warning");
-        vibrateAlertShort();
-        isSubmitting = false;
-        return;
-    }
-
-    // 3. Validasi Radius (HANYA jika targetLocation ada isinya)
-    if (targetLocation && targetLocation.lat) {
-        const [userLat, userLon] = gpsFinal; // gpsFinal didapat dari fotoData atau gpsData
-        const distance = getDistanceFromLatLonInMeters(
-            userLat, userLon, 
-            targetLocation.lat, targetLocation.lon
-        );
-
-        if (distance > RADIUS_LIMIT) {
-            showPopup(`⚠️ Di luar radius!<br>Jarak: ${distance.toFixed(0)}m (Max: ${RADIUS_LIMIT}m)`, "error");
-            vibrateAlertShort();
-            isSubmitting = false;
-            return;
-        }
-    } 
-    // Jika targetLocation adalah null (tampilan "-"), maka validasi radius dilewati otomatis.
-}
+	// 📏 Validasi Radius (Opsional)
+	if (status === "hadir" || status === "wfh") {
+	    
+	    if (targetLocation && targetLocation.lat && targetLocation.lon) {
+	        
+	        const [lat, lon] = gpsFinal;
+	        const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
+	        const insideArea = distance <= RADIUS_LIMIT;
+	
+	        if (!insideArea) {
+	            showPopup(`⚠️ Anda berada di luar area " + statusRaw + "!"<br>Jarak: ${distance.toFixed(0)} Meter (Max: ${RADIUS_LIMIT} Meter)`, "error");
+	            vibrateAlertShort();
+	            isSubmitting = false; 
+	            return;
+	        }
+	
+	    }
+	}
 
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
