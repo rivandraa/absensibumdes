@@ -986,7 +986,8 @@ function startGPSMonitoring(onReady) {
 }
 
     // ====== EVENT LISTENER STATUS ======
-let isLoading = false; // Gembok global
+let isLoading = false;
+let loadingLoopId = 0;
 
 function updateLoadingDots(loopId) {
     if (!isLoading || loopId !== loadingLoopId) return;
@@ -998,7 +999,7 @@ function updateLoadingDots(loopId) {
         elNama.value = "Sedang update koordinat" + dots[index];
     }
 
-    setTimeout(() => updateLoadingDots(loopId), 100);
+    setTimeout(() => updateLoadingDots(loopId), 200);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1006,24 +1007,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const restartBtn = document.getElementById("restartGPS");
 
 	if (statusEl) {
-		statusEl.addEventListener("change", () => {
-		    // A. RESET DATA & AKTIFKAN GEMBOK
-		    targetLocation = null;
-		    lastInsideArea = false;
-		
-		    // B. JALANKAN ANIMASI DOTS
-		    loadingLoopId++;
-			isLoading = true;
-			updateLoadingDots(loadingLoopId);
-		
-		    // C. UPDATE UI SEKETIKA
-		    // Menghilangkan status ✅/❌ karena targetLocation sekarang null
-		    forceUpdateDistanceUI();    
-		    
-		    // D. AMBIL DATA DARI SERVER
-		    // Memanggil Google Spreadsheet untuk mencari koordinat baru
-		    refreshTargetLocation(null, false);
-		});
+	    statusEl.addEventListener("change", () => {
+	        targetLocation = null;
+	        lastInsideArea = false;
+	
+	        // 🔥 reset & start animasi
+	        isLoading = false;      // matikan dulu (penting)
+	        loadingLoopId++;        // invalid loop lama
+	
+	        isLoading = true;       // nyalakan lagi
+	        updateLoadingDots(loadingLoopId);
+	
+	        forceUpdateDistanceUI();    
+	        refreshTargetLocation(null, false);
+	    });
 	}
     
     // === restart gps ===
@@ -1032,10 +1029,12 @@ document.addEventListener("DOMContentLoaded", () => {
 	        gpsSystemActive = false;
 	        stopGPSMonitoring();
 
-			// JALANKAN ANIMASI DOTS
-		    loadingLoopId++;
-			isLoading = true;
-			updateLoadingDots(loadingLoopId);
+	        // 🔥 reset & start animasi
+	        isLoading = false;      // matikan dulu (penting)
+	        loadingLoopId++;        // invalid loop lama
+	
+	        isLoading = true;       // nyalakan lagi
+	        updateLoadingDots(loadingLoopId);
 			
 	        restartBtn.innerHTML = "⏳ Restarting GPS";
 	        restartBtn.disabled = true;
