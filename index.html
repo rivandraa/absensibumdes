@@ -1859,6 +1859,9 @@ function formatIndonesia(waktuString) {
 // ================================
 // Fungsi Navigasi Laporan_Absensi
 // ================================
+// ================================
+// Navigasi Laporan Absensi
+// ================================
 let isshowLaporan = false;
 
 async function showLaporan_Absensi() {
@@ -1867,9 +1870,9 @@ async function showLaporan_Absensi() {
 
     sessionStorage.setItem('page', 'Laporan_Absensi');
 
-    // 1. Definisikan HTML Tabel (Header diisi agar kerangka tabel terlihat jelas)
+    // TABEL INI LANGSUNG MUNCUL (LOKAL)
     const html = `
-        <div id="wrapperLaporan">
+        <div>
             <div class="mb-4 text-center">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <button id="homeBtn" class="btn btn-sm btn-danger">HOME</button>
@@ -1895,7 +1898,13 @@ async function showLaporan_Absensi() {
                 <table id="Laporan-Absensi-Table" class="table table-sm table-bordered table-striped" style="font-size: 11px;">
                     <thead class="table-dark text-center">
                         <tr>
-
+                            <th>NO</th>
+                            <th>NAMA</th>
+                            <th>JABATAN</th>
+                            <th title="Hadir">Hadir</th>
+                            <th title="Izin">Izin</th>
+                            <th title="Sakit">Sakit</th>
+                            <th title="Dinas">Dinas</th>
                         </tr>
                     </thead>
                     <tbody id="laporanBody" class="text-center">
@@ -1906,22 +1915,21 @@ async function showLaporan_Absensi() {
         </div>
     `;
 
-    // 2. Tampilkan Tabel ke DOM
     $('#InnerPage').html(html).show();
     $('#AbsensiPage').hide();
 
-    // 3. Set Dropdown & Event
-    const bulanSekarang = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"][new Date().getMonth()];
+    // Set bulan sekarang
+    const bulanList = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+    const bulanSekarang = bulanList[new Date().getMonth()];
     $("#selectBulan").val(bulanSekarang);
 
+    // Event listeners
     $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", function () {
         loadLaporan_Absensi($(this).val());
     });
     $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
 
-    // 4. KUNCI: Menunggu Browser benar-benar siap (selesai Paint)
-    // requestAnimationFrame pertama: Menunggu frame berikutnya
-    // requestAnimationFrame kedua: Menunggu paint dari frame sebelumnya selesai
+    // PASTI KAN RENDER SELESAI BARU AMBIL DATA
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             loadLaporan_Absensi(bulanSekarang);
@@ -1931,7 +1939,7 @@ async function showLaporan_Absensi() {
 }
 
 // ================================
-// Load Data
+// Load Data (Ambil ISI dari Server)
 // ================================
 let isLoadingLaporan = false;
 
@@ -1941,37 +1949,42 @@ async function loadLaporan_Absensi(bulan) {
 
     const tbody = $("#laporanBody");
 
-    // 5. Masukkan loading ke tbody SETELAH tabel dipastikan muncul di layar
+    // TAMPILKAN LOADING DI DALAM BODY TABEL YANG SUDAH ADA
     tbody.html(`
         <tr>
             <td colspan="7" class="p-4 text-muted">
-                <div class="spinner-border spinner-border-sm mb-1 text-secondary"></div><br>
-                ⏳ Sedang mengambil data ${bulan}...
+                <div class="spinner-border spinner-border-sm mb-1"></div><br>
+                ⏳ Sedang mengambil data ${bulan}
             </td>
         </tr>
     `);
 
     try {
         const spreadsheetId = userData?.spreadsheetId;
-        if (!spreadsheetId) throw new Error("Sesi tidak valid");
-
         const res = await fetch(`${GAS_URL}?action=getLaporan_Absensi&spreadsheetId=${spreadsheetId}&namaBulan=${bulan}`)
                            .then(r => r.json());
 
         if (res.status === "success") {
-            $("#kopLaporan").html(res.kop);
-            const rows = res.rows.map(r => `
-                <tr>
-                    <td>${r.no}</td>
-                    <td class="text-start">${r.nama}</td>
-                    <td class="text-start">${r.jabatan}</td>
-                    <td class="text-success fw-bold">${r.hadir}</td>
-                    <td class="text-warning">${r.izin}</td>
-                    <td class="text-danger">${r.sakit}</td>
-                    <td class="text-info">${r.dinas}</td>
-                </tr>
-            `).join('');
-            tbody.html(rows || `<tr><td colspan="7" class="p-4">Data kosong</td></tr>`);
+            // Update Kop jika ada data khusus dari server
+            if(res.kop) $("#kopLaporan").html(res.kop);
+            
+            // Masukkan data baris
+            if (res.rows && res.rows.length > 0) {
+                const rows = res.rows.map(r => `
+                    <tr>
+                        <td>${r.no}</td>
+                        <td class="text-start">${r.nama}</td>
+                        <td class="text-start">${r.jabatan}</td>
+                        <td class="text-success fw-bold">${r.hadir}</td>
+                        <td class="text-warning">${r.izin}</td>
+                        <td class="text-danger">${r.sakit}</td>
+                        <td class="text-info">${r.dinas}</td>
+                    </tr>
+                `).join('');
+                tbody.html(rows);
+            } else {
+                tbody.html(`<tr><td colspan="7" class="p-4">Data tidak ditemukan</td></tr>`);
+            }
         } else {
             tbody.html(`<tr><td colspan="7" class="p-4 text-danger">${res.message}</td></tr>`);
         }
@@ -1987,20 +2000,16 @@ async function loadLaporan_Absensi(bulan) {
 // ================================
 function closeLaporan_Absensi() {
     sessionStorage.setItem('page', 'absen');
-
-    $('#InnerPage').hide().empty();
+    $('#InnerPage').hide().html('');
     $('#AbsensiPage').show();
-
-    // Kembalikan tampilan identitas di halaman utama jika diperlukan
-    if (window.userData) {
+    
+    if (userData && userData.nama) {
         $('#perangkatDisplay').val(userData.nama + ' | ' + userData.jabatan);
         $('#perangkatData').val(userData.nama + '|' + userData.jabatan);
     }
-
-    // Pastikan fungsi resetFoto tersedia di scope global Anda
-    if (typeof resetFoto === "function") {
-        resetFoto();
-    }
+    
+    resetFoto();
+    $("#InnerPage").off("click", "#homeBtn");
 }
 
 /* =========================================================================================================
