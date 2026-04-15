@@ -1941,7 +1941,9 @@ async function showLaporan_Absensi() {
     const bulanSekarang = getBulanSekarang();
 
     // 🔥 set & trigger (HANYA 1 jalur loading)
-    $("#selectBulan").val(bulanSekarang).trigger("change");
+	setTimeout(() => {
+	    $("#selectBulan").trigger("change");
+	}, 50);
 
     // tombol kembali
     $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
