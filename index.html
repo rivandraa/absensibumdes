@@ -1910,13 +1910,6 @@ async function showLaporan_Absensi() {
 
     $('#InnerPage').html(html).show();
     $('#AbsensiPage').hide();
-	const bulanSekarang = getBulanSekarang();
-
-	// set dropdown ke bulan sekarang
-	$("#selectBulan").val(bulanSekarang);
-	
-	// langsung load data
-	await loadLaporan_Absensi(bulanSekarang);
 
     // --- BAGIAN load otomatis ---
 	function getBulanSekarang() {
@@ -1927,6 +1920,14 @@ async function showLaporan_Absensi() {
 	    ];
 	    return bulan[new Date().getMonth()];
 	}
+
+	const bulanSekarang = getBulanSekarang();
+
+	// set dropdown ke bulan sekarang
+	$("#selectBulan").val(bulanSekarang);
+	
+	// langsung load data
+	await loadLaporan_Absensi(bulanSekarang);
 	
 	// pakai
 	//await loadLaporan_Absensi(getBulanSekarang());
@@ -1950,9 +1951,6 @@ async function showLaporan_Absensi() {
     $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
     isshowLaporan = false;
 }
-	
-const bulanSekarang = getBulanSekarang();
-$("#selectBulan").val(bulanSekarang).trigger("change");
 	
 /**
  * Ambil data dari GAS dan render ke tabel
