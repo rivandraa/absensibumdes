@@ -767,26 +767,10 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 // =====================================================
 // REFRESH TARGET LOCATION
 // =====================================================
-function updateLoadingDots(count) {
-    // Berhenti total jika targetLocation sudah ada isinya (Data Spreadsheet masuk)
-    if (targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null) {
-        return; 
-    }
-
-    const tampil = document.getElementById("titikKoordinatTampil");
-    if (!tampil) return;
-
-    let dots = ".".repeat(count % 4);
-    tampil.value = "Sedang update koordinat" + dots;
-
-    // Panggil lagi dirinya sendiri setelah 500ms
-    setTimeout(() => updateLoadingDots(count + 1), 500);
-}
-
 let isFetchingLocation = false;
 
 // Tambahkan parameter 'isSilent' untuk membedakan interval dan manual
-async function refreshTargetLocation(callback, isSilent = false) {
+async function refreshTargetLocation(callback) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     const userRequesting = userObj ? userObj.username : null;
     if (!userRequesting) return;
@@ -805,17 +789,6 @@ async function refreshTargetLocation(callback, isSilent = false) {
 	    return; 
 	}
 	
-	// 2. JIKA STATUS SUDAH DIPILIH, BARU JALANKAN LOGIKA LOADING
-	if (!isSilent) {
-	    targetLocation = null; 
-	    if (hidden) hidden.value = "";
-	
-	    if (tampil) {
-	        // Jalankan fungsi animasi titik-titik
-	        updateLoadingDots(0);
-	    }
-	}
-    
     // Jika status non-lokasi, langsung set dan berhenti
     if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
         if (tampil) tampil.value = "-";
