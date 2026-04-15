@@ -1026,10 +1026,12 @@ document.addEventListener("DOMContentLoaded", () => {
 	    restartBtn.addEventListener("click", () => {
 	        gpsSystemActive = false;
 	        stopGPSMonitoring();
-	
+			
+			isLoading = true; // GEMBOK DIKUNCI
+			updateLoadingDots(0);
+			
 	        restartBtn.innerHTML = "⏳ Restarting GPS";
 	        restartBtn.disabled = true;
-			updateLoadingDots(0);
 	        startGPS(() => {
 	            restartBtn.innerHTML = "🔄 Restart GPS";
 	            restartBtn.disabled = false;
