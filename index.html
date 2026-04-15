@@ -1862,6 +1862,9 @@ function formatIndonesia(waktuString) {
 // ================================
 // Navigasi Laporan Absensi
 // ================================
+// ================================
+// Navigasi Laporan Absensi
+// ================================
 let isshowLaporan = false;
 
 async function showLaporan_Absensi() {
@@ -1870,8 +1873,9 @@ async function showLaporan_Absensi() {
 
     sessionStorage.setItem('page', 'Laporan_Absensi');
 
+    // 1. Definisikan Struktur UI (Tabel Kosong)
     const html = `
-        <div>
+        <div id="containerLaporan">
             <div class="mb-4 text-center">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <button id="homeBtn" class="btn btn-sm btn-danger">HOME</button>
@@ -1900,11 +1904,12 @@ async function showLaporan_Absensi() {
 
             <div class="table-responsive">
                 <table id="Laporan-Absensi-Table" class="table table-sm table-bordered table-striped" style="font-size: 11px;">
-                    <thead class="table-dark text-center"></thead>
+                    <thead class="table-dark text-center">
+                        </thead>
                     <tbody id="laporanBody" class="text-center">
                         <tr>
-                            <td colspan="8" class="p-4 text-muted">
-                                <!-- kosong dulu -->
+                            <td colspan="8" class="p-4 text-muted italic">
+                                Menyiapkan tampilan...
                             </td>
                         </tr>
                     </tbody>
@@ -1913,47 +1918,37 @@ async function showLaporan_Absensi() {
         </div>
     `;
 
+    // 2. Render kerangka ke DOM segera
     $('#InnerPage').html(html).show();
     $('#AbsensiPage').hide();
 
-    // ================================
-    // Event dropdown
-    // ================================
+    // 3. Pasang Event Listeners
     $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", function () {
         const bulan = $(this).val();
         if (bulan) loadLaporan_Absensi(bulan);
     });
 
-    // ================================
-    // Ambil bulan sekarang
-    // ================================
+    $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
+
+    // 4. Tentukan bulan sekarang
     const bulanList = [
-        "JANUARI", "FEBRUARI", "MARET", "APRIL",
-        "MEI", "JUNI", "JULI", "AGUSTUS",
-        "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
+        "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", 
+        "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
     ];
-
     const bulanSekarang = bulanList[new Date().getMonth()];
-
-    // set dropdown
     $("#selectBulan").val(bulanSekarang);
 
-    // 🔥 jalankan setelah render (biar tidak langsung loading)
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            loadLaporan_Absensi(bulanSekarang);
-        });
-    });
-
-    // tombol kembali
-    $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
+    // 5. Jalankan load data dengan sedikit delay (50ms) 
+    // agar Browser selesai menggambar (Paint) tabel kosong di atas.
+    setTimeout(() => {
+        loadLaporan_Absensi(bulanSekarang);
+    }, 50);
 
     isshowLaporan = false;
 }
 
-
 // ================================
-// Load Data
+// Load Data (Logic Fetching)
 // ================================
 let isLoadingLaporan = false;
 
@@ -1965,65 +1960,70 @@ async function loadLaporan_Absensi(bulan) {
     const thead = $("#Laporan-Absensi-Table thead");
     const kop = $("#kopLaporan");
 
-    // 🔥 tampilkan loading SETELAH table muncul
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            tbody.html(`
-                <tr>
-                    <td colspan="8" class="p-4 text-muted">
-                        ⏳ Sedang mengambil data ${bulan}...
-                    </td>
-                </tr>
-            `);
-        });
-    });
+    // Tampilkan indikator loading di dalam baris tabel (bukan popup)
+    tbody.html(`
+        <tr>
+            <td colspan="8" class="p-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Sedang mengambil data ${bulan}...
+            </td>
+        </tr>
+    `);
 
     const spreadsheetId = userData?.spreadsheetId;
     if (!spreadsheetId) {
         isLoadingLaporan = false;
-        return showPopup("Sesi berakhir", "error");
+        tbody.html(`<tr><td colspan="8" class="p-4 text-danger">Sesi berakhir, silakan login ulang.</td></tr>`);
+        return;
     }
 
     try {
-        const res = await fetch(`${GAS_URL}?action=getLaporan_Absensi&spreadsheetId=${spreadsheetId}&namaBulan=${bulan}`)
-            .then(r => r.json());
+        const url = `${GAS_URL}?action=getLaporan_Absensi&spreadsheetId=${spreadsheetId}&namaBulan=${bulan}`;
+        const response = await fetch(url);
+        const res = await response.json();
 
         if (res.status === "success") {
+            // Update Judul/Kop jika ada perubahan dari Server
             kop.html(res.kop);
 
-            thead.html(`
-                <tr>
-                    ${res.header.map(h => `<th>${h}</th>`).join('')}
-                </tr>
-            `);
+            // Render Header Secara Dinamis
+            if (res.header && res.header.length > 0) {
+                thead.html(`
+                    <tr>
+                        ${res.header.map(h => `<th>${h}</th>`).join('')}
+                    </tr>
+                `);
+            }
 
-            const rows = res.rows.map(r => `
-                <tr>
-                    <td>${r.no}</td>
-                    <td class="text-start">${r.nama}</td>
-                    <td class="text-start">${r.jabatan}</td>
-                    <td class="text-success fw-bold">${r.hadir}</td>
-                    <td class="text-warning">${r.izin}</td>
-                    <td class="text-danger">${r.sakit}</td>
-                    <td class="text-info">${r.dinas}</td>
-                </tr>
-            `).join('');
-
-            tbody.html(rows || `
-                <tr><td colspan="8">Data kosong</td></tr>
-            `);
+            // Render Baris Data
+            if (res.rows && res.rows.length > 0) {
+                const rowsHtml = res.rows.map(r => `
+                    <tr>
+                        <td>${r.no}</td>
+                        <td class="text-start">${r.nama}</td>
+                        <td class="text-start">${r.jabatan}</td>
+                        <td class="text-success fw-bold">${r.hadir}</td>
+                        <td class="text-warning">${r.izin}</td>
+                        <td class="text-danger">${r.sakit}</td>
+                        <td class="text-info">${r.dinas}</td>
+                    </tr>
+                `).join('');
+                tbody.html(rowsHtml);
+            } else {
+                tbody.html(`<tr><td colspan="8" class="p-4">Data bulan ${bulan} belum tersedia.</td></tr>`);
+            }
 
         } else {
-            tbody.html(`<tr><td colspan="8">${res.message}</td></tr>`);
+            tbody.html(`<tr><td colspan="8" class="p-4 text-warning">${res.message || 'Gagal mengambil data'}</td></tr>`);
         }
 
     } catch (err) {
-        tbody.html(`<tr><td colspan="8">Gagal memuat data</td></tr>`);
+        console.error("Error Load Laporan:", err);
+        tbody.html(`<tr><td colspan="8" class="p-4 text-danger">Terjadi kesalahan koneksi.</td></tr>`);
+    } finally {
+        isLoadingLaporan = false;
     }
-
-    isLoadingLaporan = false;
 }
-
 
 // ================================
 // Tutup Halaman
@@ -2031,17 +2031,20 @@ async function loadLaporan_Absensi(bulan) {
 function closeLaporan_Absensi() {
     sessionStorage.setItem('page', 'absen');
 
-    $('#InnerPage').hide().html('');
+    $('#InnerPage').hide().empty();
     $('#AbsensiPage').show();
 
-    if (userData) {
+    // Kembalikan tampilan identitas di halaman utama jika diperlukan
+    if (window.userData) {
         $('#perangkatDisplay').val(userData.nama + ' | ' + userData.jabatan);
         $('#perangkatData').val(userData.nama + '|' + userData.jabatan);
     }
 
-    resetFoto();
+    // Pastikan fungsi resetFoto tersedia di scope global Anda
+    if (typeof resetFoto === "function") {
+        resetFoto();
+    }
 }
-
 
 /* =========================================================================================================
     BAGIAN KODE PENGATURAN PASSWORD
