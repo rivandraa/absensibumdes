@@ -786,27 +786,33 @@ async function refreshTargetLocation(callback, isSilent = false) {
     // =========================================================
 	// 1. CEK STATUS DULU (Prioritas Utama)
 	if (!currentStatus || currentStatus === "Pilih Status..." || currentStatus === "") {
-	    // Hentikan loading jika sebelumnya sedang jalan
 	    if (loadingInterval) {
 	        clearInterval(loadingInterval);
 	        loadingInterval = null;
 	    }
-	    
 	    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-	    return; // Berhenti di sini, jangan lanjut ke bawah
+	    return; 
 	}
 	
 	// 2. JIKA STATUS SUDAH DIPILIH, BARU JALANKAN LOGIKA LOADING
 	if (!isSilent) {
-	    targetLocation = null; 
+	    targetLocation = null; // Reset koordinat target
 	    if (hidden) hidden.value = "";
 	
 	    if (tampil) {
-	        // Hentikan interval lama jika ada
 	        if (loadingInterval) clearInterval(loadingInterval);
 	
 	        let dots = 0;
 	        loadingInterval = setInterval(() => {
+	            // --- PROTEKSI ANTI KEDIP ---
+	            // Jika tiba-tiba data target sudah masuk dari Spreadsheet,
+	            // langsung hentikan animasi agar tidak menimpa nama lokasi asli.
+	            if (targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null) {
+	                clearInterval(loadingInterval);
+	                loadingInterval = null;
+	                return; 
+	            }
+	
 	            dots = (dots + 1) % 4;
 	            tampil.value = "Sedang mengambil data" + ".".repeat(dots);
 	        }, 500);
