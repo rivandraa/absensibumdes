@@ -988,18 +988,17 @@ function startGPSMonitoring(onReady) {
     // ====== EVENT LISTENER STATUS ======
 let isLoading = false; // Gembok global
 
-function updateLoadingDots(count) {
-    if (!isLoading) return; 
+function updateLoadingDots(loopId) {
+    if (!isLoading || loopId !== loadingLoopId) return;
 
     const elNama = document.getElementById("titikKoordinatTampil");
     if (elNama) {
-        // Menggunakan array untuk menghindari kalkulasi berat saat UI sibuk
         const dots = ["", ".", "..", "..."];
-        elNama.value = "Sedang update koordinat" + dots[count % 4];
+        const index = Math.floor(Date.now() / 600) % dots.length;
+        elNama.value = "Sedang update koordinat" + dots[index];
     }
 
-    // Gunakan 600ms agar ritme sinkron dengan mata manusia
-    setTimeout(() => updateLoadingDots(count + 1), 600);
+    setTimeout(() => updateLoadingDots(loopId), 100);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1011,11 +1010,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		    // A. RESET DATA & AKTIFKAN GEMBOK
 		    targetLocation = null;
 		    lastInsideArea = false;
-		    isLoading = true; // GEMBOK DIKUNCI
 		
 		    // B. JALANKAN ANIMASI DOTS
-		    // Titik-titik mulai berjalan secara otomatis di background
-		    updateLoadingDots(0);
+		    isLoading = true; // GEMBOK DIKUNCI
+		    loadingLoopId++;
+			isLoading = true;
+			updateLoadingDots(loadingLoopId);
 		
 		    // C. UPDATE UI SEKETIKA
 		    // Menghilangkan status ✅/❌ karena targetLocation sekarang null
@@ -1034,7 +1034,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	        stopGPSMonitoring();
 			
 			isLoading = true; // GEMBOK DIKUNCI
-			updateLoadingDots(0);
+		    loadingLoopId++;
+			isLoading = true;
+			updateLoadingDots(loadingLoopId);
 			
 	        restartBtn.innerHTML = "⏳ Restarting GPS";
 	        restartBtn.disabled = true;
