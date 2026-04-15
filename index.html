@@ -1911,8 +1911,18 @@ async function showLaporan_Absensi() {
     $('#InnerPage').html(html).show();
     $('#AbsensiPage').hide();
 
-    // --- BAGIAN INI DIHAPUS (Tidak load otomatis) ---
-    // await loadLaporan_Absensi("JANUARI"); 
+    // --- BAGIAN load otomatis ---
+	function getBulanSekarang() {
+	    const bulan = [
+	        "JANUARI", "FEBRUARI", "MARET", "APRIL",
+	        "MEI", "JUNI", "JULI", "AGUSTUS",
+	        "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
+	    ];
+	    return bulan[new Date().getMonth()];
+	}
+	
+	// pakai
+	await loadLaporan_Absensi(getBulanSekarang());
 
     // Event saat bulan diganti
     $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
