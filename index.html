@@ -809,7 +809,12 @@ async function refreshTargetLocation(callback) {
         isFetchingLocation = true;
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
         const response = await fetch(url);
-        const loc = await response.json();
+		const text = await response.text();
+		
+		// kasih napas ke UI dulu
+		await new Promise(r => setTimeout(r, 0));
+		
+		const loc = JSON.parse(text);
 
         // Validasi agar data yang telat tidak menimpa status yang sudah berubah
         if (document.getElementById("status")?.value !== currentStatus) return;
@@ -826,16 +831,20 @@ async function refreshTargetLocation(callback) {
             if (tampil) tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
             if (hidden) hidden.value = koordinatMurni;
 
-            if (gpsData[0] !== 0) forceUpdateDistanceUI();
+			if (gpsData[0] !== 0) {
+			    setTimeout(() => {
+			        forceUpdateDistanceUI();
+			    }, 0);
+			}
         } else {
             targetLocation = null;
             if (tampil) tampil.value = "-";
+			isLoading = false;
         }
     } catch (error) {
         console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
-		isLoading = false;
         if (typeof callback === "function") callback();
     }
 }
