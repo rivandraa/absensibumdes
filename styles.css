@@ -387,9 +387,9 @@ textarea::placeholder {
     text-align: center;
     font-size: 8px;
     color: #999;
-    margin-top: 25px;
-    padding-top: 12px;
-    border-top: 1px solid #eee; /* 🔥 garis pemisah halus */
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 3px solid #eee; /* 🔥 garis pemisah halus */
 }
 
 /* =========================================================================================================
