@@ -700,7 +700,7 @@ function startGPSLoading() {
     stopGPSLoading();
 
     gpsLoadingInterval = setInterval(() => {
-        updateGPSDisplay("Sedang mencari lokasi" + dotsArr[i]);
+        updateGPSDisplay("Sedang memperbarui lokasi" + dotsArr[i]);
         i = (i + 1) % dotsArr.length;
     }, 600);
 }
@@ -876,7 +876,7 @@ function startGPSMonitoring(onReady) {
     gpsData = [0, 0];
     lastInsideArea = null;
     areaErrorActive = false;
-    updateGPSDisplay("Sedang mencari lokasi");
+    updateGPSDisplay("Sedang memperbarui lokasi");
     startGPSLoading();
 
     if (!navigator.geolocation) {
@@ -1251,7 +1251,7 @@ document.getElementById('snap').addEventListener('click', async () => {
 
   //  VALIDASI GPS & RADIUS
   if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
-    showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
+    showPopup("⚠️ GPS tidak aktif atau GPS Sedang memperbarui lokasi / meningkatkan akurasi.", "warning");
     vibrateAlertShort();
     isSnapping = false;
     return;
@@ -1551,7 +1551,7 @@ document.addEventListener('DOMContentLoaded', function() {
             //if (inputKoordinat) inputKoordinat.value = "";
             
             // Untuk elemen display (div/span) menggunakan .innerText
-            //if (displayGps) displayGps.innerText = "Sedang mencari lokasi...";
+            //if (displayGps) displayGps.innerText = "Sedang memperbarui lokasi...";
         }
     }
 
@@ -1646,7 +1646,7 @@ async function submitAbsensiForm() {
 
 	//  VALIDASI GPS & RADIUS
 	if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
-		showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
+		showPopup("⚠️ GPS tidak aktif atau GPS Sedang memperbarui lokasi / meningkatkan akurasi.", "warning");
     	vibrateAlertShort();
     	isSubmitting = false;
     	return;
@@ -2335,5 +2335,9 @@ window.addEventListener("load", runAutoFit);
 window.addEventListener("resize", runAutoFit);
 
 </script>
+<footer class="footer">
+    © 2026 Pemerintah Desa Galungan
+</footer>
 </body>
 </html>
+<!-- VERSI 1.1 -->
