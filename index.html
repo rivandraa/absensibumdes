@@ -274,8 +274,10 @@ body.locked {
 <div id="InnerPage" style="display:none;"></div>
 	
 <footer class="footer">
-    © 2026 galungan.tech • v1.1.0
+    <div>© 2026 galungan.tech</div>
+    <div>Versi WebApp v1.1.0</div>
 </footer>
+
 <!-- JQuery -->
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -2273,6 +2275,7 @@ $(document).ready(function() {
         if (page === 'Laporan_Absensi') {
             $('#LoginPage').hide();
             $('#AbsensiPage').hide();
+			$('.footer').show();
             showLaporan_Absensi(); // Fungsi ini sudah menghentikan resource (jika ada)
             return;
         } 
@@ -2281,6 +2284,7 @@ $(document).ready(function() {
         else if (page === 'Pengaturan_Password') {
             $('#LoginPage').hide();
             $('#AbsensiPage').hide();
+			$('.footer').show();
             openPengaturanPasswordForm(); // Fungsi ini sudah menghentikan resource (jika ada)
             return;
         } 
@@ -2289,6 +2293,7 @@ $(document).ready(function() {
         $('#LoginPage').hide(); 
         $('#AbsensiPage').show();
         $('#InnerPage').hide();
+		$('.footer').show();
 
         $('#perangkatDisplay').val(userData.nama + ' | ' + userData.jabatan);
         $('#perangkatData').val(userData.nama + '|' + userData.jabatan);
@@ -2302,7 +2307,8 @@ $(document).ready(function() {
         // ========= // Tidak Ada Sesi Tersimpan ==========
         $('#LoginPage').show(); 
         $('#AbsensiPage').hide(); 
-        $('#InnerPage').hide(); 
+        $('#InnerPage').hide();
+		$('.footer').show();
         hideAlerts();
     }
 });
