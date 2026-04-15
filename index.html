@@ -1861,23 +1861,22 @@ function formatIndonesia(waktuString) {
 // ================================
 let isshowLaporan = false;
 
-/**
- * Tampilkan halaman Laporan Absensi
- */
 async function showLaporan_Absensi() {
     if (isshowLaporan) return;
     isshowLaporan = true;
 
     sessionStorage.setItem('page', 'Laporan_Absensi');
+
     const html = `
         <div mt-3">
             <div class="mb-4 text-center">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <button id="homeBtn" class="btn btn-sm btn-danger shadow-sm">HOME</button>
-                    <select id="selectBulan" class="form-select form-select-sm w-auto shadow-sm" style="border: 2px solid #ced4da;">
+
+                    <select id="selectBulan" class="form-select form-select-sm w-auto shadow-sm">
                         <option value="">-- Pilih Bulan --</option>
                         <option value="JANUARI">Januari</option>
-                        <option value="PEBRUARI">Februari</option>
+                        <option value="FEBRUARI">Februari</option>
                         <option value="MARET">Maret</option>
                         <option value="APRIL">April</option>
                         <option value="MEI">Mei</option>
@@ -1886,20 +1885,23 @@ async function showLaporan_Absensi() {
                         <option value="AGUSTUS">Agustus</option>
                         <option value="SEPTEMBER">September</option>
                         <option value="OKTOBER">Oktober</option>
-                        <option value="NOPEMBER">November</option>
+                        <option value="NOVEMBER">November</option>
                         <option value="DESEMBER">Desember</option>
                     </select>
                 </div>
-                <h6 id="kopLaporan" class="fw-bold mb-0 text-uppercase p-1">LAPORAN ABSENSI</h6>
+
+                <h6 id="kopLaporan" class="fw-bold mb-0 text-uppercase p-1">
+                    LAPORAN ABSENSI
+                </h6>
             </div>
 
             <div class="table-responsive">
                 <table id="Laporan-Absensi-Table" class="table table-sm table-bordered table-striped shadow-sm" style="font-size: 11px;">
                     <thead class="table-dark text-center"></thead>
-                    <tbody class="text-center">
+                    <tbody id="laporanBody" class="text-center">
                         <tr>
                             <td colspan="8" class="p-4 text-muted">
-                                <i class="fas fa-arrow-up me-2"></i> Silakan pilih bulan terlebih dahulu untuk melihat data.
+                                ⏳ Menyiapkan data...
                             </td>
                         </tr>
                     </tbody>
@@ -1911,73 +1913,87 @@ async function showLaporan_Absensi() {
     $('#InnerPage').html(html).show();
     $('#AbsensiPage').hide();
 
-    // --- BAGIAN load otomatis ---
-	function getBulanSekarang() {
-	    const bulan = [
-	        "JANUARI", "FEBRUARI", "MARET", "APRIL",
-	        "MEI", "JUNI", "JULI", "AGUSTUS",
-	        "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
-	    ];
-	    return bulan[new Date().getMonth()];
-	}
-
-	const bulanSekarang = getBulanSekarang();
-
-	// set dropdown ke bulan sekarang
-	$("#selectBulan").val(bulanSekarang);
-	
-	// langsung load data
-	await loadLaporan_Absensi(bulanSekarang);
-	
-	// pakai
-	//await loadLaporan_Absensi(getBulanSekarang());
-
-	// Event saat bulan diganti
+    // ================================
+    // Event dropdown bulan
+    // ================================
     $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
         const bulanDipilih = $(this).val();
-        
+
         if (bulanDipilih !== "") {
-            // Hilangkan border merah jika sudah memilih
-            //$(this).css("border", "1px solid #ced4da");
             await loadLaporan_Absensi(bulanDipilih);
         } else {
-            // Jika kembali pilih kosong, bersihkan tabel
-            //$(this).css("border", "2px solid #dc3545");
-            //$("#Laporan-Absensi-Table tbody").html('<tr><td colspan="8" class="p-4 text-muted">Silakan pilih bulan terlebih dahulu.</td></tr>');
             $("#kopLaporan").html("LAPORAN ABSENSI");
         }
     });
 
+    // ================================
+    // Ambil bulan sekarang
+    // ================================
+    function getBulanSekarang() {
+        const bulan = [
+            "JANUARI", "FEBRUARI", "MARET", "APRIL",
+            "MEI", "JUNI", "JULI", "AGUSTUS",
+            "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
+        ];
+        return bulan[new Date().getMonth()];
+    }
+
+    const bulanSekarang = getBulanSekarang();
+
+    // 🔥 set & trigger (HANYA 1 jalur loading)
+    $("#selectBulan").val(bulanSekarang).trigger("change");
+
+    // tombol kembali
     $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
+
     isshowLaporan = false;
 }
-	
-/**
- * Ambil data dari GAS dan render ke tabel
- */
+
+
+// ================================
+// Load Data Laporan
+// ================================
+let isLoadingLaporan = false;
+
 async function loadLaporan_Absensi(bulan) {
-    const tbody = $("#Laporan-Absensi-Table tbody");
+    if (isLoadingLaporan) return; // 🔥 cegah double request
+    isLoadingLaporan = true;
+
+    const tbody = $("#laporanBody");
     const thead = $("#Laporan-Absensi-Table thead");
     const kop = $("#kopLaporan");
 
-    tbody.html('<tr><td colspan="8">Sedang mengambil data ' + bulan + '...</td></tr>');
-    
+    // tampilkan loading di dalam tabel
+    tbody.html(`
+        <tr>
+            <td colspan="8" class="p-4 text-muted">
+                ⏳ Sedang mengambil data ${bulan}...
+            </td>
+        </tr>
+    `);
+
     const spreadsheetId = userData?.spreadsheetId;
-    if (!spreadsheetId) return showPopup("Sesi berakhir", "error");
+    if (!spreadsheetId) {
+        isLoadingLaporan = false;
+        return showPopup("Sesi berakhir", "error");
+    }
 
     try {
-        // Kirim parameter bulan ke GAS
         const response = await fetch(`${GAS_URL}?action=getLaporan_Absensi&spreadsheetId=${spreadsheetId}&namaBulan=${bulan}`);
         const res = await response.json();
 
         if (res.status === "success") {
             kop.html(res.kop);
-            
-            // Render Header
-            thead.html(`<tr>${res.header.map(h => `<th class="align-middle">${h}</th>`).join('')}</tr>`);
 
-            // Render Data
-            let tbodyHtml = res.rows.map(r => `
+            // header
+            thead.html(`
+                <tr>
+                    ${res.header.map(h => `<th class="align-middle">${h}</th>`).join('')}
+                </tr>
+            `);
+
+            // isi tabel
+            const rows = res.rows.map(r => `
                 <tr>
                     <td>${r.no}</td>
                     <td class="text-start">${r.nama}</td>
@@ -1988,29 +2004,47 @@ async function loadLaporan_Absensi(bulan) {
                     <td class="text-info">${r.dinas}</td>
                 </tr>
             `).join('');
-            
-            tbody.html(tbodyHtml || '<tr><td colspan="8">Data bulan ini masih kosong.</td></tr>');
+
+            tbody.html(rows || `
+                <tr>
+                    <td colspan="8">Data bulan ini masih kosong.</td>
+                </tr>
+            `);
+
         } else {
-            tbody.html(`<tr><td colspan="8" class="text-danger">${res.message}</td></tr>`);
+            tbody.html(`
+                <tr>
+                    <td colspan="8" class="text-danger">${res.message}</td>
+                </tr>
+            `);
         }
+
     } catch (err) {
-        tbody.html('<tr><td colspan="8">Gagal memuat data.</td></tr>');
+        tbody.html(`
+            <tr>
+                <td colspan="8">Gagal memuat data.</td>
+            </tr>
+        `);
     }
+
+    isLoadingLaporan = false;
 }
 
-/**
- * Tutup halaman Laporan
- */
+
+// ================================
+// Tutup Halaman Laporan
+// ================================
 function closeLaporan_Absensi() {
     sessionStorage.setItem('page', 'absen');
+
     $('#InnerPage').hide().html('');
     $('#AbsensiPage').show();
-    
+
     if (userData && userData.nama) {
         $('#perangkatDisplay').val(userData.nama + ' | ' + userData.jabatan);
         $('#perangkatData').val(userData.nama + '|' + userData.jabatan);
     }
-    
+
     resetFoto();
     $("#InnerPage").off("click", "#homeBtn");
 }
