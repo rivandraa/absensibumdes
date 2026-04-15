@@ -1859,12 +1859,6 @@ function formatIndonesia(waktuString) {
 // ================================
 // Fungsi Navigasi Laporan_Absensi
 // ================================
-// ================================
-// Navigasi Laporan Absensi
-// ================================
-// ================================
-// Navigasi Laporan Absensi
-// ================================
 let isshowLaporan = false;
 
 async function showLaporan_Absensi() {
@@ -1873,15 +1867,13 @@ async function showLaporan_Absensi() {
 
     sessionStorage.setItem('page', 'Laporan_Absensi');
 
-    // 1. Definisikan Struktur UI (Tabel Kosong)
+    // 1. Definisikan HTML Tabel (Header diisi agar kerangka tabel terlihat jelas)
     const html = `
-        <div id="containerLaporan">
+        <div id="wrapperLaporan">
             <div class="mb-4 text-center">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <button id="homeBtn" class="btn btn-sm btn-danger">HOME</button>
-
                     <select id="selectBulan" class="form-select form-select-sm w-auto">
-                        <option value="">-- Pilih Bulan --</option>
                         <option value="JANUARI">Januari</option>
                         <option value="FEBRUARI">Februari</option>
                         <option value="MARET">Maret</option>
@@ -1896,59 +1888,50 @@ async function showLaporan_Absensi() {
                         <option value="DESEMBER">Desember</option>
                     </select>
                 </div>
-
-                <h6 id="kopLaporan" class="fw-bold mb-0 text-uppercase">
-                    LAPORAN ABSENSI
-                </h6>
+                <h6 id="kopLaporan" class="fw-bold mb-0 text-uppercase">LAPORAN ABSENSI</h6>
             </div>
 
             <div class="table-responsive">
                 <table id="Laporan-Absensi-Table" class="table table-sm table-bordered table-striped" style="font-size: 11px;">
                     <thead class="table-dark text-center">
-                        </thead>
-                    <tbody id="laporanBody" class="text-center">
                         <tr>
-                            <td colspan="8" class="p-4 text-muted italic">
-                                Menyiapkan tampilan...
-                            </td>
+                            <th>NO</th><th>NAMA</th><th>JABATAN</th><th>H</th><th>I</th><th>S</th><th>DL</th>
                         </tr>
+                    </thead>
+                    <tbody id="laporanBody" class="text-center">
+                        <tr><td colspan="7" class="p-4"></td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     `;
 
-    // 2. Render kerangka ke DOM segera
+    // 2. Tampilkan Tabel ke DOM
     $('#InnerPage').html(html).show();
     $('#AbsensiPage').hide();
 
-    // 3. Pasang Event Listeners
-    $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", function () {
-        const bulan = $(this).val();
-        if (bulan) loadLaporan_Absensi(bulan);
-    });
-
-    $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
-
-    // 4. Tentukan bulan sekarang
-    const bulanList = [
-        "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", 
-        "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
-    ];
-    const bulanSekarang = bulanList[new Date().getMonth()];
+    // 3. Set Dropdown & Event
+    const bulanSekarang = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"][new Date().getMonth()];
     $("#selectBulan").val(bulanSekarang);
 
-    // 5. Jalankan load data dengan sedikit delay (50ms) 
-    // agar Browser selesai menggambar (Paint) tabel kosong di atas.
-    setTimeout(() => {
-        loadLaporan_Absensi(bulanSekarang);
-    }, 50);
+    $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", function () {
+        loadLaporan_Absensi($(this).val());
+    });
+    $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
 
-    isshowLaporan = false;
+    // 4. KUNCI: Menunggu Browser benar-benar siap (selesai Paint)
+    // requestAnimationFrame pertama: Menunggu frame berikutnya
+    // requestAnimationFrame kedua: Menunggu paint dari frame sebelumnya selesai
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            loadLaporan_Absensi(bulanSekarang);
+            isshowLaporan = false;
+        });
+    });
 }
 
 // ================================
-// Load Data (Logic Fetching)
+// Load Data
 // ================================
 let isLoadingLaporan = false;
 
@@ -1957,69 +1940,43 @@ async function loadLaporan_Absensi(bulan) {
     isLoadingLaporan = true;
 
     const tbody = $("#laporanBody");
-    const thead = $("#Laporan-Absensi-Table thead");
-    const kop = $("#kopLaporan");
 
-    // Tampilkan indikator loading di dalam baris tabel (bukan popup)
+    // 5. Masukkan loading ke tbody SETELAH tabel dipastikan muncul di layar
     tbody.html(`
         <tr>
-            <td colspan="8" class="p-4 text-muted">
-                <span class="spinner-border spinner-border-sm me-2"></span>
-                Sedang mengambil data ${bulan}...
+            <td colspan="7" class="p-4 text-muted">
+                <div class="spinner-border spinner-border-sm mb-1 text-secondary"></div><br>
+                ⏳ Sedang mengambil data ${bulan}...
             </td>
         </tr>
     `);
 
-    const spreadsheetId = userData?.spreadsheetId;
-    if (!spreadsheetId) {
-        isLoadingLaporan = false;
-        tbody.html(`<tr><td colspan="8" class="p-4 text-danger">Sesi berakhir, silakan login ulang.</td></tr>`);
-        return;
-    }
-
     try {
-        const url = `${GAS_URL}?action=getLaporan_Absensi&spreadsheetId=${spreadsheetId}&namaBulan=${bulan}`;
-        const response = await fetch(url);
-        const res = await response.json();
+        const spreadsheetId = userData?.spreadsheetId;
+        if (!spreadsheetId) throw new Error("Sesi tidak valid");
+
+        const res = await fetch(`${GAS_URL}?action=getLaporan_Absensi&spreadsheetId=${spreadsheetId}&namaBulan=${bulan}`)
+                           .then(r => r.json());
 
         if (res.status === "success") {
-            // Update Judul/Kop jika ada perubahan dari Server
-            kop.html(res.kop);
-
-            // Render Header Secara Dinamis
-            if (res.header && res.header.length > 0) {
-                thead.html(`
-                    <tr>
-                        ${res.header.map(h => `<th>${h}</th>`).join('')}
-                    </tr>
-                `);
-            }
-
-            // Render Baris Data
-            if (res.rows && res.rows.length > 0) {
-                const rowsHtml = res.rows.map(r => `
-                    <tr>
-                        <td>${r.no}</td>
-                        <td class="text-start">${r.nama}</td>
-                        <td class="text-start">${r.jabatan}</td>
-                        <td class="text-success fw-bold">${r.hadir}</td>
-                        <td class="text-warning">${r.izin}</td>
-                        <td class="text-danger">${r.sakit}</td>
-                        <td class="text-info">${r.dinas}</td>
-                    </tr>
-                `).join('');
-                tbody.html(rowsHtml);
-            } else {
-                tbody.html(`<tr><td colspan="8" class="p-4">Data bulan ${bulan} belum tersedia.</td></tr>`);
-            }
-
+            $("#kopLaporan").html(res.kop);
+            const rows = res.rows.map(r => `
+                <tr>
+                    <td>${r.no}</td>
+                    <td class="text-start">${r.nama}</td>
+                    <td class="text-start">${r.jabatan}</td>
+                    <td class="text-success fw-bold">${r.hadir}</td>
+                    <td class="text-warning">${r.izin}</td>
+                    <td class="text-danger">${r.sakit}</td>
+                    <td class="text-info">${r.dinas}</td>
+                </tr>
+            `).join('');
+            tbody.html(rows || `<tr><td colspan="7" class="p-4">Data kosong</td></tr>`);
         } else {
-            tbody.html(`<tr><td colspan="8" class="p-4 text-warning">${res.message || 'Gagal mengambil data'}</td></tr>`);
+            tbody.html(`<tr><td colspan="7" class="p-4 text-danger">${res.message}</td></tr>`);
         }
-
     } catch (err) {
-        console.error("Error Load Laporan:", err);
-        tbody.html(`<tr><td colspan="8" class="p-4 text-danger">Terjadi kesalahan koneksi.</td></tr>`);
+        tbody.html(`<tr><td colspan="7" class="p-4 text-danger">Gagal memuat data</td></tr>`);
     } finally {
         isLoadingLaporan = false;
     }
