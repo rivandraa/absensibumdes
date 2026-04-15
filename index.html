@@ -113,8 +113,7 @@ body.locked {
         </div>
     </form>
 <footer class="footer">
-    <div>© 2026 galungan.tech</div>
-    <div>Versi WebApp v1.1.0</div>
+    © 2026 Pemerintah Desa Galungan • v1.1.0
 </footer>
 </div>
 
@@ -530,6 +529,7 @@ async function loginUser() {
 
             $('#LoginPage').hide();
             $('#AbsensiPage').show();
+			$('.footer').show();
 
             $('#perangkatDisplay').val(res.nama + ' | ' + res.jabatan);
             $('#perangkatData').val(res.nama + '|' + res.jabatan);
