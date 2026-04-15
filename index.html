@@ -270,14 +270,14 @@ body.locked {
 </div>
 
 <!-- Wadah Halaman Dinamis (Laporan / Pengaturan Password) -->
-
 <div id="InnerPage" style="display:none;"></div>
+	
 <footer class="footer">
     © 2026 Pemerintah Desa Galungan • v1.1.0
 </footer>
 </div>
+	
 <!-- JQuery -->
-
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   
 <script>
@@ -530,7 +530,6 @@ async function loginUser() {
 
             $('#LoginPage').hide();
             $('#AbsensiPage').show();
-			$('.footer').show();
 
             $('#perangkatDisplay').val(res.nama + ' | ' + res.jabatan);
             $('#perangkatData').val(res.nama + '|' + res.jabatan);
@@ -2274,7 +2273,6 @@ $(document).ready(function() {
         if (page === 'Laporan_Absensi') {
             $('#LoginPage').hide();
             $('#AbsensiPage').hide();
-			$('.footer').show();
             showLaporan_Absensi(); // Fungsi ini sudah menghentikan resource (jika ada)
             return;
         } 
@@ -2283,7 +2281,6 @@ $(document).ready(function() {
         else if (page === 'Pengaturan_Password') {
             $('#LoginPage').hide();
             $('#AbsensiPage').hide();
-			$('.footer').show();
             openPengaturanPasswordForm(); // Fungsi ini sudah menghentikan resource (jika ada)
             return;
         } 
@@ -2292,7 +2289,6 @@ $(document).ready(function() {
         $('#LoginPage').hide(); 
         $('#AbsensiPage').show();
         $('#InnerPage').hide();
-		$('.footer').show();
 
         $('#perangkatDisplay').val(userData.nama + ' | ' + userData.jabatan);
         $('#perangkatData').val(userData.nama + '|' + userData.jabatan);
@@ -2307,7 +2303,6 @@ $(document).ready(function() {
         $('#LoginPage').show(); 
         $('#AbsensiPage').hide(); 
         $('#InnerPage').hide();
-		$('.footer').show();
         hideAlerts();
     }
 });
