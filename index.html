@@ -777,7 +777,7 @@ function updateLoadingDots(count) {
     if (!tampil) return;
 
     let dots = ".".repeat(count % 4);
-    tampil.value = "Sedang mengambil data" + dots;
+    tampil.value = "Sedang update koordinat" + dots;
 
     // Panggil lagi dirinya sendiri setelah 500ms
     setTimeout(() => updateLoadingDots(count + 1), 500);
@@ -801,10 +801,6 @@ async function refreshTargetLocation(callback, isSilent = false) {
     // =========================================================
 	// 1. CEK STATUS DULU (Prioritas Utama)
 	if (!currentStatus || currentStatus === "Pilih Status..." || currentStatus === "") {
-	    if (loadingInterval) {
-	        clearInterval(loadingInterval);
-	        loadingInterval = null;
-	    }
 	    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
 	    return; 
 	}
