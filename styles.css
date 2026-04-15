@@ -380,30 +380,6 @@ textarea::placeholder {
   font-family: inherit;
 }
 
-/* ============================
-   ANIMASI DOT/TITIK
-============================ */
-/* Animasi Titik Berjalan */
-.loading-dots::after {
-  content: '';
-  animation: dots 1.5s steps(4, end) infinite;
-}
-
-/* Buat animasi dot sederhana */
-@keyframes dots-animation {
-  0% { content: ""; }
-  33% { content: "."; }
-  66% { content: ".."; }
-  100% { content: "..."; }
-}
-
-/* Trik untuk Input: Gunakan variabel CSS */
-.loading-input {
-    background-color: #f9f9f9 !important;
-    font-style: italic;
-    color: #666;
-}
-
 /* =========================================================================================================
     CSS LAPORAN ABSENSI
     Fungsinya:
