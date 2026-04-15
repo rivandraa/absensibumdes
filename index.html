@@ -1929,7 +1929,8 @@ async function showLaporan_Absensi() {
 	}
 	
 	// pakai
-	await loadLaporan_Absensi(getBulanSekarang());
+	const bulanSekarang = getBulanSekarang();
+	$("#selectBulan").val(bulanSekarang).trigger("change");
 
     // Event saat bulan diganti
     $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
