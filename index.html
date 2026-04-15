@@ -81,7 +81,8 @@ body.locked {
 <!-- =========================================================================================================
      BAGIAN LOGIN PAGE
 ========================================================================================================= -->
-<div class="container" id="LoginPage" style="display:none;">
+<div class="container">
+	<div id="LoginPage" style="display:none;">
 
     <!-- ========= Judul & Subjudul ========= -->
     <div class="title">BUMDESA WANA AMERTHA</div>
@@ -112,13 +113,12 @@ body.locked {
             <input type="submit" value="LOGIN">
         </div>
     </form>
-
 </div>
 
 <!-- =========================================================================================================
      BAGIAN ABSENSI PAGE
 ========================================================================================================= -->
-<div class="container" id="AbsensiPage" style="display:none;">
+<div id="AbsensiPage" style="display:none;">
 
     <!-- ========= Judul & Subjudul ========= -->
     <div class="title">BUMDESA WANA AMERTHA</div>
@@ -143,11 +143,11 @@ body.locked {
             <label>📋 Status Absen</label>
             <select id="status" class="form-control">
                 <option value="" disabled selected hidden>Pilih Status Absen</option>
-                <option value="Hadir">Hadir</option>
+                <option value="Hadir">Hadir - Kantor BUMDesa</option>
+				<option value="WAN">Hadir - WAN Mart</option>
                 <option value="Izin">Izin</option>
                 <option value="Sakit">Sakit</option>
                 <option value="Dinas">Dinas</option>
-                <option value="WFH" disabled hidden>WFH</option>
             </select>
         </div>
 
@@ -166,7 +166,7 @@ body.locked {
         <!-- Titik Koordinat -->
         <div class="form-group mb-3">
             <label for="titikKoordinatTampil">📍 Titik Koordinat Absensi</label>
-            <input type="text" id="titikKoordinatTampil" class="form-control" value="Sedang mengambil data..." readonly>
+            <input type="text" id="titikKoordinatTampil" class="form-control" readonly>
             <input type="hidden" id="titikKoordinat">
         </div>
 
@@ -205,8 +205,8 @@ body.locked {
 
         <!-- Kamera -->
         <div class="form-group mb-3">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-               <!-- <label style="margin:0;">📸 Dokumentasi</label> -->
+            <div id="dokumentasi" style="display:flex; justify-content:space-between; align-items:center;">
+                <label style="margin:0;">📸 Dokumentasi</label>
                 <button type="button" id="restartCamera" class="btn-gps">
                     📷 Start/Restart Kamera
                 </button>
@@ -248,7 +248,7 @@ body.locked {
             <input
                 type="button"
                 id="Notifikasi_AbsensiBtn"
-                onclick="window.open('https://t.me/+cYMab7mf3Rk5ZTU1','_blank')"
+                onclick="window.open('https://t.me/xxxxx','_blank')" // alamat telegram
                 value="NOTIFIKASI ABSENSI"
             >
         </div>
@@ -268,11 +268,15 @@ body.locked {
 
     </form>
 </div>
-
+	
 <!-- Wadah Halaman Dinamis (Laporan / Pengaturan Password) -->
-
 <div id="InnerPage" style="display:none;"></div>
-
+	
+<footer class="footer">
+    © 2026 galungan.tech • v1.1.0
+</footer>
+</div>
+	
 <!-- JQuery -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   
@@ -676,9 +680,6 @@ function resetGPSState() {
     targetLocation = null;
     lastTargetLocation = null;
     isFetchingLocation = false;
-
-    // reset tampilan
-    //updateGPSDisplay("Silakan tunggu...");
 }
 
 // =====================================================
@@ -696,17 +697,23 @@ function updateGPSDisplay(text) {
 
 function startGPSLoading() {
     animatingGPS = true;
-    let dots = 0;
+
+    const dotsArr = ["", ".", "..", "..."];
+    let i = 0;
+
     stopGPSLoading();
+
     gpsLoadingInterval = setInterval(() => {
-        dots = (dots + 1) % 4;
-        updateGPSDisplay("Sedang mencari lokasi" + ".".repeat(dots));
-    }, 500);
+        updateGPSDisplay("Sedang memperbarui lokasi" + dotsArr[i]);
+        i = (i + 1) % dotsArr.length;
+    }, 600);
 }
 
 function stopGPSLoading() {
-    if (gpsLoadingInterval) clearInterval(gpsLoadingInterval);
-    gpsLoadingInterval = null;
+    if (gpsLoadingInterval) {
+        clearInterval(gpsLoadingInterval);
+        gpsLoadingInterval = null;
+    }
     animatingGPS = false;
 }
 
@@ -714,66 +721,66 @@ function stopGPSLoading() {
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
-    const statusInput = document.getElementById("status");
-    const status = statusInput ? statusInput.value : "";
-    
+    // 1. Ambil input secepat mungkin
+    const status = (document.getElementById("status")?.value || "").toLowerCase();
     const elNama = document.getElementById("titikKoordinatTampil");
-    const namaLokasi = (elNama && elNama.value) ? elNama.value : "Area Absensi";
+    const namaLokasi = elNama?.value || "Area Absensi";
 
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
-    if (currentLat === 0) return;
+    // Jika GPS belum aktif, jangan proses apa pun
+    if (!currentLat || currentLat === 0) return;
 
-    // Baris 1: Lokasi
+    // 2. Bangun teks dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
-    
-    // Baris 2: Akurasi
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // Baris Tambahan (Opsional): Animasi Akurasi
-    if (acc && acc > MAX_ACCURACY) {
-        displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
-    }
-
-    // LOGIKA BARIS JARAK & STATUS
-    if (status === "Hadir" || status === "WFH") {
-        const hasTargetData = targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null;
-
-        if (hasTargetData) {
-            const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
-            const insideArea = distance <= RADIUS_LIMIT;
-            lastInsideArea = insideArea;
-
-            if (insideArea) {
-                // Tampilan jika di DALAM radius
-                displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
-            } else {
-                // Tampilan jika di LUAR radius (2 baris sesuai permintaanmu)
-                displayText += `\n❌ Di luar area ${namaLokasi}`;
-                displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
-            }
-        } 
-        else if (namaLokasi !== "-") {
-            displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
-            lastInsideArea = false;
+    // 3. Logika Prioritas Tinggi (Status Absensi)
+    if (status === "hadir" || status === "wan") {
+        
+        // JIKA LOKASI BEBAS: Langsung keluar dari fungsi (Sangat Cepat)
+        if (namaLokasi === "-") {
+            lastInsideArea = true;
+            updateGPSDisplay(displayText);
+            return; 
         }
-        // Jika data benar-benar kosong, baris ketiga tidak akan muncul sama sekali
+
+        // JIKA DATA TARGET BELUM ADA: Tampilkan loading dan langsung berhenti di sini
+        const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
+        
+        if (!hasTargetData) {
+            lastInsideArea = false;
+            displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
+            updateGPSDisplay(displayText);
+            return; // Berhenti di sini agar tidak memproses kode di bawahnya
+        }
+
+        // JIKA DATA SUDAH FIX: Hitung jarak
+        const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
+        lastInsideArea = distance <= RADIUS_LIMIT;
+
+        if (lastInsideArea) {
+            displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
+        } else {
+            displayText += `\n❌ Di luar area ${namaLokasi}`;
+            displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+        }
     } else {
-        displayText += ``;
         lastInsideArea = true;
     }
 
+    // 4. Update UI
     updateGPSDisplay(displayText);
 }
-	
+
 // =====================================================
 // REFRESH TARGET LOCATION
 // =====================================================
 let isFetchingLocation = false;
 
 // Tambahkan parameter 'isSilent' untuk membedakan interval dan manual
-async function refreshTargetLocation(callback, isSilent = false) {
+async function refreshTargetLocation(callback) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     const userRequesting = userObj ? userObj.username : null;
     if (!userRequesting) return;
@@ -783,27 +790,20 @@ async function refreshTargetLocation(callback, isSilent = false) {
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
 
-    // =========================================================
-    // LOGIKA ANTI-KEDIP (Hanya reset jika BUKAN dari interval)
-    // =========================================================
-    if (!isSilent) {
-        targetLocation = null; 
-        if (tampil) tampil.value = "Sedang mengambil data...";
-        if (hidden) hidden.value = "";
-    }
-    // =========================================================
-
-    if (!currentStatus || currentStatus === "Pilih Status...") {
-        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-        return;
-    }
-    
+	// 1. CEK STATUS DULU (Prioritas Utama)
+	if (!currentStatus || currentStatus === "Pilih Status..." || currentStatus === "") {
+	    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+		isLoading = false;
+	    return; 
+	}
+	
     // Jika status non-lokasi, langsung set dan berhenti
     if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
         if (tampil) tampil.value = "-";
         if (hidden) hidden.value = "-";
         targetLocation = null;
         lastTargetLocation = null;
+		isLoading = false;
         return; 
     }
 
@@ -813,7 +813,12 @@ async function refreshTargetLocation(callback, isSilent = false) {
         isFetchingLocation = true;
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
         const response = await fetch(url);
-        const loc = await response.json();
+		const text = await response.text();
+		
+		// kasih napas ke UI dulu
+		await new Promise(r => setTimeout(r, 0));
+		
+		const loc = JSON.parse(text);
 
         // Validasi agar data yang telat tidak menimpa status yang sudah berubah
         if (document.getElementById("status")?.value !== currentStatus) return;
@@ -830,7 +835,11 @@ async function refreshTargetLocation(callback, isSilent = false) {
             if (tampil) tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
             if (hidden) hidden.value = koordinatMurni;
 
-            if (gpsData[0] !== 0) forceUpdateDistanceUI();
+			if (gpsData[0] !== 0) {
+			    setTimeout(() => {
+			        forceUpdateDistanceUI();
+			    }, 0);
+			}
         } else {
             targetLocation = null;
             if (tampil) tampil.value = "-";
@@ -839,7 +848,8 @@ async function refreshTargetLocation(callback, isSilent = false) {
         console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
-        if (typeof callback === "function") callback();
+		isLoading = false;
+		if (typeof callback === "function") callback();
     }
 }
     
@@ -870,7 +880,7 @@ function startGPSMonitoring(onReady) {
     gpsData = [0, 0];
     lastInsideArea = null;
     areaErrorActive = false;
-    updateGPSDisplay("Sedang mencari lokasi");
+    updateGPSDisplay("Sedang memperbarui lokasi");
     startGPSLoading();
 
     if (!navigator.geolocation) {
@@ -989,36 +999,65 @@ function startGPSMonitoring(onReady) {
 }
 
     // ====== EVENT LISTENER STATUS ======
+let isLoading = false;
+let loadingLoopId = 0;
+
+function updateLoadingDots(loopId) {
+    if (!isLoading || loopId !== loadingLoopId) return;
+
+    const elNama = document.getElementById("titikKoordinatTampil");
+    if (elNama) {
+        const dots = ["", ".", "..", "..."];
+        const index = Math.floor(Date.now() / 600) % dots.length;
+        elNama.value = "Sedang update koordinat" + dots[index];
+    }
+
+    setTimeout(() => updateLoadingDots(loopId), 200);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     const statusEl = document.getElementById("status");
     const restartBtn = document.getElementById("restartGPS");
 
-    if (statusEl) {
-        statusEl.addEventListener("change", () => {
-            // 2. Refresh data target (untuk memproses tanda "-" atau koordinat baru)
-            refreshTargetLocation(null, false);
-        });
-    }
+	if (statusEl) {
+	    statusEl.addEventListener("change", () => {
+	        targetLocation = null;
+	        lastInsideArea = false;
+	
+	        // 🔥 reset & start animasi
+	        isLoading = false;      // matikan dulu (penting)
+	        loadingLoopId++;        // invalid loop lama
+	
+	        isLoading = true;       // nyalakan lagi
+	        updateLoadingDots(loadingLoopId);
+	
+	        forceUpdateDistanceUI();    
+	        refreshTargetLocation(null, false);
+	    });
+	}
     
     // === restart gps ===
 	if (restartBtn) {
 	    restartBtn.addEventListener("click", () => {
 	        gpsSystemActive = false;
 	        stopGPSMonitoring();
+
+	        // 🔥 reset & start animasi
+	        isLoading = false;      // matikan dulu (penting)
+	        loadingLoopId++;        // invalid loop lama
 	
+	        isLoading = true;       // nyalakan lagi
+	        updateLoadingDots(loadingLoopId);
+			
 	        restartBtn.innerHTML = "⏳ Restarting GPS";
 	        restartBtn.disabled = true;
 	        startGPS(() => {
 	            restartBtn.innerHTML = "🔄 Restart GPS";
 	            restartBtn.disabled = false;
-	
-	            //if (typeof showPopup === "function") {
-	               //showPopup("GPS berhasil di-restart.", "success", 5000);
-	            	//}
-	        	});
-	    	});
-		}
-	});
+			});
+		});
+	}
+});
 	
 /* =========================================================================================================
     BAGIAN KODE KAMERA & FOTO DOKUMENTASI (REDESAIN + ERROR MAPPING)
@@ -1050,10 +1089,11 @@ function stopWebcam() {
 
 async function startWebcam() {
 	if (!useCamera) {
-        $('#cameraContainer').hide(); // Sembunyikan kontainer kamera jika ada
-		$('#restartCamera').hide(); // Sembunyikan kontainer kamera jika ada
-		$('#reset').hide(); // Sembunyikan kontainer kamera jika ada
-		$('#snap').hide(); // Sembunyikan kontainer kamera jika ada
+        $('#cameraContainer').hide(); // Sembunyikan kontainer kamera
+		$('#dokumentasi').hide(); // Sembunyikan tulisan dokumentasi kamera
+		$('#restartCamera').hide(); // Sembunyikan kontainer kamera
+		$('#reset').hide(); // Sembunyikan kontainer kamera
+		$('#snap').hide(); // Sembunyikan kontainer kamera
         return; 
     }
 	
@@ -1215,31 +1255,56 @@ document.getElementById('snap').addEventListener('click', async () => {
 
   //  VALIDASI GPS & RADIUS
   if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
-    showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
+    showPopup("⚠️ GPS tidak aktif atau GPS Sedang memperbarui lokasi / meningkatkan akurasi.", "warning");
     vibrateAlertShort();
     isSnapping = false;
     return;
   }
 
-  if (status === "Hadir" || status === "WFH") {
-    if (koordinatValue === "Sedang mengambil data...") {
-        showPopup("⚠️ Menunggu koordinat absensi...", "warning");
-		vibrateAlertShort();
-		isSnapping = false;
-        return;
-    }
-    
-    // Mengganti checkUserLocation dengan logika getDistanceFromLatLonInMeters
-    if (targetLocation) {
-        const distance = getDistanceFromLatLonInMeters(gpsData[0], gpsData[1], targetLocation.lat, targetLocation.lon);
-        if (distance > RADIUS_LIMIT) {
-            showPopup(`❌ Di luar area! Jarak: ${distance.toFixed(0)}m`, "error");
-			vibrateAlertShort();
-			isSnapping = false;
-            return;
-        }
-    }
-  }
+	// 📏 Validasi Radius & Kesiapan Data
+	const statusLower = status.toLowerCase();
+	if (statusLower === "hadir" || statusLower === "wfh" || statusLower === "wan") {
+	    
+	    // 1. Ambil Nama Lokasi
+	    const elNama = document.getElementById("titikKoordinatTampil");
+	    const namaLokasi = (elNama && elNama.value) ? elNama.value : "-";
+	
+		    // 2. Jika lokasi ditentukan (bukan "-"), lakukan validasi ketat
+		    if (namaLokasi !== "-" && namaLokasi !== "") {
+		        
+			const lat = gpsData[0];
+			const lon = gpsData[1];
+			
+			// 2. Cek apakah koordinat GPS sudah ada/valid
+			if (!lat || lat === 0 || !lon || lon === 0) {
+			    showPopup("⚠️ Koordinat GPS belum siap. Mohon tunggu.", "warning");
+			    vibrateAlertShort();
+			    isSnapping = false;
+			    return;
+			}
+	
+	        // Cek apakah data target lokasi sudah dimuat
+	        const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
+	        if (!hasTargetData) {
+	            showPopup("⚠️ Data lokasi tujuan belum tersedia.", "warning");
+				vibrateAlertShort();
+	            isSnapping = false;
+	            return;
+	        }
+	
+	        // 3. Kalkulasi Ulang Jarak (Double Check saat Submit)
+	        const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
+	        const insideArea = distance <= RADIUS_LIMIT;
+	
+	        if (!insideArea) {
+	            showPopup(`❌ Di luar area ${namaLokasi}!<br>Jarak: ${distance.toFixed(0)}m (Maks: ${RADIUS_LIMIT}m)`, "danger");
+	            vibrateAlertShort();
+	            isSnapping = false;
+	            return;
+	        }
+	    } 
+	    // Jika namaLokasi === "-", maka otomatis lolos ke proses submit berikutnya
+	}
 
   // 3. PROSES PENGAMBILAN GAMBAR
   showPopup("Mengambil foto...", "loading");
@@ -1366,7 +1431,7 @@ document.getElementById('snap').addEventListener('click', async () => {
             const finalBoxWidth = Math.min(dynamicWidth, canvas.width);
     
             // BACKGROUND DINAMIS
-            const padding = 15;
+            const padding = 10;
             const boxTop = currentY - totalHeight - padding;
             const boxBottom = currentY + padding;
             const boxHeight = totalHeight + padding * 2;
@@ -1477,7 +1542,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 video.srcObject.getTracks().forEach(track => track.stop());
                 video.srcObject = null;
             }
-        } else if (status === "Hadir" || status === "Dinas" || status === "WFH") {
+        } else if (status === "Hadir" || status === "Dinas" || status === "WAN") {
             // 1. Tampilkan kembali (Gunakan "" agar layout tetap rapi/sejajar kiri)
             koordinatSection.style.display = ""; 
             gpsSection.style.display = "";
@@ -1487,10 +1552,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 2. Reset tampilan ke state "Loading"
             // Untuk Input menggunakan .value
-            if (inputKoordinat) inputKoordinat.value = "Sedang mengambil data...";
+            //if (inputKoordinat) inputKoordinat.value = "";
             
             // Untuk elemen display (div/span) menggunakan .innerText
-            //if (displayGps) displayGps.innerText = "Sedang mencari lokasi...";
+            //if (displayGps) displayGps.innerText = "Sedang memperbarui lokasi...";
         }
     }
 
@@ -1561,7 +1626,7 @@ async function submitAbsensiForm() {
     }
 
     // 📸 Validasi Foto
-    const wajibFoto = ["hadir", "dinas", "wfh"].includes(status);
+    const wajibFoto = ["hadir", "dinas", "wan"].includes(status);
     if (useCamera && wajibFoto && !fotoData) {
         showPopup("Foto Kehadiran wajib untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
@@ -1569,33 +1634,7 @@ async function submitAbsensiForm() {
         return;
     }
 
-	// Menggunakan operator && untuk menggabungkan pengecekan status dan kondisi koordinat
-	const tampil = document.getElementById("titikKoordinatTampil");
-	// Gunakan trim() untuk membuang spasi liar di awal/akhir teks
-	const koordinatValue = tampil ? (tampil.value || tampil.innerText).trim() : "";
-	
-	const titiktampil = document.getElementById("titikKoordinat");
-	// PERBAIKAN: Ambil dari titiktampil, bukan tampil
-	const titikkoordinatValue = titiktampil ? (titiktampil.value || titiktampil.innerText).trim() : "";
-	
-	// Debugging: Munculkan di console untuk memastikan isinya benar
-	console.log("Koordinat:", koordinatValue);
-	console.log("Titik:", titikkoordinatValue);
-	
-	if (status === "Hadir" || status === "WFH") {
-	    // Gunakan .includes() agar lebih aman jika ada perbedaan jumlah titik (...)
-	    const sedangLoading = koordinatValue.includes("Sedang mengambil") || 
-	                          titikkoordinatValue.includes("Sedang menghitung");
-	
-	    if (sedangLoading) {
-	        showPopup("⚠️ Menunggu koordinat absensi...", "warning");
-	        vibrateAlertShort();
-	        isSubmitting = false;
-	        return; // Menghentikan eksekusi
-	    }
-	}
-
-    // 🔥 TENTUKAN SUMBER GPS
+	// 🔥 TENTUKAN SUMBER GPS
     const gpsFinal = fotoData?.gps || gpsData;
 
 	// 📍 Validasi GPS
@@ -1609,40 +1648,55 @@ async function submitAbsensiForm() {
         }
     }
 
-  //  VALIDASI GPS & RADIUS
-  if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
-    showPopup("⚠️ GPS tidak aktif atau GPS sedang mencari lokasi / meningkatkan akurasi.", "warning");
-    vibrateAlertShort();
-    isSubmitting = false;
-    return;
-  }
+	//  VALIDASI GPS & RADIUS
+	if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
+		showPopup("⚠️ GPS tidak aktif atau GPS Sedang memperbarui lokasi / meningkatkan akurasi.", "warning");
+    	vibrateAlertShort();
+    	isSubmitting = false;
+    	return;
+  	}
 
-// 📏 Validasi Radius (DIPERBAIKI: Menjadi Opsional)
-    if (useCamera && (status === "hadir" || status === "wfh")) {
-        
-        // Cek apakah targetLocation ada (koordinat kantor tersedia)
-        if (targetLocation && targetLocation.lat && targetLocation.lon) {
-            
-            const [lat, lon] = gpsFinal;
-            const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
-            const insideArea = distance <= RADIUS_LIMIT;
-
-            if (!insideArea) {
-                showPopup(`⚠️ Anda berada di luar area absensi!<br>Jarak: ${distance.toFixed(0)}m (Max: ${RADIUS_LIMIT}m)`, "error");
-                vibrateAlertShort();
-                isSubmitting = false; 
-                return; // Blokir hanya jika user TERBUKTI di luar radius
-            }
-            
-            console.log("Lokasi valid, jarak: " + distance.toFixed(0) + "m");
-            
-        } else {
-            // JIKA targetLocation tidak ada, kode TIDAK AKAN return.
-            // Ini akan membiarkan proses berlanjut ke pengiriman data (Bebas Lokasi).
-            console.log("Target lokasi tidak ditentukan, menggunakan mode Bebas Lokasi.");
-        }
-    }
-
+	// 📏 Validasi Radius & Kesiapan Data
+	if (status === "hadir" || status === "wan") {
+	    
+	    // 1. Ambil Nama Lokasi
+	    const elNama = document.getElementById("titikKoordinatTampil");
+	    const namaLokasi = (elNama && elNama.value) ? elNama.value : "-";
+	
+	    // 2. Jika lokasi ditentukan (bukan "-"), lakukan validasi ketat
+	    if (namaLokasi !== "-" && namaLokasi !== "") {
+	        
+	        // Cek apakah koordinat GPS sudah ada
+	        const [lat, lon] = gpsFinal; // Menggunakan gpsFinal sesuai kode Anda
+	        if (!useCamera && (!lat || lat === 0)) {
+	            showPopup("⚠️ Koordinat GPS belum siap. Mohon tunggu.", "warning");
+				vibrateAlertShort();
+	            isSubmitting = false;
+	            return;
+	        }
+	
+	        // Cek apakah data target lokasi sudah dimuat
+	        const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
+	        if (!useCamera && !hasTargetData) {
+	            showPopup("⚠️ Data lokasi tujuan belum tersedia.", "warning");
+				vibrateAlertShort();
+	            isSubmitting = false;
+	            return;
+	        }
+	
+	        // 3. Kalkulasi Ulang Jarak (Double Check saat Submit)
+	        const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
+	        const insideArea = distance <= RADIUS_LIMIT;
+	
+	        if (!useCamera && !insideArea) {
+	            showPopup(`❌ Di luar area ${namaLokasi}!<br>Jarak: ${distance.toFixed(0)}m (Maks: ${RADIUS_LIMIT}m)`, "danger");
+	            vibrateAlertShort();
+	            isSubmitting = false;
+	            return;
+	        }
+	    } 
+	    // Jika namaLokasi === "-", maka otomatis lolos ke proses submit berikutnya
+	}
 
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
@@ -1693,8 +1747,8 @@ async function submitAbsensiForm() {
 		        Terima kasih, selamat menjalankan tugas.`;
 		    } 
 		    
-		    else if (status === "WFH") {
-		        pesan = `✅ Absensi WFH Berhasil<br>
+		    else if (status === "WAN") {
+		        pesan = `✅ Absensi Kehadiran Berhasil<br>
 		        Pegawai: <b>${res.nama}</b><br>
 		        🕒 Waktu: <b>${waktuID}</b><br>
 		        Tetap semangat bekerja dari rumah.`;
@@ -1805,25 +1859,26 @@ function formatIndonesia(waktuString) {
 // ================================
 // Fungsi Navigasi Laporan_Absensi
 // ================================
+// ================================
+// Navigasi Laporan Absensi
+// ================================
 let isshowLaporan = false;
 
-/**
- * Tampilkan halaman Laporan Absensi
- */
 async function showLaporan_Absensi() {
     if (isshowLaporan) return;
     isshowLaporan = true;
 
     sessionStorage.setItem('page', 'Laporan_Absensi');
+
+    // TABEL INI LANGSUNG MUNCUL (LOKAL)
     const html = `
-        <div class="container mt-3">
+        <div>
             <div class="mb-4 text-center">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <button id="homeBtn" class="btn btn-sm btn-danger shadow-sm">HOME</button>
-                    <select id="selectBulan" class="form-select form-select-sm w-auto shadow-sm" style="border: 2px solid #dc3545;">
-                        <option value="">-- Pilih Bulan --</option>
+                    <button id="homeBtn" class="btn btn-sm btn-danger">HOME</button>
+                    <select id="selectBulan" class="form-select form-select-sm w-auto">
                         <option value="JANUARI">Januari</option>
-                        <option value="PEBRUARI">Februari</option>
+                        <option value="FEBRUARI">Februari</option>
                         <option value="MARET">Maret</option>
                         <option value="APRIL">April</option>
                         <option value="MEI">Mei</option>
@@ -1832,22 +1887,28 @@ async function showLaporan_Absensi() {
                         <option value="AGUSTUS">Agustus</option>
                         <option value="SEPTEMBER">September</option>
                         <option value="OKTOBER">Oktober</option>
-                        <option value="NOPEMBER">November</option>
+                        <option value="NOVEMBER">November</option>
                         <option value="DESEMBER">Desember</option>
                     </select>
                 </div>
-                <h6 id="kopLaporan" class="fw-bold mb-0 text-uppercase p-1">LAPORAN ABSENSI</h6>
+                <h6 id="kopLaporan" class="fw-bold mb-0 text-uppercase">LAPORAN ABSENSI</h6>
             </div>
 
             <div class="table-responsive">
-                <table id="Laporan-Absensi-Table" class="table table-sm table-bordered table-striped shadow-sm" style="font-size: 11px;">
-                    <thead class="table-dark text-center"></thead>
-                    <tbody class="text-center">
+                <table id="Laporan-Absensi-Table" class="table table-sm table-bordered table-striped" style="font-size: 11px;">
+                    <thead class="table-dark text-center">
                         <tr>
-                            <td colspan="8" class="p-4 text-muted">
-                                <i class="fas fa-arrow-up me-2"></i> Silakan pilih bulan terlebih dahulu untuk melihat data.
-                            </td>
+                            <th>NO</th>
+                            <th>NAMA</th>
+                            <th>JABATAN</th>
+                            <th title="Hadir">Hadir</th>
+                            <th title="Izin">Izin</th>
+                            <th title="Sakit">Sakit</th>
+                            <th title="Dinas">Dinas</th>
                         </tr>
+                    </thead>
+                    <tbody id="laporanBody" class="text-center">
+                        <tr><td colspan="7" class="p-4"></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1857,79 +1918,86 @@ async function showLaporan_Absensi() {
     $('#InnerPage').html(html).show();
     $('#AbsensiPage').hide();
 
-    // --- BAGIAN INI DIHAPUS (Tidak load otomatis) ---
-    // await loadLaporan_Absensi("JANUARI"); 
+    // Set bulan sekarang
+    const bulanList = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+    const bulanSekarang = bulanList[new Date().getMonth()];
+    $("#selectBulan").val(bulanSekarang);
 
-    // Event saat bulan diganti
-    $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
-        const bulanDipilih = $(this).val();
-        
-        if (bulanDipilih !== "") {
-            // Hilangkan border merah jika sudah memilih
-            $(this).css("border", "1px solid #ced4da");
-            await loadLaporan_Absensi(bulanDipilih);
-        } else {
-            // Jika kembali pilih kosong, bersihkan tabel
-            $(this).css("border", "2px solid #dc3545");
-            $("#Laporan-Absensi-Table tbody").html('<tr><td colspan="8" class="p-4 text-muted">Silakan pilih bulan terlebih dahulu.</td></tr>');
-            $("#kopLaporan").html("LAPORAN ABSENSI");
-        }
+    // Event listeners
+    $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", function () {
+        loadLaporan_Absensi($(this).val());
     });
-
     $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
-    isshowLaporan = false;
+
+    // PASTI KAN RENDER SELESAI BARU AMBIL DATA
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            loadLaporan_Absensi(bulanSekarang);
+            isshowLaporan = false;
+        });
+    });
 }
 
-/**
- * Ambil data dari GAS dan render ke tabel
- */
-async function loadLaporan_Absensi(bulan) {
-    const tbody = $("#Laporan-Absensi-Table tbody");
-    const thead = $("#Laporan-Absensi-Table thead");
-    const kop = $("#kopLaporan");
+// ================================
+// Load Data (Ambil ISI dari Server)
+// ================================
+let isLoadingLaporan = false;
 
-    tbody.html('<tr><td colspan="8">Sedang mengambil data ' + bulan + '...</td></tr>');
-    
-    const spreadsheetId = userData?.spreadsheetId;
-    if (!spreadsheetId) return showPopup("Sesi berakhir", "error");
+async function loadLaporan_Absensi(bulan) {
+    if (isLoadingLaporan) return;
+    isLoadingLaporan = true;
+
+    const tbody = $("#laporanBody");
+
+    // TAMPILKAN LOADING DI DALAM BODY TABEL YANG SUDAH ADA
+    tbody.html(`
+        <tr>
+            <td colspan="7" class="p-4 text-muted">
+                <div class="spinner-border spinner-border-sm mb-1"></div><br>
+                ⏳ Sedang mengambil data ${bulan}
+            </td>
+        </tr>
+    `);
 
     try {
-        // Kirim parameter bulan ke GAS
-        const response = await fetch(`${GAS_URL}?action=getLaporan_Absensi&spreadsheetId=${spreadsheetId}&namaBulan=${bulan}`);
-        const res = await response.json();
+        const spreadsheetId = userData?.spreadsheetId;
+        const res = await fetch(`${GAS_URL}?action=getLaporan_Absensi&spreadsheetId=${spreadsheetId}&namaBulan=${bulan}`)
+                           .then(r => r.json());
 
         if (res.status === "success") {
-            kop.html(res.kop);
+            // Update Kop jika ada data khusus dari server
+            if(res.kop) $("#kopLaporan").html(res.kop);
             
-            // Render Header
-            thead.html(`<tr>${res.header.map(h => `<th class="align-middle">${h}</th>`).join('')}</tr>`);
-
-            // Render Data
-            let tbodyHtml = res.rows.map(r => `
-                <tr>
-                    <td>${r.no}</td>
-                    <td class="text-start">${r.nama}</td>
-                    <td class="text-start">${r.jabatan}</td>
-                    <td class="fw-bold text-success">${r.hadir}</td>
-                    <td class="text-warning">${r.izin}</td>
-                    <td class="text-danger">${r.sakit}</td>
-                    <td class="text-info">${r.dinas}</td>
-                    <td class="bg-light">${r.tanpaKeterangan}</td>
-                </tr>
-            `).join('');
-            
-            tbody.html(tbodyHtml || '<tr><td colspan="8">Data bulan ini masih kosong.</td></tr>');
+            // Masukkan data baris
+            if (res.rows && res.rows.length > 0) {
+                const rows = res.rows.map(r => `
+                    <tr>
+                        <td>${r.no}</td>
+                        <td class="text-start">${r.nama}</td>
+                        <td class="text-start">${r.jabatan}</td>
+                        <td class="text-success fw-bold">${r.hadir}</td>
+                        <td class="text-warning">${r.izin}</td>
+                        <td class="text-danger">${r.sakit}</td>
+                        <td class="text-info">${r.dinas}</td>
+                    </tr>
+                `).join('');
+                tbody.html(rows);
+            } else {
+                tbody.html(`<tr><td colspan="7" class="p-4">Data tidak ditemukan</td></tr>`);
+            }
         } else {
-            tbody.html(`<tr><td colspan="8" class="text-danger">${res.message}</td></tr>`);
+            tbody.html(`<tr><td colspan="7" class="p-4 text-danger">${res.message}</td></tr>`);
         }
     } catch (err) {
-        tbody.html('<tr><td colspan="8">Gagal memuat data.</td></tr>');
+        tbody.html(`<tr><td colspan="7" class="p-4 text-danger">Gagal memuat data</td></tr>`);
+    } finally {
+        isLoadingLaporan = false;
     }
 }
 
-/**
- * Tutup halaman Laporan
- */
+// ================================
+// Tutup Halaman
+// ================================
 function closeLaporan_Absensi() {
     sessionStorage.setItem('page', 'absen');
     $('#InnerPage').hide().html('');
@@ -1985,7 +2053,7 @@ function openPengaturanPasswordForm() {
 
     // Kerangka HTML Form (Dipindah ke Frontend)
     const html = `
-        <div class="container mt-3">
+        <div mt-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="fw-bold mb-0">🔑 Ubah Password</h5>
                 <button type="button" class="btn btn-sm btn-secondary" onclick="closePengaturanPasswordForm()">
@@ -2248,7 +2316,7 @@ $(document).ready(function() {
         // ========= // Tidak Ada Sesi Tersimpan ==========
         $('#LoginPage').show(); 
         $('#AbsensiPage').hide(); 
-        $('#InnerPage').hide(); 
+        $('#InnerPage').hide();
         hideAlerts();
     }
 });
