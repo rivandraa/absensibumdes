@@ -830,6 +830,7 @@ async function refreshTargetLocation(callback) {
         console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
+		isLoading = false;
         if (typeof callback === "function") callback();
     }
 }
@@ -1028,6 +1029,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	
 	        restartBtn.innerHTML = "⏳ Restarting GPS";
 	        restartBtn.disabled = true;
+			refreshTargetLocation(null, false);
 	        startGPS(() => {
 	            restartBtn.innerHTML = "🔄 Restart GPS";
 	            restartBtn.disabled = false;
