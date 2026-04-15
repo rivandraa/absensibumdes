@@ -693,17 +693,23 @@ function updateGPSDisplay(text) {
 
 function startGPSLoading() {
     animatingGPS = true;
-    let dots = 0;
+
+    const dotsArr = ["", ".", "..", "..."];
+    let i = 0;
+
     stopGPSLoading();
+
     gpsLoadingInterval = setInterval(() => {
-        dots = (dots + 1) % 4;
-        updateGPSDisplay("Sedang mencari lokasi" + ".".repeat(dots));
-    }, 500);
+        updateGPSDisplay("Sedang mencari lokasi" + dotsArr[i]);
+        i = (i + 1) % dotsArr.length;
+    }, 600);
 }
 
 function stopGPSLoading() {
-    if (gpsLoadingInterval) clearInterval(gpsLoadingInterval);
-    gpsLoadingInterval = null;
+    if (gpsLoadingInterval) {
+        clearInterval(gpsLoadingInterval);
+        gpsLoadingInterval = null;
+    }
     animatingGPS = false;
 }
 
@@ -780,9 +786,6 @@ async function refreshTargetLocation(callback) {
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
 
-    // =========================================================
-    // LOGIKA ANTI-KEDIP (Hanya reset jika BUKAN dari interval)
-    // =========================================================
 	// 1. CEK STATUS DULU (Prioritas Utama)
 	if (!currentStatus || currentStatus === "Pilih Status..." || currentStatus === "") {
 	    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
