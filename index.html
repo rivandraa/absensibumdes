@@ -796,6 +796,7 @@ async function refreshTargetLocation(callback) {
         if (hidden) hidden.value = "-";
         targetLocation = null;
         lastTargetLocation = null;
+		isLoading = false;
         return; 
     }
 
