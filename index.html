@@ -983,18 +983,17 @@ function startGPSMonitoring(onReady) {
 
     // ====== EVENT LISTENER STATUS ======
 function toggleLoadingUI(active) {
-    const elNama = document.getElementById("titikKoordinatTampil");
-    const container = elNama.parentElement; // Ambil pembungkus elemen (div)
-
-    if (active) {
-        isLoading = true;
-        elNama.value = "Sedang update koordinat";
-        // Tambahkan class ke parent karena input tidak mendukung ::after secara langsung
-        container.classList.add("loading-dots", "loading-text");
-    } else {
-        isLoading = false;
-        container.classList.remove("loading-dots", "loading-text");
-    }
+	const wrapper = document.getElementById("wrapperNama");
+	const elNama = document.getElementById("titikKoordinatTampil");
+	
+	if (active) {
+	    isLoading = true;
+	    elNama.value = "Sedang update koordinat"; 
+	    wrapper.classList.add("loading-dots"); // Tambah class ke pembungkus
+	} else {
+	    isLoading = false;
+	    wrapper.classList.remove("loading-dots");
+	}
 }
 
 document.addEventListener("DOMContentLoaded", () => {
