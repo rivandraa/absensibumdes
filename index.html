@@ -786,6 +786,7 @@ async function refreshTargetLocation(callback) {
 	// 1. CEK STATUS DULU (Prioritas Utama)
 	if (!currentStatus || currentStatus === "Pilih Status..." || currentStatus === "") {
 	    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+		isLoading = false;
 	    return; 
 	}
 	
