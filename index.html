@@ -767,8 +767,34 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 // =====================================================
 // REFRESH TARGET LOCATION
 // =====================================================
+function updateLoadingDots(count) {
+    // Berhenti total jika targetLocation sudah ada isinya (Data Spreadsheet masuk)
+    if (targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null) {
+        return; 
+    }
+
+    const tampil = document.getElementById("titikKoordinatTampil");
+    if (!tampil) return;
+
+    let dots = ".".repeat(count % 4);
+    tampil.value = "Sedang mengambil data" + dots;
+
+    // Panggil lagi dirinya sendiri setelah 500ms
+    setTimeout(() => updateLoadingDots(count + 1), 500);
+}
+
+// 2. Gunakan di dalam kode kamu
+if (!isSilent) {
+    targetLocation = null; 
+    if (hidden) hidden.value = "";
+
+    if (tampil) {
+        // Jalankan fungsi animasi titik-titik
+        updateLoadingDots(0);
+    }
+}
+	
 let isFetchingLocation = false;
-let loadingInterval = null;
 
 // Tambahkan parameter 'isSilent' untuk membedakan interval dan manual
 async function refreshTargetLocation(callback, isSilent = false) {
@@ -796,26 +822,12 @@ async function refreshTargetLocation(callback, isSilent = false) {
 	
 	// 2. JIKA STATUS SUDAH DIPILIH, BARU JALANKAN LOGIKA LOADING
 	if (!isSilent) {
-	    targetLocation = null; // Reset koordinat target
+	    targetLocation = null; 
 	    if (hidden) hidden.value = "";
 	
 	    if (tampil) {
-	        if (loadingInterval) clearInterval(loadingInterval);
-	
-	        let dots = 0;
-	        loadingInterval = setInterval(() => {
-	            // --- PROTEKSI ANTI KEDIP ---
-	            // Jika tiba-tiba data target sudah masuk dari Spreadsheet,
-	            // langsung hentikan animasi agar tidak menimpa nama lokasi asli.
-	            if (targetLocation && targetLocation.lat !== 0 && targetLocation.lat !== null) {
-	                clearInterval(loadingInterval);
-	                loadingInterval = null;
-	                return; 
-	            }
-	
-	            dots = (dots + 1) % 4;
-	            tampil.value = "Sedang update koordinat" + ".".repeat(dots);
-	        }, 500);
+	        // Jalankan fungsi animasi titik-titik
+	        updateLoadingDots(0);
 	    }
 	}
     
