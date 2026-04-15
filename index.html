@@ -1874,7 +1874,7 @@ async function showLaporan_Absensi() {
             <div class="mb-4 text-center">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <button id="homeBtn" class="btn btn-sm btn-danger shadow-sm">HOME</button>
-                    <select id="selectBulan" class="form-select form-select-sm w-auto shadow-sm" style="border: 2px solid #dc3545;">
+                    <select id="selectBulan" class="form-select form-select-sm w-auto shadow-sm" style="border: 2px solid #ced4da;">
                         <option value="">-- Pilih Bulan --</option>
                         <option value="JANUARI">Januari</option>
                         <option value="PEBRUARI">Februari</option>
@@ -1929,10 +1929,9 @@ async function showLaporan_Absensi() {
 	}
 	
 	// pakai
-	const bulanSekarang = getBulanSekarang();
-	$("#selectBulan").val(bulanSekarang).trigger("change");
+	//await loadLaporan_Absensi(getBulanSekarang());
 
-    // Event saat bulan diganti
+	// Event saat bulan diganti
     $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
         const bulanDipilih = $(this).val();
         
