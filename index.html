@@ -1932,8 +1932,8 @@ async function showLaporan_Absensi() {
 	await loadLaporan_Absensi(getBulanSekarang());
 
     // Event saat bulan diganti
-    //$("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
-        //const bulanDipilih = $(this).val();
+    $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
+        const bulanDipilih = $(this).val();
         
         //if (bulanDipilih !== "") {
             // Hilangkan border merah jika sudah memilih
@@ -1947,9 +1947,9 @@ async function showLaporan_Absensi() {
         //}
     //});
 
-    //$("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
-    //isshowLaporan = false;
-//}
+    $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
+    isshowLaporan = false;
+}
 
 /**
  * Ambil data dari GAS dan render ke tabel
