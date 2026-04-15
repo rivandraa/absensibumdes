@@ -982,18 +982,18 @@ function startGPSMonitoring(onReady) {
 }
 
     // ====== EVENT LISTENER STATUS ======
-// Ganti fungsi lama dengan yang lebih sederhana ini
 function toggleLoadingUI(active) {
     const elNama = document.getElementById("titikKoordinatTampil");
-    if (!elNama) return;
+    const container = elNama.parentElement; // Ambil pembungkus elemen (div)
 
     if (active) {
         isLoading = true;
-        elNama.value = "Sedang update koordinat...";
-        elNama.classList.add("loading-style"); // Aktifkan animasi CSS
+        elNama.value = "Sedang update koordinat";
+        // Tambahkan class ke parent karena input tidak mendukung ::after secara langsung
+        container.classList.add("loading-dots", "loading-text");
     } else {
         isLoading = false;
-        elNama.classList.remove("loading-style"); // Matikan animasi CSS
+        container.classList.remove("loading-dots", "loading-text");
     }
 }
 
@@ -1019,10 +1019,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	    restartBtn.addEventListener("click", () => {
 	        gpsSystemActive = false;
 	        stopGPSMonitoring();
-			
-			isLoading = true; // GEMBOK DIKUNCI
-			updateLoadingDots(0);
-			
+			toggleLoadingUI(true);
 	        restartBtn.innerHTML = "⏳ Restarting GPS";
 	        restartBtn.disabled = true;
 	        startGPS(() => {
