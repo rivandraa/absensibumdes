@@ -1012,7 +1012,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		    lastInsideArea = false;
 		
 		    // B. JALANKAN ANIMASI DOTS
-		    isLoading = true; // GEMBOK DIKUNCI
 		    loadingLoopId++;
 			isLoading = true;
 			updateLoadingDots(loadingLoopId);
@@ -1032,8 +1031,8 @@ document.addEventListener("DOMContentLoaded", () => {
 	    restartBtn.addEventListener("click", () => {
 	        gpsSystemActive = false;
 	        stopGPSMonitoring();
-			
-			isLoading = true; // GEMBOK DIKUNCI
+
+			// JALANKAN ANIMASI DOTS
 		    loadingLoopId++;
 			isLoading = true;
 			updateLoadingDots(loadingLoopId);
