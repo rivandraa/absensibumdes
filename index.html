@@ -769,7 +769,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // 4. Update UI
     updateGPSDisplay(displayText);
 }
-	
+
 // =====================================================
 // REFRESH TARGET LOCATION
 // =====================================================
@@ -839,13 +839,13 @@ async function refreshTargetLocation(callback) {
         } else {
             targetLocation = null;
             if (tampil) tampil.value = "-";
-			isLoading = false;
         }
     } catch (error) {
         console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
-        if (typeof callback === "function") callback();
+		isLoading = false;
+		if (typeof callback === "function") callback();
     }
 }
     
