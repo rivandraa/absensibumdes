@@ -273,7 +273,7 @@ body.locked {
 <div id="InnerPage" style="display:none;"></div>
 	
 <footer class="footer">
-    © 2026 Pemerintah Desa Galungan • v1.1.0
+    © 2026 galungan.tech • v1.1.0
 </footer>
 </div>
 	
@@ -1932,24 +1932,24 @@ async function showLaporan_Absensi() {
 	await loadLaporan_Absensi(getBulanSekarang());
 
     // Event saat bulan diganti
-    $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
-        const bulanDipilih = $(this).val();
+    //$("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
+        //const bulanDipilih = $(this).val();
         
-        if (bulanDipilih !== "") {
+        //if (bulanDipilih !== "") {
             // Hilangkan border merah jika sudah memilih
             //$(this).css("border", "1px solid #ced4da");
-            await loadLaporan_Absensi(bulanDipilih);
-        } else {
+            //await loadLaporan_Absensi(bulanDipilih);
+        //} else {
             // Jika kembali pilih kosong, bersihkan tabel
             //$(this).css("border", "2px solid #dc3545");
-            $("#Laporan-Absensi-Table tbody").html('<tr><td colspan="8" class="p-4 text-muted">Silakan pilih bulan terlebih dahulu.</td></tr>');
-            $("#kopLaporan").html("LAPORAN ABSENSI");
-        }
-    });
+            //$("#Laporan-Absensi-Table tbody").html('<tr><td colspan="8" class="p-4 text-muted">Silakan pilih bulan terlebih dahulu.</td></tr>');
+            //$("#kopLaporan").html("LAPORAN ABSENSI");
+        //}
+    //});
 
-    $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
-    isshowLaporan = false;
-}
+    //$("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
+    //isshowLaporan = false;
+//}
 
 /**
  * Ambil data dari GAS dan render ke tabel
