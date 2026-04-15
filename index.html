@@ -786,7 +786,7 @@ async function refreshTargetLocation(callback) {
 	// 1. CEK STATUS DULU (Prioritas Utama)
 	if (!currentStatus || currentStatus === "Pilih Status..." || currentStatus === "") {
 	    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-		toggleLoadingUI(false);
+		isLoading = false;
 	    return; 
 	}
 	
@@ -831,7 +831,7 @@ async function refreshTargetLocation(callback) {
         console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
-		toggleLoadingUI(false);
+		isLoading = false;
         if (typeof callback === "function") callback();
     }
 }
@@ -982,18 +982,20 @@ function startGPSMonitoring(onReady) {
 }
 
     // ====== EVENT LISTENER STATUS ======
-function toggleLoadingUI(active) {
-	const wrapper = document.getElementById("wrapperNama");
-	const elNama = document.getElementById("titikKoordinatTampil");
-	
-	if (active) {
-	    isLoading = true;
-	    elNama.value = "Sedang update koordinat"; 
-	    wrapper.classList.add("loading-dots"); // Tambah class ke pembungkus
-	} else {
-	    isLoading = false;
-	    wrapper.classList.remove("loading-dots");
-	}
+let isLoading = false; // Gembok global
+
+function updateLoadingDots(count) {
+    if (!isLoading) return; 
+
+    const elNama = document.getElementById("titikKoordinatTampil");
+    if (elNama) {
+        // Menggunakan array untuk menghindari kalkulasi berat saat UI sibuk
+        const dots = ["", ".", "..", "..."];
+        elNama.value = "Sedang update koordinat" + dots[count % 4];
+    }
+
+    // Gunakan 600ms agar ritme sinkron dengan mata manusia
+    setTimeout(() => updateLoadingDots(count + 1), 600);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1002,13 +1004,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	if (statusEl) {
 		statusEl.addEventListener("change", () => {
+		    // A. RESET DATA & AKTIFKAN GEMBOK
 		    targetLocation = null;
 		    lastInsideArea = false;
-		    
-		    // Panggil fungsi loading CSS
-		    toggleLoadingUI(true);
+		    isLoading = true; // GEMBOK DIKUNCI
 		
+		    // B. JALANKAN ANIMASI DOTS
+		    // Titik-titik mulai berjalan secara otomatis di background
+		    updateLoadingDots(0);
+		
+		    // C. UPDATE UI SEKETIKA
+		    // Menghilangkan status ✅/❌ karena targetLocation sekarang null
 		    forceUpdateDistanceUI();    
+		    
+		    // D. AMBIL DATA DARI SERVER
+		    // Memanggil Google Spreadsheet untuk mencari koordinat baru
 		    refreshTargetLocation(null, false);
 		});
 	}
@@ -1018,7 +1028,10 @@ document.addEventListener("DOMContentLoaded", () => {
 	    restartBtn.addEventListener("click", () => {
 	        gpsSystemActive = false;
 	        stopGPSMonitoring();
-			toggleLoadingUI(true);
+			
+			isLoading = true; // GEMBOK DIKUNCI
+			updateLoadingDots(0);
+			
 	        restartBtn.innerHTML = "⏳ Restarting GPS";
 	        restartBtn.disabled = true;
 	        startGPS(() => {
