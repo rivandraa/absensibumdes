@@ -783,17 +783,6 @@ function updateLoadingDots(count) {
     setTimeout(() => updateLoadingDots(count + 1), 500);
 }
 
-// 2. Gunakan di dalam kode kamu
-if (!isSilent) {
-    targetLocation = null; 
-    if (hidden) hidden.value = "";
-
-    if (tampil) {
-        // Jalankan fungsi animasi titik-titik
-        updateLoadingDots(0);
-    }
-}
-	
 let isFetchingLocation = false;
 
 // Tambahkan parameter 'isSilent' untuk membedakan interval dan manual
