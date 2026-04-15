@@ -1029,7 +1029,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	
 	        restartBtn.innerHTML = "⏳ Restarting GPS";
 	        restartBtn.disabled = true;
-			refreshTargetLocation(null, false);
+			updateLoadingDots(0);
 	        startGPS(() => {
 	            restartBtn.innerHTML = "🔄 Restart GPS";
 	            restartBtn.disabled = false;
