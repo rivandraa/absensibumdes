@@ -784,31 +784,27 @@ async function refreshTargetLocation(callback, isSilent = false) {
     // =========================================================
     // LOGIKA ANTI-KEDIP (Hanya reset jika BUKAN dari interval)
     // =========================================================
-	function startLoadingText(element) {
-	    let dots = 0;
-	    // Bersihkan interval lama jika masih jalan
-	    if (loadingInterval) clearInterval(loadingInterval);
+	// 1. CEK STATUS DULU (Prioritas Utama)
+	if (!currentStatus || currentStatus === "Pilih Status..." || currentStatus === "") {
+	    // Hentikan loading jika sebelumnya sedang jalan
+	    if (loadingInterval) {
+	        clearInterval(loadingInterval);
+	        loadingInterval = null;
+	    }
 	    
-	    loadingInterval = setInterval(() => {
-	        dots = (dots + 1) % 4; // Berputar dari 0 sampai 3
-	        element.value = "Sedang update koordinat" + ".".repeat(dots);
-	    }, 500); // Update setiap 0.5 detik
+	    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+	    return; // Berhenti di sini, jangan lanjut ke bawah
 	}
 	
-	// Gunakan di dalam kode Anda
+	// 2. JIKA STATUS SUDAH DIPILIH, BARU JALANKAN LOGIKA LOADING
 	if (!isSilent) {
 	    targetLocation = null; 
 	    if (tampil) {
-	        startLoadingText(tampil); // Jalankan animasi loading
+	        // Pastikan tampil.value tidak sedang berisi pesan error sebelum mulai animasi
+	        startLoadingText(tampil); 
 	    }
 	    if (hidden) hidden.value = "";
 	}
-    // =========================================================
-
-    if (!currentStatus || currentStatus === "Pilih Status...") {
-        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-        return;
-    }
     
     // Jika status non-lokasi, langsung set dan berhenti
     if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
