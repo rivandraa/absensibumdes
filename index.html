@@ -1876,7 +1876,6 @@ async function showLaporan_Absensi() {
                     '<tr><td colspan="8" class="p-4 text-muted">Silakan tunggu sedang mengambil data Laporan Absensi.</td></tr>'
                 );
                 $("#kopLaporan").html("LAPORAN ABSENSI");
-				forceClosePopup();
             }
         });
 
@@ -1931,7 +1930,7 @@ async function loadLaporan_Absensi(bulan, isUserAction = false) {
 
         if (res.status === "success") {
             kop.html(res.kop);
-
+			forceClosePopup();
             // HEADER
             thead.html(`
                 <tr>
