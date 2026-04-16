@@ -1861,14 +1861,16 @@ async function showLaporan_Absensi() {
         $('#InnerPage').html(html).show();
         $('#AbsensiPage').hide();
 
-        // Event pilih bulan
-        $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
+        // EVENT PILIH BULAN
+        $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function () {
             const bulanDipilih = $(this).val();
 
             if (bulanDipilih !== "") {
                 $(this).css("border", "1px solid #ced4da");
-                await loadLaporan_Absensi(bulanDipilih);
-				forceClosePopup();
+
+                // user trigger → tampilkan loading
+                await loadLaporan_Absensi(bulanDipilih, true);
+
             } else {
                 $(this).css("border", "2px solid #dc3545");
                 $("#Laporan-Absensi-Table tbody").html(
@@ -1878,7 +1880,7 @@ async function showLaporan_Absensi() {
             }
         });
 
-        // Tombol home
+        // HOME BUTTON
         $("#InnerPage").off("click", "#homeBtn").on("click", "#homeBtn", closeLaporan_Absensi);
 
         // ==============================
@@ -1888,7 +1890,11 @@ async function showLaporan_Absensi() {
             .toLocaleString('id-ID', { month: 'long' })
             .toUpperCase();
 
-        $("#selectBulan").val(bulanSekarang).trigger("change");
+        // auto load → TIDAK tampil loading text
+        await loadLaporan_Absensi(bulanSekarang, false);
+
+        // set dropdown tanpa trigger loading lagi
+        $("#selectBulan").val(bulanSekarang);
 
     } catch (err) {
         console.error(err);
@@ -1900,13 +1906,18 @@ async function showLaporan_Absensi() {
 
 /**
  * Ambil data dari GAS dan render ke tabel
+ * isUserAction = true → tampilkan loading text
+ * isUserAction = false → silent loading (auto load awal)
  */
-async function loadLaporan_Absensi(bulan) {
+async function loadLaporan_Absensi(bulan, isUserAction = false) {
     const tbody = $("#Laporan-Absensi-Table tbody");
     const thead = $("#Laporan-Absensi-Table thead");
     const kop = $("#kopLaporan");
 
-    tbody.html('<tr><td colspan="8">Sedang mengambil data ' + bulan + '...</td></tr>');
+    // hanya tampil saat user klik/ganti bulan
+    if (isUserAction) {
+        tbody.html('<tr><td colspan="8">Sedang mengambil data ' + bulan + '...</td></tr>');
+    }
 
     const spreadsheetId = userData?.spreadsheetId;
     if (!spreadsheetId) return showPopup("Sesi berakhir", "error");
@@ -1921,14 +1932,14 @@ async function loadLaporan_Absensi(bulan) {
         if (res.status === "success") {
             kop.html(res.kop);
 
-            // header
+            // HEADER
             thead.html(`
                 <tr>
                     ${res.header.map(h => `<th class="align-middle">${h}</th>`).join('')}
                 </tr>
             `);
 
-            // data
+            // BODY
             const tbodyHtml = res.rows.map(r => `
                 <tr>
                     <td>${r.no}</td>
