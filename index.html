@@ -1868,6 +1868,7 @@ async function showLaporan_Absensi() {
             if (bulanDipilih !== "") {
                 $(this).css("border", "1px solid #ced4da");
                 await loadLaporan_Absensi(bulanDipilih);
+				forceClosePopup();
             } else {
                 $(this).css("border", "2px solid #dc3545");
                 $("#Laporan-Absensi-Table tbody").html(
