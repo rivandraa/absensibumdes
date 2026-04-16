@@ -1870,8 +1870,6 @@ async function showLaporan_Absensi() {
 
     sessionStorage.setItem('page', 'Laporan_Absensi');
 
-	showPopup("Memuat halaman Laporan Absensi...", "loading");
-	
     // TABEL INI LANGSUNG MUNCUL (LOKAL)
     const html = `
         <div>
@@ -1935,7 +1933,6 @@ async function showLaporan_Absensi() {
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             loadLaporan_Absensi(bulanSekarang);
-			//forceClosePopup();
             isshowLaporan = false;
         });
     });
