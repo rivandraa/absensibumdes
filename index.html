@@ -1807,7 +1807,10 @@ let isshowLaporan = false;
  * Tampilkan halaman Laporan Absensi
  */
 async function showLaporan_Absensi() {
-    if (isshowLaporan) return;
+    if (isshowLaporan) {
+        showTempPopup("⏳ Sedang memuat halaman, harap tunggu...", "warning");
+        return;
+    }
     isshowLaporan = true;
 
     sessionStorage.setItem('page', 'Laporan_Absensi');
@@ -1854,7 +1857,7 @@ async function showLaporan_Absensi() {
     $('#AbsensiPage').hide();
 
     // --- BAGIAN INI DIHAPUS (Tidak load otomatis) ---
-    // await loadLaporan_Absensi("JANUARI"); 
+     await loadLaporan_Absensi("JANUARI"); 
 
     // Event saat bulan diganti
     $("#InnerPage").off("change", "#selectBulan").on("change", "#selectBulan", async function() {
