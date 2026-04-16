@@ -1859,13 +1859,13 @@ function formatIndonesia(waktuString) {
 // ================================
 // Fungsi Navigasi Laporan_Absensi
 // ================================
-// ================================
-// Navigasi Laporan Absensi
-// ================================
 let isshowLaporan = false;
 
 async function showLaporan_Absensi() {
-    if (isshowLaporan) return;
+    if (isshowLaporan) {
+        showTempPopup("⏳ Sedang memuat halaman, harap tunggu...", "warning");
+        return;
+    }
     isshowLaporan = true;
 
     sessionStorage.setItem('page', 'Laporan_Absensi');
@@ -1999,6 +1999,9 @@ async function loadLaporan_Absensi(bulan) {
 // Tutup Halaman
 // ================================
 function closeLaporan_Absensi() {
+	isshowLaporan = false;
+    isLoadingLaporan = false;
+	
     sessionStorage.setItem('page', 'absen');
     $('#InnerPage').hide().html('');
     $('#AbsensiPage').show();
@@ -2010,10 +2013,10 @@ function closeLaporan_Absensi() {
     }
     
     // Restart GPS & Kamera
-    fotoData = null; 
-    startGPS();
-    resetFoto();
-    startWebcam();
+    //fotoData = null; 
+    //startGPS();
+    //resetFoto();
+    //startWebcam();
     $("#InnerPage").off("click", "#homeBtn");
 }
 
@@ -2052,7 +2055,7 @@ function openPengaturanPasswordForm() {
     isopenPengaturanPasswordForm = true;
 
     sessionStorage.setItem('page', 'Pengaturan_Password');
-    if (typeof resetFoto === "function") resetFoto();
+    //if (typeof resetFoto === "function") resetFoto();
 
     //showPopup("Memuat Pengaturan Password...", "loading");
 
@@ -2164,7 +2167,7 @@ async function submitPengaturanPassword() {
 
         if (res.status === "berhasil") {
             showPopup("✅ Password berhasil diubah!", "success", 3000);
-            setTimeout(closePengaturanPasswordForm, 2000);
+            //setTimeout(closePengaturanPasswordForm, 2000);
         } else if (res.status === "salah_lama") {
             showPopup("⚠️ Password lama salah!", "error");
             alertBox.html("Password lama yang Anda masukkan salah.").show();
@@ -2192,10 +2195,10 @@ function closePengaturanPasswordForm() {
         $('#perangkatData').val(userData.nama + '|' + userData.jabatan);
 
         // Restart GPS & Kamera
-        fotoData = null; 
-        startGPS();
-        resetFoto();
-        startWebcam();
+        //fotoData = null; 
+        //startGPS();
+        //resetFoto();
+        //startWebcam();
     }
 }
 
