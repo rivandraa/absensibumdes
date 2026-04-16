@@ -998,7 +998,7 @@ function startGPSMonitoring(onReady) {
     }
 }
 
-    // ====== EVENT LISTENER STATUS ======
+// ====== EVENT LISTENER STATUS ======
 let isLoading = false;
 let loadingLoopId = 0;
 
@@ -1336,7 +1336,7 @@ document.getElementById('snap').addEventListener('click', async () => {
 	    // LANJUT PROSES
 	    // =====================================================
 	
-	    showPopup("Sinkronisasi waktu server...", "loading");
+	    showPopup("Sinkronisasi waktu...", "loading");
 	
 	    // 2. Sinkronisasi Waktu Server
 	    const response = await fetch(`${GAS_URL}?action=getServerTime`);
@@ -2008,7 +2008,11 @@ function closeLaporan_Absensi() {
         $('#perangkatData').val(userData.nama + '|' + userData.jabatan);
     }
     
+    // Restart GPS & Kamera
+    fotoData = null; 
+    startGPS();
     resetFoto();
+    startWebcam();
     $("#InnerPage").off("click", "#homeBtn");
 }
 
@@ -2089,17 +2093,25 @@ function openPengaturanPasswordForm() {
         </div>
     `;
 
-    // Tampilkan Form
-    $('#InnerPage').html(html).show();
-    $('#AbsensiPage').hide();
+/**
+ * Tutup Form Ubah Password
+ */
+function closePengaturanPasswordForm() {
+    sessionStorage.setItem('page', 'absen');
+    $('#InnerPage').hide().html('');
+    $('#AbsensiPage').show();
+    showPopup("Kembali ke halaman absen.", "warning");
 
-    // Isi username otomatis dari session login
-    $("#Pengaturan_PasswordUsername").val(userData.username || "");
-    
-    if (typeof forceClosePopup === "function") forceClosePopup();
-    else if (typeof hidePopup === "function") hidePopup();
-    
-    isopenPengaturanPasswordForm = false;
+    if (userData && userData.nama && userData.jabatan) {
+        $('#perangkatDisplay').val(userData.nama + ' | ' + userData.jabatan);
+        $('#perangkatData').val(userData.nama + '|' + userData.jabatan);
+
+        // Restart GPS & Kamera
+        fotoData = null; 
+        startGPS();
+        resetFoto();
+        startWebcam();
+    }
 }
 
 /**
@@ -2174,16 +2186,6 @@ async function submitPengaturanPassword() {
 }
 
 /**
- * Menutup form pengaturan password
- */
-function closePengaturanPasswordForm() {
-    sessionStorage.setItem('page', 'absen');
-    $('#InnerPage').hide().html('');
-    $('#AbsensiPage').show();
-    if (typeof resetFoto === "function") resetFoto();
-}
-
-/**
  * Tutup Form Ubah Password
  */
 function closePengaturanPasswordForm() {
@@ -2198,9 +2200,9 @@ function closePengaturanPasswordForm() {
 
         // Restart GPS & Kamera
         fotoData = null; 
-        //startGPS();
+        startGPS();
         resetFoto();
-        //startWebcam();
+        startWebcam();
     }
 }
 
@@ -2355,4 +2357,3 @@ window.addEventListener("resize", runAutoFit);
 </script>
 </body>
 </html>
-<!-- VERSI 1.1 -->
