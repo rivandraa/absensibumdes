@@ -48,40 +48,35 @@ body.locked {
   const overlay = document.getElementById('gatekeeper-overlay');
   const gateMessage = document.getElementById('gate-message');
 
-  // Logika Pengecekan
+  // 1. Cek apakah ini aplikasi Android kamu (lewat kunci unik tadi)
+  const isMyAndroidApp = ua.includes("ABSENSI_BUMDES_ANDROID");
+
+  // 2. Cek apakah ini Safari di iPhone (Murni Safari, bukan Chrome/FB di iPhone)
   const isIphone = /iPhone|iPad|iPod/i.test(ua);
-  const isAndroid = /Android/i.test(ua);
-  
-  // Deteksi Safari Asli di iPhone (Bukan Chrome/FB Browser di iPhone)
-  // Safari asli mengandung 'Safari' tapi TIDAK mengandung 'CriOS' atau 'FBIOS'
   const isSafariIphone = isIphone && /Safari/i.test(ua) && !/CriOS/i.test(ua) && !/FBIOS/i.test(ua);
 
-  // Deteksi Android WebView (Aplikasi Kotlin)
-  // Biasanya WebView Android mengandung kata kunci 'Version/X.X' bersama 'Chrome'
-  // atau kamu bisa menambahkan identifier khusus dari kode Kotlin kamu.
-  const isAndroidWebView = isAndroid && /wv|Version\/[.0-9]+/i.test(ua);
-
-  let isAllowed = false;
-
-  if (isSafariIphone || isAndroidWebView) {
-    isAllowed = true;
-  }
+  // Tentukan apakah boleh masuk
+  const isAllowed = isMyAndroidApp || isSafariIphone;
 
   if (!isAllowed) {
-    // 1. Tampilkan Overlay
+    // TAMPILKAN BLOKIR
     overlay.style.display = 'flex';
-    gateMessage.innerHTML = "<span style='color:#e74c3c; font-size:16px;'>AKSES DIBLOKIR!</span><br>Gunakan Aplikasi Resmi (Android) atau Safari (iPhone).";
     
-    // 2. Sembunyikan konten lain
+    if (isIphone) {
+        gateMessage.innerHTML = "<span style='color:#e74c3c; font-size:16px;'>AKSES DIBATASI!</span><br>Harap gunakan browser <b>Safari</b> bawaan iPhone.";
+    } else {
+        gateMessage.innerHTML = "<span style='color:#e74c3c; font-size:16px;'>AKSES DIBATASI!</span><br>Silakan instal dan gunakan <b>Aplikasi Absensi Resmi</b>.";
+    }
+
+    // Sembunyikan konten lain secara agresif
     const sheet = document.createElement('style');
     sheet.innerHTML = "body > *:not(#gatekeeper-overlay) { display: none !important; }";
     document.head.appendChild(sheet);
-    
-    // 3. Kunci scroll
     document.body.classList.add('locked');
+    
   } else {
-    // Jika diizinkan, hapus overlay
-    overlay.remove();
+    // IZINKAN MASUK: Hapus overlay agar web bisa digunakan
+    if (overlay) overlay.remove();
   }
 })();
 </script>
