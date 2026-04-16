@@ -1815,6 +1815,7 @@ async function showLaporan_Absensi() {
 
     sessionStorage.setItem('page', 'Laporan_Absensi');
 	showPopup("Memuat halaman Laporan Absensi...", "loading");
+	try {
     const html = `
         <div class="container mt-3">
             <div class="mb-4 text-center">
