@@ -71,43 +71,151 @@ body.locked {
 
 <script>
 (function() {
-  const ua = navigator.userAgent;
+
+  const ua = navigator.userAgent || "";
+
   const overlay = document.getElementById('gatekeeper-overlay');
   const gateMessage = document.getElementById('gate-message');
 
-  // 1. Cek apakah ini aplikasi Android kamu (lewat kunci unik tadi)
+  // =========================
+  // 1. AMBIL TOKEN DARI APP
+  // =========================
   const match = ua.match(/APP_TOKEN=([^;]+)/);
   const token = match ? match[1] : null;
 
-  const isMyAndroidApp = token === "ABSENSI_BUMDESA_ANDROID_v1.1.0";
+  // =========================
+  // 2. VERSI WAJIB (FORCE UPDATE CONTROL)
+  // =========================
+  const REQUIRED_VERSION = "ABSENSI_BUMDESA_ANDROID_v1.1.1";
 
-  // 2. Cek apakah ini Safari di iPhone (Murni Safari, bukan Chrome/FB di iPhone)
+  const isMyAndroidApp = token === REQUIRED_VERSION;
+
+  // =========================
+  // 3. DETEKSI SAFARI iOS
+  // =========================
   const isIphone = /iPhone|iPad|iPod/i.test(ua);
-  const isSafariIphone = isIphone && /Safari/i.test(ua) && !/CriOS/i.test(ua) && !/FBIOS/i.test(ua);
+  const isSafariIphone =
+      isIphone &&
+      /Safari/i.test(ua) &&
+      !/CriOS/i.test(ua) &&
+      !/FBIOS/i.test(ua);
 
-  // Tentukan apakah boleh masuk
+  // =========================
+  // 4. IZIN AKSES
+  // =========================
   const isAllowed = isMyAndroidApp || isSafariIphone;
 
-  if (!isAllowed) {
-    // TAMPILKAN BLOKIR
-    overlay.style.display = 'flex';
-    
-    if (isIphone) {
-        gateMessage.innerHTML = "<span style='color:#e74c3c; font-size:16px;'>AKSES DIBATASI!</span><br>Harap gunakan browser <b>Safari</b> bawaan iPhone.";
-    } else {
-        gateMessage.innerHTML = "<span style='color:#e74c3c; font-size:16px;'>AKSES DIBATASI!</span><br>Silakan instal dan gunakan <b>Aplikasi Absensi Resmi dan Terbaru</b>.";
-    }
+  // =========================
+  // 5. UPDATE POPUP
+  // =========================
+  function showUpdatePopup() {
 
-    // Sembunyikan konten lain secara agresif
-    const sheet = document.createElement('style');
-    sheet.innerHTML = "body > *:not(#gatekeeper-overlay) { display: none !important; }";
-    document.head.appendChild(sheet);
-    document.body.classList.add('locked');
-    
+    document.body.innerHTML = `
+      <div style="
+          position:fixed;
+          top:0;left:0;
+          width:100%;height:100%;
+          background:rgba(0,0,0,0.75);
+          display:flex;
+          justify-content:center;
+          align-items:center;
+          z-index:999999;
+          font-family:sans-serif;
+      ">
+
+        <div style="
+            background:#fff;
+            padding:40px;
+            border-radius:18px;
+            text-align:center;
+            max-width:420px;
+            width:90%;
+            animation:fadeIn 0.4s ease;
+        ">
+
+            <h2 style="margin-bottom:10px;">🚀 Update Tersedia</h2>
+
+            <p style="color:#555; margin-bottom:20px;">
+                Versi aplikasi kamu sudah tidak didukung.<br>
+                Silakan update untuk melanjutkan.
+            </p>
+
+            <button onclick="goUpdate()" style="
+                padding:12px 20px;
+                border:none;
+                border-radius:10px;
+                background:#27ae60;
+                color:#fff;
+                font-size:16px;
+                cursor:pointer;
+                margin-bottom:10px;
+            ">
+                ⬇️ Update Sekarang
+            </button>
+
+            <p id="countdown" style="font-size:13px;color:#888;">
+                Redirect otomatis dalam 5 detik...
+            </p>
+
+        </div>
+      </div>
+
+      <style>
+        @keyframes fadeIn {
+            from {opacity:0; transform:scale(0.9);}
+            to {opacity:1; transform:scale(1);}
+        }
+      </style>
+    `;
+
+    startCountdown();
+  }
+
+  // =========================
+  // 6. REDIRECT FUNCTION
+  // =========================
+  window.goUpdate = function() {
+    window.location.replace(
+      "https://drive.google.com/uc?export=download&id=FILE_TERBARU"
+    );
+  };
+
+  // =========================
+  // 7. COUNTDOWN AUTO REDIRECT
+  // =========================
+  function startCountdown() {
+    let time = 5;
+    const el = document.getElementById("countdown");
+
+    const interval = setInterval(() => {
+      time--;
+
+      if (el) {
+        el.innerText = `Redirect otomatis dalam ${time} detik...`;
+      }
+
+      if (time <= 0) {
+        clearInterval(interval);
+        goUpdate();
+      }
+    }, 1000);
+  }
+
+  // =========================
+  // 8. MAIN LOGIC
+  // =========================
+  if (!isAllowed) {
+
+    showUpdatePopup();
+
+    return; // STOP SCRIPT
+
   } else {
-    // IZINKAN MASUK: Hapus overlay agar web bisa digunakan
+
+    // izin masuk → bersihkan overlay jika ada
     if (overlay) overlay.remove();
   }
+
 })();
 </script>
         
