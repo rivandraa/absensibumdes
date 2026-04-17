@@ -57,31 +57,35 @@
 
 <script>
 (function() {
-  const ua = navigator.userAgent;
+
+  const ua = navigator.userAgent || "";
+
   const overlay = document.getElementById('gatekeeper-overlay');
   const gateMessage = document.getElementById('gate-message');
 
   // =========================
-  // 1. CEK TOKEN APP
+  // 1. DETEKSI ANDROID APP
   // =========================
   const match = ua.match(/APP_TOKEN=([^;]+)/);
   const token = match ? match[1] : null;
 
-  const isMyAndroidApp = token === "ABSENSI_BUMDESA_ANDROID_v1.1.0";
+  const isAndroidApp = token !== null;
+
+  const REQUIRED_VERSION = "ABSENSI_BUMDESA_ANDROID_v1.1.1";
+  const isValidApp = token === REQUIRED_VERSION;
 
   // =========================
-  // 2. CEK IPHONE SAFARI
+  // 2. DETEKSI SAFARI IPHONE
   // =========================
   const isIphone = /iPhone|iPad|iPod/i.test(ua);
-  const isSafariIphone = isIphone &&
+  const isSafariIphone =
+    isIphone &&
     /Safari/i.test(ua) &&
     !/CriOS/i.test(ua) &&
     !/FBIOS/i.test(ua);
 
-  const isAllowed = isMyAndroidApp || isSafariIphone;
-
   // =========================
-  // 3. FUNCTION UPDATE POPUP (BARU)
+  // 3. UPDATE POPUP (ANDROID ONLY)
   // =========================
   function showUpdatePopup() {
 
@@ -157,7 +161,7 @@
   };
 
   // =========================
-  // 5. COUNTDOWN AUTO REDIRECT
+  // 5. COUNTDOWN
   // =========================
   function startCountdown() {
     let time = 5;
@@ -178,35 +182,49 @@
   }
 
   // =========================
-  // 6. MAIN LOGIC (TIDAK DIUBAH)
+  // 6. RULE ACCESS SYSTEM
   // =========================
-  if (!isAllowed) {
 
-    // TAMPILKAN BLOKIR LAMA KAMU
+  // ❌ Bukan Android & bukan Safari → BLOCK TOTAL
+  if (!isAndroidApp && !isSafariIphone) {
+
     overlay.style.display = 'flex';
 
-    if (isIphone) {
-      gateMessage.innerHTML =
-        "<span style='color:#e74c3c; font-size:16px;'>AKSES DIBATASI!</span><br>Harap gunakan browser <b>Safari</b> bawaan iPhone.";
-    } else {
-      gateMessage.innerHTML =
-        "<span style='color:#e74c3c; font-size:16px;'>AKSES DIBATASI!</span><br>Silakan instal dan gunakan <b>Aplikasi Absensi Resmi dan Terbaru</b>.";
-    }
+    gateMessage.innerHTML =
+      "<span style='color:#e74c3c; font-size:16px;'>AKSES DITOLAK!</span><br>Gunakan aplikasi resmi atau Safari iPhone.";
 
     const sheet = document.createElement('style');
-    sheet.innerHTML = "body > *:not(#gatekeeper-overlay) { display: none !important; }";
+    sheet.innerHTML = "body > *:not(#gatekeeper-overlay) { display:none !important; }";
     document.head.appendChild(sheet);
+
     document.body.classList.add('locked');
 
-    // =========================
-    // 🔥 TAMBAHAN: POPUP UPDATE
-    // =========================
-    setTimeout(() => {
-      showUpdatePopup();
-    }, 500); // delay biar tidak bentrok UI
+    return;
+  }
 
-  } else {
-    if (overlay) overlay.remove();
+  // =========================
+  // 7. ANDROID APP → CEK VERSION
+  // =========================
+  if (isAndroidApp) {
+
+    if (!isValidApp) {
+
+      setTimeout(() => {
+        showUpdatePopup();
+      }, 500);
+
+      return;
+    }
+
+    // valid → masuk
+    overlay?.remove();
+  }
+
+  // =========================
+  // 8. SAFARI IPHONE → LANGSUNG MASUK
+  // =========================
+  if (isSafariIphone) {
+    overlay?.remove();
   }
 
 })();
