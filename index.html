@@ -159,27 +159,27 @@
   // =========================
   // 4. UPDATE HANDLER (FIXED)
   // =========================
-  window.goUpdate = function() {
-
-    isUpdating = true;
-
-    if (countdownInterval) {
-      clearInterval(countdownInterval);
-    }
-
-    document.body.style.pointerEvents = "none";
-
-    const apkUrl = "https://github.com/rivandraa/absensiku/releases/download/v1.1/Absensi.Bumdes.Galungan.v1.1.apk";
-
-    // 🔥 ANDROID WEBVIEW (UTAMA)
-    if (window.Android && Android.downloadUpdate) {
-      Android.downloadUpdate(apkUrl);
-    }
-    // 🔥 FALLBACK (browser biasa)
-    else {
-      window.open(apkUrl, "_blank");
-    }
-  };
+	window.goUpdate = function() {
+	
+	  isUpdating = true;
+	
+	  if (countdownInterval) {
+	    clearInterval(countdownInterval);
+	  }
+	
+	  document.body.style.pointerEvents = "none";
+	
+	  const apkUrl = "https://github.com/rivandraa/absensiku/releases/download/v1.1/Absensi.Bumdes.Galungan.v1.1.apk";
+	
+	  // 🔥 WAJIB PRIORITAS ANDROID APP
+	  if (window.Android && typeof Android.downloadUpdate === "function") {
+	    Android.downloadUpdate(apkUrl);
+	    return;
+	  }
+	
+	  // fallback browser (hanya kalau bukan app)
+	  window.location.href = apkUrl;
+	};
 
   // =========================
   // 5. COUNTDOWN SYSTEM
