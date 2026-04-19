@@ -278,28 +278,38 @@ function ensureProgressUI() {
   return el;
 }
 
+// Fungsi ini harus ada agar elemen progress muncul di layar
+function ensureProgressUI() {
+    let el = document.getElementById("downloadProgress");
+    if (!el) {
+        el = document.createElement("div");
+        el.id = "downloadProgress";
+        // Styling agar muncul melayang di tengah/bawah
+        el.style.position = "fixed";
+        el.style.bottom = "20px";
+        el.style.left = "50%";
+        el.style.transform = "translateX(-50%)";
+        el.style.backgroundColor = "rgba(0,0,0,0.8)";
+        el.style.color = "white";
+        el.style.padding = "10px 20px";
+        el.style.borderRadius = "20px";
+        el.style.zIndex = "9999";
+        document.body.appendChild(el);
+    }
+    return el;
+}
+
 window.updateDownloadProgress = function(progress) {
-
-  const el = ensureProgressUI();
-
-  el.innerText = "Downloading: " + progress + "%";
-
-  console.log("Download:", progress + "%");
+    const el = ensureProgressUI();
+    el.innerText = "Downloading: " + progress + "%";
 };
 
 window.downloadComplete = function() {
-
-  const el = document.getElementById("downloadProgress");
-
-  if (el) {
-    el.innerText = "Download selesai ✓";
-
-    setTimeout(() => {
-      el.remove();
-    }, 2000);
-  }
-
-  console.log("Download selesai");
+    const el = document.getElementById("downloadProgress");
+    if (el) {
+        el.innerText = "Download selesai ✓";
+        setTimeout(() => { el.remove(); }, 3000);
+    }
 };
 
 </script>
