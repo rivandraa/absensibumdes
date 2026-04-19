@@ -28,67 +28,52 @@
   const ua = navigator.userAgent || "";
   const overlay = document.getElementById('gatekeeper-overlay');
   const gateMessage = document.getElementById('gate-message');
-  let countdownInterval = null;
-  let isUpdating = false;
-
   const REQUIRED_VERSION = "ABSENSI_BUMDESA_ANDROID_v1.1.1";
+  
+  // Deteksi App Token
   const match = ua.match(/APP_TOKEN=([^;]+)/);
   const token = match ? match[1] : null;
   const isAndroidApp = token !== null;
   const isValidApp = token === REQUIRED_VERSION;
 
-  const isSafariIphone = /iPhone|iPad|iPod/i.test(ua) && /Safari/i.test(ua) && !/CriOS/i.test(ua) && !/FBIOS/i.test(ua);
+  // Deteksi iPhone Safari
+  const isIphone = /iPhone|iPad|iPod/i.test(ua);
+  const isSafariIphone = isIphone && /Safari/i.test(ua) && !/CriOS/i.test(ua) && !/FBIOS/i.test(ua);
 
-  // --- PROGRESS UI ---
-  function ensureProgressUI() {
-    let el = document.getElementById("downloadProgress");
-    if (!el) {
-        el = document.createElement("div");
-        el.id = "downloadProgress";
-        el.style = "position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:white; padding:12px 25px; border-radius:25px; z-index:1000001; font-size:14px; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.3);";
-        document.body.appendChild(el);
-    }
-    return el;
+  // --- 1. GATEKEEPER RULES (Blokir Desktop) ---
+  if (!isAndroidApp && !isSafariIphone) {
+    if (overlay) overlay.style.display = 'flex';
+    // Sembunyikan konten asli
+    const sheet = document.createElement('style');
+    sheet.innerHTML = "body > *:not(#gatekeeper-overlay) { display:none !important; }";
+    document.head.appendChild(sheet);
+    return;
   }
 
-  window.updateDownloadProgress = function(p) {
-    ensureProgressUI().innerText = "📥 Mengunduh: " + p + "%";
-  };
+  // --- 2. VERSION CHECK (Tampilkan Popup Sederhana Anda) ---
+  if (isAndroidApp && !isValidApp) {
+    showUpdatePopup();
+  } else {
+    // Jika versi benar atau iPhone, hapus overlay pemblokir
+    if (overlay) overlay.remove();
+  }
 
-  window.downloadComplete = function() {
-    const el = document.getElementById("downloadProgress");
-    if (el) {
-      el.style.backgroundColor = "#27ae60";
-      el.innerText = "✅ Download selesai ✓";
-      setTimeout(() => el.remove(), 3000);
-    }
-    document.body.style.pointerEvents = "auto";
-  };
-
-  // --- UPDATE SYSTEM ---
   function showUpdatePopup() {
-    const style = document.createElement('style');
-    style.innerHTML = `@keyframes fadeIn { from {opacity:0; transform:scale(0.9);} to {opacity:1; transform:scale(1);} }`;
-    document.head.appendChild(style);
-
-    document.body.innerHTML = `
-      <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; z-index:999999; font-family:sans-serif;">
-        <div style="background:#fff; padding:35px; border-radius:16px; text-align:center; max-width:380px; width:90%; animation:fadeIn 0.4s ease;">
-          <h2 style="margin-bottom:10px;">🚀 Update Tersedia</h2>
-          <p style="color:#555; margin-bottom:20px;">Versi aplikasi kamu sudah tidak didukung.<br>Silakan update untuk melanjutkan.</p>
-          <button onclick="goUpdate()" style="padding:12px 22px; border:none; border-radius:10px; background:#27ae60; color:#fff; font-size:15px; font-weight:bold; cursor:pointer;">⬇️ Update Sekarang</button>
-          <p id="countdown" style="font-size:13px; color:#888; margin-top:15px;">Redirect otomatis dalam 5 detik...</p>
+    const popupHtml = `
+      <div id="updateOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;z-index:999999;font-family:sans-serif;">
+        <div style="background:#fff;padding:40px 30px;border-radius:24px;text-align:center;width:85%;max-width:400px;box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+          <h2 style="margin-top:0;">🚀 Versi Baru!</h2>
+          <p style="color:#555; line-height:1.5;">Versi aplikasi Anda sudah usang.<br>Silakan update untuk melanjutkan absensi.</p>
+          <button onclick="goUpdate()" style="margin-top:10px;padding:14px 30px;background:#27ae60;color:#fff;border:none;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;width:100%;">Update Sekarang</button>
         </div>
       </div>`;
-    startCountdown();
+    document.body.insertAdjacentHTML('beforeend', popupHtml);
   }
 
   window.goUpdate = function() {
-    isUpdating = true;
-    if (countdownInterval) clearInterval(countdownInterval);
-    document.body.style.pointerEvents = "none";
+    document.body.style.pointerEvents = "none"; // Lock screen saat download
     const apkUrl = "https://github.com/rivandraa/absensiku/releases/download/v1.1/Absensi.Bumdes.Galungan.v1.1.apk";
-
+    
     if (window.UpdateBridge) {
       UpdateBridge.downloadUpdate(apkUrl);
     } else {
@@ -96,32 +81,28 @@
     }
   };
 
-  function startCountdown() {
-    let t = 5;
-    countdownInterval = setInterval(() => {
-      if (isUpdating) return clearInterval(countdownInterval);
-      t--;
-      document.getElementById("countdown").innerText = `Redirect otomatis dalam ${t} detik...`;
-      if (t <= 0) { clearInterval(countdownInterval); goUpdate(); }
-    }, 1000);
-  }
-
-  // --- GATEKEEPER RULES ---
-  if (!isAndroidApp && !isSafariIphone) {
-    overlay.style.display = 'flex';
-    gateMessage.innerHTML = "<span style='color:#e74c3c; font-size:18px; font-weight:bold;'>AKSES DITOLAK!</span><br>Sistem mendeteksi Anda tidak menggunakan Aplikasi Resmi.";
-    const s = document.createElement('style');
-    s.innerHTML = "body > *:not(#gatekeeper-overlay) { display:none !important; }";
-    document.head.appendChild(s);
-  } else if (isAndroidApp) {
-    if (!isValidApp) {
-      setTimeout(showUpdatePopup, 500);
-    } else {
-      overlay.remove();
+  // --- 3. UI PROGRESS (Sesuai keinginan Anda) ---
+  window.updateDownloadProgress = function(progress) {
+    let el = document.getElementById("downloadProgress");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "downloadProgress";
+      el.style = "position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:12px 25px;border-radius:30px;z-index:1000000;font-size:14px;font-weight:bold;box-shadow: 0 4px 12px rgba(0,0,0,0.3);";
+      document.body.appendChild(el);
     }
-  } else if (isSafariIphone) {
-    overlay.remove();
-  }
+    el.innerText = "📥 Mengunduh: " + progress + "%";
+  };
+
+  window.downloadComplete = function() {
+    const el = document.getElementById("downloadProgress");
+    if (el) {
+      el.style.background = "#27ae60";
+      el.innerText = "✅ Selesai, Membuka Installer...";
+      setTimeout(() => { if(el) el.remove(); }, 5000);
+    }
+    document.body.style.pointerEvents = "auto";
+  };
+
 })();
 </script>
 
