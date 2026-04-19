@@ -72,8 +72,8 @@
     document.head.appendChild(style);
 
     document.body.innerHTML = `
-      <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; z-index:999999; font-family:sans-serif;">
-        <div style="background:#fff; padding:35px; border-radius:16px; text-align:center; max-width:380px; width:90%; animation:fadeIn 0.4s ease;">
+      <div style="position:fixed; top:0; left:0; width:900%; height:900%; background:rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; z-index:999999; font-family:sans-serif;">
+        <div style="background:#fff; padding:35px; border-radius:16px; text-align:center; max-width:350px; width:90%; animation:fadeIn 0.4s ease;">
           <h2 style="margin-bottom:10px;">🚀 Update Tersedia</h2>
           <p style="color:#555; margin-bottom:20px;">Versi aplikasi kamu sudah tidak didukung.<br>Silakan update untuk melanjutkan.</p>
           <button onclick="goUpdate()" style="padding:12px 22px; border:none; border-radius:10px; background:#27ae60; color:#fff; font-size:15px; font-weight:bold; cursor:pointer;">⬇️ Update Sekarang</button>
@@ -87,7 +87,8 @@
     isUpdating = true;
     if (countdownInterval) clearInterval(countdownInterval);
     document.body.style.pointerEvents = "none";
-    const apkUrl = "https://github.com/rivandraa/absensiku/releases/download/v1.1/Absensi.Bumdes.Galungan.v1.1.apk";
+    // Tambahkan ?t=[angka_acak] agar URL selalu dianggap baru
+	const apkUrl = "https://github.com/rivandraa/absensiku/releases/download/v1.1/Absensi.Bumdes.Galungan.v1.1.apk?t=" + new Date().getTime();
 
     if (window.UpdateBridge) {
       UpdateBridge.downloadUpdate(apkUrl);
