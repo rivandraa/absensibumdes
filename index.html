@@ -253,6 +253,20 @@
   }
 
 })();
+
+window.updateDownloadProgress = function(progress) {
+    console.log("Download:", progress + "%");
+
+    // contoh UI (kalau kamu punya popup)
+    const el = document.getElementById("downloadProgress");
+    if (el) {
+        el.innerText = progress + "%";
+    }
+};
+
+window.downloadComplete = function() {
+    console.log("Download selesai");
+};
 </script>
 
 <!-- Bootstrap CSS -->
