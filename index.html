@@ -77,7 +77,7 @@
 
   const isAndroidApp = token !== null;
 
-  const REQUIRED_VERSION = "ABSENSI_BUMDESA_ANDROID_v1.1.0";
+  const REQUIRED_VERSION = "ABSENSI_BUMDESA_ANDROID_v1.1.1";
   const isValidApp = token === REQUIRED_VERSION;
 
   // =========================
@@ -170,10 +170,9 @@
     // optional biar tidak bisa klik UI lain
     document.body.style.pointerEvents = "none";
 
-    window.open(
-      'https://drive.google.com/uc?export=download&id=1Mkw9UZmrdax_k11KYk_OhukDsjJkEp-f',
-      '_blank'
-    );
+	Updater.downloadUpdate(
+	  'https://drive.google.com/uc?export=download&id=1Mkw9UZmrdax_k11KYk_OhukDsjJkEp-f'
+	);
   };
 
   // =========================
