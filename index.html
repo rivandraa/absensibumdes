@@ -49,14 +49,27 @@
     document.body.insertAdjacentHTML('beforeend', popupHtml);
   }
 
-  window.goUpdate = function() {
+window.goUpdate = function() {
     const apkUrl = "https://github.com/rivandraa/absensiku/releases/download/v1.1/Absensi.Bumdes.Galungan.v1.1.apk";
-    if (window.UpdateBridge) {
-      UpdateBridge.downloadUpdate(apkUrl);
-    } else {
-      window.location.href = apkUrl;
+    
+    // Gunakan try-catch agar jika gagal tidak mengunci layar
+    try {
+        // Cek apakah bridge sudah siap
+        if (typeof UpdateBridge !== 'undefined' && UpdateBridge.downloadUpdate) {
+            console.log("Menggunakan Bridge Android...");
+            UpdateBridge.downloadUpdate(apkUrl);
+            
+            // Kunci layar HANYA jika bridge berhasil dipanggil
+            document.body.style.pointerEvents = "none";
+        } else {
+            console.log("Bridge belum siap, mencoba fallback browser...");
+            window.location.href = apkUrl;
+        }
+    } catch (e) {
+        console.error("Error saat memanggil update:", e);
+        window.location.href = apkUrl; // Tetap arahkan ke link jika error
     }
-  };
+};
 
   // UI PROGRESS
   window.updateDownloadProgress = function(progress) {
