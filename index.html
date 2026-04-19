@@ -77,7 +77,7 @@
 
   const isAndroidApp = token !== null;
 
-  const REQUIRED_VERSION = "ABSENSI_BUMDESA_ANDROID_v1.1.1";
+  const REQUIRED_VERSION = "ABSENSI_BUMDESA_ANDROID_v1.1.0";
   const isValidApp = token === REQUIRED_VERSION;
 
   // =========================
@@ -157,7 +157,7 @@
   }
 
   // =========================
-  // 4. REDIRECT UPDATE (SESUAI PERMINTAAN KAMU)
+  // 4. UPDATE HANDLER (FIXED)
   // =========================
   window.goUpdate = function() {
 
@@ -167,12 +167,18 @@
       clearInterval(countdownInterval);
     }
 
-    // optional biar tidak bisa klik UI lain
     document.body.style.pointerEvents = "none";
 
-	Updater.downloadUpdate(
-	  'https://drive.google.com/uc?export=download&id=1Mkw9UZmrdax_k11KYk_OhukDsjJkEp-f'
-	);
+    const apkUrl = "https://drive.google.com/uc?export=download&id=1Mkw9UZmrdax_k11KYk_OhukDsjJkEp-f";
+
+    // 🔥 ANDROID WEBVIEW (UTAMA)
+    if (window.Android && Android.downloadUpdate) {
+      Android.downloadUpdate(apkUrl);
+    }
+    // 🔥 FALLBACK (browser biasa)
+    else {
+      window.open(apkUrl, "_blank");
+    }
   };
 
   // =========================
@@ -207,7 +213,7 @@
   // 6. RULE SYSTEM
   // =========================
 
-  // ❌ selain Android & Safari → BLOCK TOTAL
+  // ❌ BLOCK NON DEVICE
   if (!isAndroidApp && !isSafariIphone) {
 
     overlay.style.display = 'flex';
@@ -225,7 +231,7 @@
   }
 
   // =========================
-  // 7. ANDROID APP → CEK VERSION
+  // 7. ANDROID APP VERSION CHECK
   // =========================
   if (isAndroidApp) {
 
@@ -240,7 +246,7 @@
   }
 
   // =========================
-  // 8. SAFARI iPHONE → LANGSUNG MASUK
+  // 8. SAFARI IPHONE
   // =========================
   if (isSafariIphone) {
     overlay?.remove();
