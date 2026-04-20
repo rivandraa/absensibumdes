@@ -27,11 +27,6 @@
     <div id="ping-dot" style="width: 5px; height: 5px; background: #2ecc71; border-radius: 50%; margin-right: 5px; box-shadow: 0 0 5px #2ecc71;"></div>
     <span id="ping-display" style="color: #fff; font-size: 11px; font-weight: bold; line-height: 1; letter-spacing: 0.2px;">Checking...</span>
 </div>
-	
-<!--<div id="ping-container" style="display: none; position: fixed; top: 5px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,0,0,0.4); padding: 2px 7px; border-radius: 12px; font-family: sans-serif; align-items: center; justify-content: center; backdrop-filter: blur(3px); border: 0.5px solid rgba(255,255,255,0.1); white-space: nowrap; pointer-events: none;">
-    <div id="ping-dot" style="width: 4px; height: 4px; background: #2ecc71; border-radius: 50%; margin-right: 4px; box-shadow: 0 0 4px #2ecc71;"></div>
-    <span id="ping-display" style="color: #fff; font-size: 9px; font-weight: bold; line-height: 1;">Checking...</span>
-</div>-->
 
 <script>
 (function() {
@@ -156,47 +151,51 @@
 
 })();
 
-//==================================
-window.updatePingStatus = function(ping) {
-    const pingEl = document.getElementById('ping-display');
-    const dotEl = document.getElementById('ping-dot');
-    if (!pingEl || !dotEl) return;
-
-    pingEl.innerText = ping;
-
-    if (ping === "Offline" || ping === "Error") {
-        pingEl.innerText = "📶 Disconnected";
-        pingEl.style.color = "#ff4d4d";
-        dotEl.style.backgroundColor = "#ff4d4d";
-        dotEl.style.boxShadow = "0 0 8px #ff4d4d";
-    } else {
-        const ms = parseInt(ping);
-        // Logika warna Sinyal
-        if (ms < 100) { // Bagus
-            pingEl.style.color = "#2ecc71";
-            dotEl.style.backgroundColor = "#2ecc71";
-            dotEl.style.boxShadow = "0 0 8px #2ecc71";
-        } else if (ms < 300) { // Sedang
-            pingEl.style.color = "#f1c40f";
-            dotEl.style.backgroundColor = "#f1c40f";
-            dotEl.style.boxShadow = "0 0 8px #f1c40f";
-        } else { // Buruk / Lag
-            pingEl.style.color = "#e67e22";
-            dotEl.style.backgroundColor = "#e67e22";
-            dotEl.style.boxShadow = "0 0 8px #e67e22";
-        }
-    }
-};
-
-document.addEventListener("DOMContentLoaded", function() {
-    if (window.Android) {
-        const pingContainer = document.getElementById('ping-container');
-        if (pingContainer) {
-            // Gunakan flex agar isi di dalamnya (dot dan teks) tetap rapi di tengah
-            pingContainer.style.setProperty('display', 'flex', 'important'); 
-        }
-    }
-});
+	// ==========================================
+	// BAGIAN 3: PING KONEKSI
+	// ------------------------------------------
+	// Bagian ini bertugas ping ke server
+	// ==========================================
+	window.updatePingStatus = function(ping) {
+	    const pingEl = document.getElementById('ping-display');
+	    const dotEl = document.getElementById('ping-dot');
+	    if (!pingEl || !dotEl) return;
+	
+	    pingEl.innerText = ping;
+	
+	    if (ping === "Offline" || ping === "Error") {
+	        pingEl.innerText = "📶 Disconnected";
+	        pingEl.style.color = "#ff4d4d";
+	        dotEl.style.backgroundColor = "#ff4d4d";
+	        dotEl.style.boxShadow = "0 0 8px #ff4d4d";
+	    } else {
+	        const ms = parseInt(ping);
+	        // Logika warna Sinyal
+	        if (ms < 100) { // Bagus
+	            pingEl.style.color = "#2ecc71";
+	            dotEl.style.backgroundColor = "#2ecc71";
+	            dotEl.style.boxShadow = "0 0 8px #2ecc71";
+	        } else if (ms < 300) { // Sedang
+	            pingEl.style.color = "#f1c40f";
+	            dotEl.style.backgroundColor = "#f1c40f";
+	            dotEl.style.boxShadow = "0 0 8px #f1c40f";
+	        } else { // Buruk / Lag
+	            pingEl.style.color = "#e67e22";
+	            dotEl.style.backgroundColor = "#e67e22";
+	            dotEl.style.boxShadow = "0 0 8px #e67e22";
+	        }
+	    }
+	};
+	
+	document.addEventListener("DOMContentLoaded", function() {
+	    if (window.Android) {
+	        const pingContainer = document.getElementById('ping-container');
+	        if (pingContainer) {
+	            // Gunakan flex agar isi di dalamnya (dot dan teks) tetap rapi di tengah
+	            pingContainer.style.setProperty('display', 'flex', 'important'); 
+	        }
+	    }
+	});
 </script>
 
 <!-- Bootstrap CSS -->
@@ -562,7 +561,6 @@ function showTempPopup(msg, type = "warning", duration = 1500) {
     }, duration);
 }
 
-
 /**
  * Fungsi Getar Pendek (warning / error)
  */
@@ -688,7 +686,7 @@ async function loginUser() {
         }
     } catch (error) {
         console.error("Connection Error:", error);
-        showPopup("⚠️ Gagal terhubung ke server.", "error", 5000);
+        showPopup("⚠️ Gagal terhubung ke server, periksa koneksi internet.", "error", 5000);
     }
 }
 
@@ -868,7 +866,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
     // 3. Logika Prioritas Tinggi (Status Absensi)
-    if (status === "hadir" || status === "wan") {
+    if (status === "hadir" || status === "pulang" || status === "wfh") {
         
         // JIKA LOKASI BEBAS: Langsung keluar dari fungsi (Sangat Cepat)
         if (namaLokasi === "-") {
@@ -910,7 +908,6 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 // =====================================================
 let isFetchingLocation = false;
 
-// Tambahkan parameter 'isSilent' untuk membedakan interval dan manual
 async function refreshTargetLocation(callback) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     const userRequesting = userObj ? userObj.username : null;
@@ -921,69 +918,92 @@ async function refreshTargetLocation(callback) {
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
 
-	// 1. CEK STATUS DULU (Prioritas Utama)
-	if (!currentStatus || currentStatus === "Pilih Status..." || currentStatus === "") {
-	    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-		isLoading = false;
-	    return; 
-	}
-	
-    // Jika status non-lokasi, langsung set dan berhenti
+    // ===============================
+    // 1. VALIDASI STATUS
+    // ===============================
+    if (!currentStatus || currentStatus === "Pilih Status...") {
+        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+        isLoading = false;
+        return;
+    }
+
+    // ===============================
+    // 2. STATUS TANPA KOORDINAT
+    // ===============================
     if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
         if (tampil) tampil.value = "-";
         if (hidden) hidden.value = "-";
+
         targetLocation = null;
         lastTargetLocation = null;
-		isLoading = false;
-        return; 
+        isLoading = false;
+
+        // langsung update UI (tanpa nunggu GPS)
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+        return;
     }
 
     if (isFetchingLocation) return;
 
     try {
         isFetchingLocation = true;
-        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
-        const response = await fetch(url);
-		const text = await response.text();
-		
-		// kasih napas ke UI dulu
-		await new Promise(r => setTimeout(r, 0));
-		
-		const loc = JSON.parse(text);
 
-        // Validasi agar data yang telat tidak menimpa status yang sudah berubah
+        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
+
+        const response = await fetch(url);
+        const loc = await response.json(); // ⬅️ langsung json, lebih cepat
+
+        // ===============================
+        // CEK STATUS BERUBAH ATAU TIDAK
+        // ===============================
         if (document.getElementById("status")?.value !== currentStatus) return;
 
+        // ===============================
+        // JIKA ADA LOKASI TARGET
+        // ===============================
         if (loc && loc.lat && loc.lon) {
-            const newLocation = { lat: parseFloat(loc.lat), lon: parseFloat(loc.lon) };
-            
-            // Update memori
+            const newLocation = {
+                lat: parseFloat(loc.lat),
+                lon: parseFloat(loc.lon)
+            };
+
             targetLocation = newLocation;
             lastTargetLocation = newLocation;
 
-            // Update Tampilan (Tanpa kedip karena isSilent menangani ini)
             const koordinatMurni = `${newLocation.lat.toFixed(6)}, ${newLocation.lon.toFixed(6)}`;
-            if (tampil) tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
+
+            if (tampil) {
+                tampil.value = (loc.nama && loc.nama.trim() !== "")
+                    ? loc.nama
+                    : koordinatMurni;
+            }
+
             if (hidden) hidden.value = koordinatMurni;
 
-			if (gpsData[0] !== 0) {
-			    setTimeout(() => {
-			        forceUpdateDistanceUI();
-			    }, 0);
-			}
+            // 🚀 UPDATE LANGSUNG TANPA DELAY
+            if (gpsData[0] !== 0) {
+                forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+            }
+
         } else {
             targetLocation = null;
+
             if (tampil) tampil.value = "-";
+
+            // update juga biar UI tidak nunggu
+            forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         }
+
     } catch (error) {
         console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
-		isLoading = false;
-		if (typeof callback === "function") callback();
+        isLoading = false;
+
+        if (typeof callback === "function") callback();
     }
 }
-    
+
 // =====================================================
 // CALCULATION LOGIC
 // =====================================================
@@ -1129,21 +1149,21 @@ function startGPSMonitoring(onReady) {
     }
 }
 
-    // ====== EVENT LISTENER STATUS ======
-let isLoading = false;
-let loadingLoopId = 0;
+// ====== EVENT LISTENER STATUS ======
+let isLoading = false; // Gembok global
 
-function updateLoadingDots(loopId) {
-    if (!isLoading || loopId !== loadingLoopId) return;
+function updateLoadingDots(count) {
+    if (!isLoading) return; 
 
     const elNama = document.getElementById("titikKoordinatTampil");
     if (elNama) {
+        // Menggunakan array untuk menghindari kalkulasi berat saat UI sibuk
         const dots = ["", ".", "..", "..."];
-        const index = Math.floor(Date.now() / 600) % dots.length;
-        elNama.value = "Sedang update koordinat" + dots[index];
+        elNama.value = "Sedang update koordinat" + dots[count % 4];
     }
 
-    setTimeout(() => updateLoadingDots(loopId), 200);
+    // Gunakan 600ms agar ritme sinkron dengan mata manusia
+    setTimeout(() => updateLoadingDots(count + 1), 600);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1151,20 +1171,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const restartBtn = document.getElementById("restartGPS");
 
 	if (statusEl) {
-	    statusEl.addEventListener("change", () => {
-	        targetLocation = null;
-	        lastInsideArea = false;
-	
-	        // 🔥 reset & start animasi
+		statusEl.addEventListener("change", () => {
+		    // A. RESET DATA & AKTIFKAN GEMBOK
+		    targetLocation = null;
+		    lastInsideArea = false;
+		
+		    // B. JALANKAN ANIMASI DOTS
 	        isLoading = false;      // matikan dulu (penting)
-	        loadingLoopId++;        // invalid loop lama
-	
 	        isLoading = true;       // nyalakan lagi
-	        updateLoadingDots(loadingLoopId);
-	
-	        forceUpdateDistanceUI();    
-	        refreshTargetLocation(null, false);
-	    });
+		    updateLoadingDots(0);
+		
+		    // C. UPDATE UI SEKETIKA
+		    // Menghilangkan status ✅/❌ karena targetLocation sekarang null
+		    forceUpdateDistanceUI();    
+		    
+		    // D. AMBIL DATA DARI SERVER
+		    // Memanggil Google Spreadsheet untuk mencari koordinat baru
+		    refreshTargetLocation(null, false);
+		});
 	}
     
     // === restart gps ===
@@ -1172,13 +1196,10 @@ document.addEventListener("DOMContentLoaded", () => {
 	    restartBtn.addEventListener("click", () => {
 	        gpsSystemActive = false;
 	        stopGPSMonitoring();
-
-	        // 🔥 reset & start animasi
+			
 	        isLoading = false;      // matikan dulu (penting)
-	        loadingLoopId++;        // invalid loop lama
-	
-	        isLoading = true;       // nyalakan lagi
-	        updateLoadingDots(loadingLoopId);
+			isLoading = true; // nyalakan lagi
+			updateLoadingDots(0);
 			
 	        restartBtn.innerHTML = "⏳ Restarting GPS";
 	        restartBtn.disabled = true;
