@@ -39,9 +39,41 @@
     const match = ua.match(/APP_TOKEN=([^;]+)/);
     const token = match ? match[1] : null;
     const isAndroidApp = token !== null;
-    const isValidApp = token === REQUIRED_VERSION;
-    const isSafariIphone = /iPhone|iPad|iPod/i.test(ua) && /Safari/i.test(ua) && !/CriOS/i.test(ua) && !/FBIOS/i.test(ua);
 
+    // 1. Cek apakah ini Aplikasi resmi Mas (v1.2.0)
+    const isAndroidApp = token !== null; // Mengetahui ini App (v1.2.0 ke atas)
+    const isValidApp   = token === REQUIRED_VERSION; // Mengetahui ini App yang BENAR
+
+    // 3. Cek Chrome di Android (Bukan dari dalam aplikasi/WebView lain)
+    // Chrome di Android mengandung kata "Android" dan "Chrome", tapi tidak mengandung "Version/" (biasanya tanda WebView)
+    const isAndroidChrome = /Android/i.test(ua) && /Chrome/i.test(ua) && !/Version\//i.test(ua);
+	
+	// 2. Cek Safari di iPhone
+    const isSafariIphone = /iPhone/i.test(ua) && /Safari/i.test(ua) && !/CriOS/i.test(ua);
+
+	// ==========================================
+    // LOGIKA PEMBLOKIRAN TOTAL (FIXED)
+    // ==========================================
+    if (!isSafariIphone && !isAndroidChrome && !isValidApp) {
+        document.body.innerHTML = `
+            <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; font-family: sans-serif; background: #fff;">
+                <div style="font-size: 60px;">🚫</div>
+                <h2 style="color: #d32f2f; margin-top: 20px;">Akses Tidak Diizinkan</h2>
+                <p style="color: #555; line-height: 1.6; max-width: 300px;">
+                    Anda menggunakan <b>Aplikasi Versi Lama.</b><br>
+					Silakan gunakan Aplikasi<br><b>Versi Terbaru</b>
+                </p>
+                <div style="margin-top: 20px; padding: 15px; background: #fff4f4; border: 1px solid #ffcdd2; border-radius: 10px; width: 100%; max-width: 280px;">
+                    <p style="margin: 0; font-size: 13px; color: #b71c1c;">
+                        Hubungi Admin untuk mendapatkan file APK terbaru.</p>
+                    </p>
+                </div>
+            </div>
+        `;
+        window.stop(); // Hentikan pemuatan halaman
+        throw new Error("Akses diblokir: Versi tidak sesuai.");
+    }
+	
     // ==========================================
     // BAGIAN 1: SISTEM UPDATE (Standalone)
     // ------------------------------------------
