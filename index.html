@@ -23,7 +23,7 @@
   </div>
 </div>
 
-<div id="ping-container" style="position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,0,0,0.6); padding: 6px 15px; border-radius: 25px; font-family: sans-serif; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); white-space: nowrap; pointer-events: none;">
+<div id="ping-container" style="display: none; position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,0,0,0.6); padding: 6px 15px; border-radius: 25px; font-family: sans-serif; align-items: center; justify-content: center; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); white-space: nowrap; pointer-events: none;">
     <div id="ping-dot" style="width: 7px; height: 7px; background: #2ecc71; border-radius: 50%; margin-right: 8px; box-shadow: 0 0 8px #2ecc71;"></div>
     <span id="ping-display" style="color: #fff; font-size: 11px; font-weight: bold; letter-spacing: 0.5px;">📶 Checking...</span>
 </div>
@@ -182,6 +182,16 @@ window.updatePingStatus = function(ping) {
         }
     }
 };
+
+document.addEventListener("DOMContentLoaded", function() {
+    if (window.Android) {
+        const pingContainer = document.getElementById('ping-container');
+        if (pingContainer) {
+            // Gunakan flex agar isi di dalamnya (dot dan teks) tetap rapi di tengah
+            pingContainer.style.setProperty('display', 'flex', 'important'); 
+        }
+    }
+});
 </script>
 
 <!-- Bootstrap CSS -->
