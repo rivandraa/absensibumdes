@@ -38,7 +38,7 @@
     // ==========================================
     // Hanya blokir jika: Bukan App Valid DAN Bukan App Lama DAN Bukan Chrome/Safari
     if (!isValidApp && !isAndroidApp && !isAndroidChrome && !isSafariIphone) {
-        
+        isUpdating = true;
         const applyBlock = function() {
             const style = document.createElement('style');
             style.innerHTML = `
