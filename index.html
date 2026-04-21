@@ -27,22 +27,19 @@
     // ==========================================
     // LOGIKA 1: CEK UPDATE (DIPRIORITASKAN)
     // ==========================================
-    // Jika dia adalah App (punya token) tapi versinya salah, WAJIB UPDATE
+    // Jika terdeteksi pakai App tapi versi tidak cocok, tampilkan UPDATE
     if (isAndroidApp && !isValidApp) {
         setTimeout(showUpdatePopup, 500);
-        return; // BERHENTI DI SINI, jangan lanjut ke logika blokir
+        return; // WAJIB berhenti di sini agar tidak kena blokir di bawah
     }
 
     // ==========================================
     // LOGIKA 2: PEMBLOKIRAN TOTAL
     // ==========================================
-    // Hanya blokir jika: Bukan App yang valid DAN bukan Chrome Android DAN bukan Safari iPhone
-    if (!isValidApp && !isAndroidChrome && !isSafariIphone) {
+    // Hanya blokir jika: Bukan App Valid DAN Bukan App Lama DAN Bukan Chrome/Safari
+    if (!isValidApp && !isAndroidApp && !isAndroidChrome && !isSafariIphone) {
         
-        // JANGAN gunakan window.stop() karena akan mematikan fungsi JS di bawahnya
-        
-        const applyBlock = () => {
-            // Paksa kunci layar agar tidak bisa digeser
+        const applyBlock = function() {
             const style = document.createElement('style');
             style.innerHTML = `
                 html, body { 
@@ -56,9 +53,8 @@
             `;
             document.head.appendChild(style);
 
-            // Timpa isi BODY saja (jangan documentElement agar script tetap hidup)
             document.body.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); position:fixed; top:0; left:0; z-index:9999999;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); position: fixed; top: 0; left: 0; z-index: 9999999;">
                     <div style="background: white; padding: 40px 30px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 320px; border: 1px solid rgba(255,255,255,0.8);">
                         <div style="width: 80px; height: 80px; background: #fff5f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
                             <div style="font-size: 50px;">✋</div>
@@ -67,16 +63,13 @@
                         <p style="color: #718096; line-height: 1.5; font-size: 15px; margin-bottom: 25px;">
                             Maaf, perangkat Anda menggunakan versi yang tidak didukung. Mohon gunakan Aplikasi Versi Terbaru.
                         </p>
-                        <div style="background: #edf2f7; padding: 15px; border-radius: 15px; border: 1px solid #e2e8f0;">
-                            <p style="margin: 0; font-size: 13px; color: #4a5568; font-weight: 500;">Butuh bantuan?</p>
-                            <p style="margin: 5px 0 0 0; font-size: 14px; color: #3182ce; font-weight: 600;">Hubungi Administrator Desa</p>
-                        </div>
                     </div>
                 </div>
             `;
         };
 
-        if (document.body) { applyBlock(); } else { window.addEventListener('DOMContentLoaded', applyBlock); }
+        if (document.readyState === "complete") { applyBlock(); } 
+        else { window.addEventListener('load', applyBlock); }
         throw new Error("BLOCK_ACCESS");
     }
 
