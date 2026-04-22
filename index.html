@@ -659,77 +659,82 @@ function stopGPSLoading() {
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
-    // 1. Ambil input secepat mungkin
+
+    acc = Number(acc) || 0;
+    lat = Number(lat) || 0;
+    lon = Number(lon) || 0;
+
     const status = (document.getElementById("status")?.value || "").toLowerCase();
     const elNama = document.getElementById("titikKoordinatTampil");
-    const namaLokasi = elNama?.value || "Area Absensi";
 
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
-    // Jika GPS belum aktif, jangan proses apa pun
-    if (!currentLat || currentLat === 0) return;
+    // 🚫 Jika GPS belum siap
+    if (!currentLat || !currentLon || currentLat === 0 || currentLon === 0) {
+        updateGPSDisplay("📡 Menunggu sinyal GPS...");
+        return;
+    }
 
-    // 2. Bangun teks dasar
+    // 🧾 Tampilan dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // 3. Logika Prioritas Tinggi (Status Absensi)
-    if (status === "hadir" || status === "wan") {
-        
-        // JIKA LOKASI BEBAS: Langsung keluar dari fungsi (Sangat Cepat)
-        if (namaLokasi === "-") {
+    // ===============================
+    // 🔥 LOGIKA HADIR MULTI LOKASI
+    // ===============================
+    if (status === "hadir") {
+
+        if (!targetLocations) {
+            displayText += `\nSedang mengambil data lokasi...`;
+            updateGPSDisplay(displayText);
+            return;
+        }
+
+        let dKantor = Infinity;
+        let dWAN = Infinity;
+
+        // ✅ Hitung hanya jika ada data
+        if (targetLocations.kantor?.lat) {
+            dKantor = getDistanceFromLatLonInMeters(
+                currentLat, currentLon,
+                targetLocations.kantor.lat,
+                targetLocations.kantor.lon
+            );
+        }
+
+        if (targetLocations.wan?.lat) {
+            dWAN = getDistanceFromLatLonInMeters(
+                currentLat, currentLon,
+                targetLocations.wan.lat,
+                targetLocations.wan.lon
+            );
+        }
+
+        let lokasiTerdeteksi = null;
+        let jarak = 0;
+
+        if (dKantor <= RADIUS_LIMIT) {
+            lokasiTerdeteksi = targetLocations.kantor.nama;
+            jarak = dKantor;
+        } else if (dWAN <= RADIUS_LIMIT) {
+            lokasiTerdeteksi = targetLocations.wan.nama;
+            jarak = dWAN;
+        }
+
+        if (lokasiTerdeteksi) {
             lastInsideArea = true;
-            updateGPSDisplay(displayText);
-            return; 
-        }
-
-        // JIKA DATA TARGET BELUM ADA: Tampilkan loading dan langsung berhenti di sini
-        const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
-        
-        if (!hasTargetData) {
+            displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
+        } else {
             lastInsideArea = false;
-            displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
-            updateGPSDisplay(displayText);
-            return; // Berhenti di sini agar tidak memproses kode di bawahnya
+            displayText += `\n❌ Di luar area absensi`;
+            displayText += `\n📏 Kantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`;
         }
 
-        // JIKA DATA SUDAH FIX: Hitung jarak
-if (targetLocations) {
-    const dKantor = getDistanceFromLatLonInMeters(
-        currentLat, currentLon,
-        targetLocations.kantor.lat,
-        targetLocations.kantor.lon
-    );
-
-    const dWAN = getDistanceFromLatLonInMeters(
-        currentLat, currentLon,
-        targetLocations.wan.lat,
-        targetLocations.wan.lon
-    );
-
-    let lokasiTerdeteksi = null;
-    let jarak = 0;
-
-    if (dKantor <= RADIUS_LIMIT) {
-        lokasiTerdeteksi = targetLocations.kantor.nama;
-        jarak = dKantor;
-    } else if (dWAN <= RADIUS_LIMIT) {
-        lokasiTerdeteksi = targetLocations.wan.nama;
-        jarak = dWAN;
-    }
-
-    if (lokasiTerdeteksi) {
-        lastInsideArea = true;
-        displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
     } else {
-        lastInsideArea = false;
-        displayText += `\n❌ Di luar area absensi`;
-        displayText += `\n📏 Kantor: ${dKantor.toFixed(0)}m | WAN: ${dWAN.toFixed(0)}m`;
+        lastInsideArea = true;
     }
-}
 
-    // 4. Update UI
     updateGPSDisplay(displayText);
 }
 
