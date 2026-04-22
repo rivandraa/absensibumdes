@@ -663,7 +663,6 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     lon = Number(lon) || 0;
 
     const status = (document.getElementById("status")?.value || "").toLowerCase();
-    const elNama = document.getElementById("titikKoordinatTampil");
 
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
@@ -683,16 +682,10 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // ===============================
     if (status === "hadir") {
 
-        if (!targetLocations) {
-            displayText += `\nSedang mengambil data lokasi...`;
-            updateGPSDisplay(displayText);
-            return;
-        }
-
         let dKantor = Infinity;
         let dWAN = Infinity;
 
-        // ✅ Hitung hanya jika ada data
+        // ✅ Hitung jika ada
         if (targetLocations.kantor?.lat) {
             dKantor = getDistanceFromLatLonInMeters(
                 currentLat, currentLon,
@@ -710,31 +703,39 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         }
 
         let lokasiTerdeteksi = null;
-        let jarak = 0;
+        let distance = null;
 
         if (dKantor <= RADIUS_LIMIT) {
             lokasiTerdeteksi = targetLocations.kantor.nama;
-            jarak = dKantor;
+            distance = dKantor;
         } else if (dWAN <= RADIUS_LIMIT) {
             lokasiTerdeteksi = targetLocations.wan.nama;
-            jarak = dWAN;
-        }
-
-        if (lokasiTerdeteksi) {
-            lastInsideArea = true;
-            displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
+            distance = dWAN;
         } else {
-            lastInsideArea = false;
-            displayText += `\n❌ Di luar area absensi`;
-            displayText += `\n📏 Kantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`;
+            // 🔥 ambil jarak terdekat
+            distance = Math.min(dKantor, dWAN);
         }
 
+        lastInsideArea = !!lokasiTerdeteksi;
+
+        // ===============================
+        // 🎯 FORMAT SESUAI KEINGINANMU
+        // ===============================
+        if (lastInsideArea) {
+            displayText += `\n✅ Berada dalam area radius ${lokasiTerdeteksi}`;
+        } else {
+            displayText += `\n❌ Di luar area absensi`;
+        }
+
+        displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+		displayText += `\n📏 Kantor: ${Math.round(dKantor)} Meter | WAN: ${Math.round(dWAN)} Meter`;
     } else {
         lastInsideArea = true;
     }
 
     updateGPSDisplay(displayText);
 }
+
 
 // =====================================================
 // REFRESH TARGET LOCATION
@@ -772,10 +773,14 @@ async function refreshTargetLocation(callback) {
         return;
     }
 
-    if (isFetchingLocation) return;
-
-    try {
-        isFetchingLocation = true;
+	if (isFetchingLocation) return;
+	
+	try {
+	    isFetchingLocation = true;
+	
+	    // 🔥 TAMPILKAN LOADING DI INPUT
+	    if (tampil) tampil.value = "Sedang mengambil data lokasi...";
+	    if (hidden) hidden.value = "-";
 
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
         const response = await fetch(url);
