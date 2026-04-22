@@ -682,6 +682,12 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // ===============================
     if (status === "hadir") {
 
+		if (!targetLocations) {
+		    lastInsideArea = false;
+		    updateGPSDisplay(displayText);
+		    return;
+		}
+
         let dKantor = Infinity;
         let dWAN = Infinity;
 
@@ -728,7 +734,6 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         }
 
         displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
-		displayText += `\n📏 Kantor: ${Math.round(dKantor)} Meter | WAN: ${Math.round(dWAN)} Meter`;
     } else {
         lastInsideArea = true;
     }
@@ -777,10 +782,6 @@ async function refreshTargetLocation(callback) {
 	
 	try {
 	    isFetchingLocation = true;
-	
-	    // 🔥 TAMPILKAN LOADING DI INPUT
-	    if (tampil) tampil.value = "Sedang mengambil data lokasi...";
-	    if (hidden) hidden.value = "-";
 
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
         const response = await fetch(url);
