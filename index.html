@@ -184,8 +184,7 @@ body.locked {
             <label>📋 Status Absen</label>
             <select id="status" class="form-control">
                 <option value="" disabled selected hidden>Pilih Status Absen</option>
-                <option value="Hadir">Hadir - Kantor BUMDesa</option>
-				<option value="WAN">Hadir - WAN Mart</option>
+                <option value="Hadir">Hadir</option>
                 <option value="Izin">Izin</option>
                 <option value="Sakit">Sakit</option>
                 <option value="Dinas">Dinas</option>
@@ -668,8 +667,10 @@ let areaErrorActive = false;
 let lastInsideArea = null;
 let fetchRequestId = 0;
 
-let targetLocation = null;
+let targetLocations = null;
 let gpsSystemActive = false;
+	targetLocations = loc;
+
 	
 const RADIUS_LIMIT = 30; // meter
 const MAX_ACCURACY = 50; // meter
@@ -798,18 +799,39 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         }
 
         // JIKA DATA SUDAH FIX: Hitung jarak
-        const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
-        lastInsideArea = distance <= RADIUS_LIMIT;
+if (targetLocations) {
+    const dKantor = getDistanceFromLatLonInMeters(
+        currentLat, currentLon,
+        targetLocations.kantor.lat,
+        targetLocations.kantor.lon
+    );
 
-        if (lastInsideArea) {
-            displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
-        } else {
-            displayText += `\n❌ Di luar area ${namaLokasi}`;
-            displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
-        }
-    } else {
-        lastInsideArea = true;
+    const dWAN = getDistanceFromLatLonInMeters(
+        currentLat, currentLon,
+        targetLocations.wan.lat,
+        targetLocations.wan.lon
+    );
+
+    let lokasiTerdeteksi = null;
+    let jarak = 0;
+
+    if (dKantor <= RADIUS_LIMIT) {
+        lokasiTerdeteksi = targetLocations.kantor.nama;
+        jarak = dKantor;
+    } else if (dWAN <= RADIUS_LIMIT) {
+        lokasiTerdeteksi = targetLocations.wan.nama;
+        jarak = dWAN;
     }
+
+    if (lokasiTerdeteksi) {
+        lastInsideArea = true;
+        displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
+    } else {
+        lastInsideArea = false;
+        displayText += `\n❌ Di luar area absensi`;
+        displayText += `\n📏 Kantor: ${dKantor.toFixed(0)}m | WAN: ${dWAN.toFixed(0)}m`;
+    }
+}
 
     // 4. Update UI
     updateGPSDisplay(displayText);
