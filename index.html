@@ -682,17 +682,21 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // ===============================
     if (status === "hadir") {
 
-		if (!targetLocations) {
-		    lastInsideArea = false;
-		    updateGPSDisplay(displayText);
-		    return;
-		}
+        // ===============================
+        // 🆓 FREE MODE (BOS / TANPA LOKASI)
+        // ===============================
+        if (!targetLocations || (targetLocations.mode === "free")) {
+            lastInsideArea = true;
+            return;
+        }
 
-        let dKantor = Infinity;
-        let dWAN = Infinity;
+        let dKantor = null;
+        let dWAN = null;
 
-        // ✅ Hitung jika ada
-        if (targetLocations.kantor?.lat) {
+        // ===============================
+        // KANTOR (optional)
+        // ===============================
+        if (targetLocations.kantor?.lat && targetLocations.kantor?.lon) {
             dKantor = getDistanceFromLatLonInMeters(
                 currentLat, currentLon,
                 targetLocations.kantor.lat,
@@ -700,7 +704,10 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             );
         }
 
-        if (targetLocations.wan?.lat) {
+        // ===============================
+        // WAN (optional)
+        // ===============================
+        if (targetLocations.wan?.lat && targetLocations.wan?.lon) {
             dWAN = getDistanceFromLatLonInMeters(
                 currentLat, currentLon,
                 targetLocations.wan.lat,
@@ -711,21 +718,28 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         let lokasiTerdeteksi = null;
         let distance = null;
 
-        if (dKantor <= RADIUS_LIMIT) {
+        // ===============================
+        // DETEKSI
+        // ===============================
+        if (dKantor !== null && dKantor <= RADIUS_LIMIT) {
             lokasiTerdeteksi = targetLocations.kantor.nama;
             distance = dKantor;
-        } else if (dWAN <= RADIUS_LIMIT) {
+        }
+        else if (dWAN !== null && dWAN <= RADIUS_LIMIT) {
             lokasiTerdeteksi = targetLocations.wan.nama;
             distance = dWAN;
-        } else {
-            // 🔥 ambil jarak terdekat
-            distance = Math.min(dKantor, dWAN);
+        }
+        else {
+            distance = Math.min(
+                dKantor ?? Infinity,
+                dWAN ?? Infinity
+            );
         }
 
         lastInsideArea = !!lokasiTerdeteksi;
 
         // ===============================
-        // 🎯 FORMAT SESUAI KEINGINANMU
+        // OUTPUT
         // ===============================
         if (lastInsideArea) {
             displayText += `\n✅ Berada dalam area radius ${lokasiTerdeteksi}`;
@@ -734,6 +748,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         }
 
         displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+
     } else {
         lastInsideArea = true;
     }
@@ -773,35 +788,37 @@ async function refreshTargetLocation(callback) {
         if (tampil) tampil.value = "-";
         if (hidden) hidden.value = "-";
 
-        targetLocations = null; // 🔥 pakai multi
+        targetLocations = null;
         isLoading = false;
         return;
     }
 
-	if (isFetchingLocation) return;
-	
-	try {
-	    isFetchingLocation = true;
+    if (isFetchingLocation) return;
+
+    try {
+        isFetchingLocation = true;
 
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
         const response = await fetch(url);
+        const loc = await response.json();
 
-        const loc = await response.json(); // 🔥 langsung json saja (lebih bersih)
-
-        // cegah data telat overwrite
         if (document.getElementById("status")?.value !== currentStatus) return;
 
         // ===============================
-        // 3. MULTI LOKASI (KANTOR + WAN)
+        // 3. DATA LOKASI
         // ===============================
-        if (loc && (loc.kantor || loc.wan)) {
+        if (loc && (loc.kantor || loc.wan || loc.mode === "free")) {
 
-            targetLocations = loc; // 🔥 INI INTINYA
+            targetLocations = loc;
 
-            if (tampil) tampil.value = "Multi Lokasi (Auto Detect)";
+            if (loc.mode === "free") {
+                if (tampil) tampil.value = "Mode Bebas Lokasi (Bos/Admin)";
+            } else {
+                if (tampil) tampil.value = "Multi Lokasi (Auto Detect)";
+            }
+
             if (hidden) hidden.value = "-";
 
-            // 🚀 update UI langsung kalau GPS sudah ada
             if (gpsData[0] !== 0) {
                 setTimeout(() => {
                     forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
@@ -810,7 +827,6 @@ async function refreshTargetLocation(callback) {
 
         } else {
             targetLocations = null;
-
             if (tampil) tampil.value = "-";
         }
 
@@ -823,6 +839,7 @@ async function refreshTargetLocation(callback) {
         if (typeof callback === "function") callback();
     }
 }
+
     
 // =====================================================
 // CALCULATION LOGIC
