@@ -752,21 +752,34 @@ let isFetchingLocation = false;
 async function refreshTargetLocation(callback) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     const userRequesting = userObj ? userObj.username : null;
-    const tampil = document.getElementById("titikKoordinatTampil");
-    const status = (document.getElementById("status")?.value || "").toLowerCase();
+    if (!userRequesting) return;
 
-    if (!userRequesting) {
+    const statusInput = document.getElementById("status");
+    const currentStatus = (statusInput ? statusInput.value : "").toLowerCase();
+    const tampil = document.getElementById("titikKoordinatTampil");
+    const hidden = document.getElementById("titikKoordinat");
+
+    // ===============================
+    // 1. VALIDASI STATUS
+    // ===============================
+    if (!currentStatus || currentStatus === "pilih status...") {
+        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
         isLoading = false;
         return;
     }
 
-    // Status yang tidak butuh GPS (Dinas, Sakit, Izin)
-    if (["dinas", "izin", "sakit"].includes(status)) {
-        targetLocations = null;
+    // ===============================
+    // 2. STATUS TANPA KOORDINAT (Dinas, Izin, Sakit)
+    // ===============================
+    if (["dinas", "izin", "sakit"].includes(currentStatus)) {
         if (tampil) tampil.value = "-";
-        lastInsideArea = true;
+        if (hidden) hidden.value = "-";
+
+        targetLocations = null; // Reset multi-lokasi
         isLoading = false;
-        forceUpdateDistanceUI();
+
+        // Langsung update UI agar tombol absen aktif (karena status ini biasanya bebas)
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
         return;
     }
 
@@ -774,37 +787,54 @@ async function refreshTargetLocation(callback) {
 
     try {
         isFetchingLocation = true;
+
+        // Action tetap getTargetLocation, tapi server sekarang mengirimkan objek kantor & wan
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
-        
+
         const response = await fetch(url);
-        const data = await response.json();
+        const locs = await response.json(); 
 
-        if (data && !data.error) {
-            targetLocations = data; // Menyimpan objek multi-lokasi
+        // Validasi jika user mengubah status saat fetch sedang berjalan
+        if (document.getElementById("status")?.value.toLowerCase() !== currentStatus) return;
 
+        // ===========================================
+        // 3. JIKA DATA LOKASI BERHASIL DIAMBIL
+        // ===========================================
+        if (locs && (locs.kantor || locs.wan)) {
+            
+            // Simpan ke variabel global targetLocations (Bentuknya Objek Multi)
+            targetLocations = locs;
+
+            // Update Tampilan Input (Hanya kosmetik)
             if (tampil) {
-                // Logika Tampilan Lokasi Bebas sesuai request Bos
-                let info = [];
-                if (data.kantor?.lat === "FREE") info.push("Kantor");
-                if (data.wan?.lat === "FREE") info.push("WAN");
-
-                if (info.length > 0) {
-                    tampil.value = "✅ Lokasi Bebas: " + info.join(" & ");
+                if (locs.kantor?.lat === "FREE" || locs.wan?.lat === "FREE") {
+                    tampil.value = "Lokasi Bebas Aktif";
                 } else {
-                    tampil.value = "📍 Multi Lokasi Aktif";
+                    tampil.value = "Multi Lokasi (Auto Detect)";
                 }
             }
-            forceUpdateDistanceUI();
+            if (hidden) hidden.value = "MULTI";
+
+            // 🚀 UPDATE UI SECEPATNYA JIKA GPS SUDAH ADA
+            if (gpsData[0] !== 0) {
+                forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
+            }
+
         } else {
-            if (tampil) tampil.value = "⚠️ Data lokasi tidak ditemukan";
+            // Jika data kosong dari server
+            targetLocations = null;
+            if (tampil) tampil.value = "-";
+            forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
         }
-    } catch (e) {
-        console.error("Gagal refresh:", e);
-        if (tampil) tampil.value = "⚠️ Gagal memuat koordinat";
+
+    } catch (error) {
+        console.error("Gagal refresh lokasi:", error);
+        if (tampil) tampil.value = "❌ Gagal memuat data lokasi.";
     } finally {
         isFetchingLocation = false;
-        isLoading = false; // 🔥 PENTING: Ini agar teks "Sedang update..." berhenti
-        if (callback) callback();
+        isLoading = false;
+
+        if (typeof callback === "function") callback();
     }
 }
 // =====================================================
