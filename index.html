@@ -728,56 +728,60 @@ let isFetchingLocation = false;
 async function refreshTargetLocation(callback) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     const userRequesting = userObj ? userObj.username : null;
+    const statusInput = document.getElementById("status");
+    const currentStatus = (statusInput ? statusInput.value : "").toLowerCase();
     const tampil = document.getElementById("titikKoordinatTampil");
-    
-    // Ambil status untuk pengecekan bypass (Dinas/Sakit/Izin)
-    const status = (document.getElementById("status")?.value || "").toLowerCase();
 
-    if (!userRequesting) return;
+    if (!userRequesting || !currentStatus || currentStatus.includes("pilih")) {
+        isLoading = false;
+        return;
+    }
 
-    // Bypass jika status bukan Hadir/WAN
-    if (["dinas", "izin", "sakit"].includes(status)) {
+    // Bypass untuk status selain kehadiran fisik
+    if (["dinas", "izin", "sakit"].includes(currentStatus)) {
         targetLocations = null;
         if (tampil) tampil.value = "-";
-        lastInsideArea = true;
+        lastInsideArea = true; // Langsung izinkan absen
         isLoading = false;
         forceUpdateDistanceUI();
         return;
     }
 
+    if (isFetchingLocation) return;
+
     try {
         isFetchingLocation = true;
-        // PENTING: URL hanya butuh username karena server akan kirim semua lokasi
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
         
         const response = await fetch(url);
         const data = await response.json();
 
         if (data && !data.error) {
-            targetLocations = data; // Simpan {kantor:..., wan:...}
+            targetLocations = data;
 
+            // LOGIKA TAMPILAN: Menampilkan lokasi mana yang "Bebas"
             if (tampil) {
-                let infoBebas = [];
-                if (data.kantor?.lat === "FREE") infoBebas.push("Kantor");
-                if (data.wan?.lat === "FREE") infoBebas.push("WAN");
+                let info = [];
+                if (data.kantor?.lat === "FREE") info.push("Kantor");
+                if (data.wan?.lat === "FREE") info.push("WAN");
 
-                if (infoBebas.length > 0) {
-                    tampil.value = "✅ Lokasi Bebas: " + infoBebas.join(" & ");
+                if (info.length > 0) {
+                    tampil.value = "✅ Lokasi Bebas: " + info.join(" & ");
                 } else {
-                    tampil.value = "📍 Multi Lokasi Aktif";
+                    tampil.value = "📍 Multi Lokasi (Auto Detect)";
                 }
             }
             forceUpdateDistanceUI();
         } else {
-            if (tampil) tampil.value = "⚠️ Data tidak ditemukan";
+            if (tampil) tampil.value = "⚠️ Data lokasi tidak ditemukan";
         }
     } catch (e) {
-        console.error("Fetch Error:", e);
+        console.error("Error:", e);
         if (tampil) tampil.value = "⚠️ Gagal memuat koordinat";
     } finally {
         isFetchingLocation = false;
-        isLoading = false; // Menghentikan animasi loading "Sedang update..."
-        if (callback) callback();
+        isLoading = false; // Menghentikan teks "Sedang update koordinat..."
+        if (typeof callback === "function") callback();
     }
 }
 // =====================================================
