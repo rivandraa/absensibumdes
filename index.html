@@ -657,84 +657,62 @@ function stopGPSLoading() {
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
-    // 1. Ambil input secepat mungkin
     const status = (document.getElementById("status")?.value || "").toLowerCase();
-    
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
-    // Jika GPS belum aktif, jangan proses apa pun
     if (!currentLat || currentLat === 0) return;
 
-    // 2. Bangun teks dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    if (acc && acc > MAX_ACCURACY) {
-        displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
-    }
-	
-    // 3. Logika Prioritas Tinggi (Status Hadir)
-    // Kita cek "hadir" karena WAN sekarang sudah masuk ke dalam multi-lokasi otomatis
-    if (status === "hadir") {
-        
-        // JIKA DATA TARGET BELUM ADA (Sedang Fetching)
+    if (status === "hadir" || status === "wan") {
         if (!targetLocations) {
             lastInsideArea = false;
-            displayText += `\nMenghubungkan ke server lokasi${".".repeat(accDots)}`;
-            updateGPSDisplay(displayText);
+            updateGPSDisplay(displayText + "\n⌛ Menunggu data lokasi...");
             return;
         }
 
-        let lokasiTerdeteksi = null;
-        let minDistance = Infinity;
-        let isFreeLocation = false;
+        let lokasiTerpilih = null;
+        let jarakTerkecil = Infinity;
+        let isFree = false;
 
-        // Loop mengecek semua properti di targetLocations (kantor, wan, dll)
+        // Cek semua lokasi yang ada (Kantor & WAN)
         for (let key in targetLocations) {
-            const loc = targetLocations[key];
+            let loc = targetLocations[key];
             if (!loc) continue;
 
-            // CEK LOKASI BEBAS (Jika lat adalah "FREE")
+            // Jika lokasi ini kosong di spreadsheet (FREE)
             if (loc.lat === "FREE") {
-                lokasiTerdeteksi = loc.nama;
-                isFreeLocation = true;
-                break; // Langsung lolos, tidak perlu cek lokasi lain
+                lokasiTerpilih = loc.nama;
+                isFree = true;
+                break; 
             }
 
-            // CEK RADIUS (Jika koordinat ada)
-            if (loc.lat && loc.lon) {
-                const d = getDistanceFromLatLonInMeters(currentLat, currentLon, loc.lat, loc.lon);
-                
-                // Simpan jarak terkecil untuk ditampilkan jika user di luar semua radius
-                if (d < minDistance) minDistance = d;
+            // Hitung jarak
+            let d = getDistanceFromLatLonInMeters(currentLat, currentLon, loc.lat, loc.lon);
+            if (d < jarakTerkecil) jarakTerkecil = d;
 
-                if (d <= RADIUS_LIMIT) {
-                    lokasiTerdeteksi = loc.nama;
-                    minDistance = d; // Jarak ke lokasi yang match
-                    break; // Sudah ketemu satu yang masuk radius, berhenti loop
-                }
+            if (d <= RADIUS_LIMIT) {
+                lokasiTerpilih = loc.nama;
+                jarakTerkecil = d;
+                break;
             }
         }
 
-        lastInsideArea = !!lokasiTerdeteksi;
+        lastInsideArea = !!lokasiTerpilih || isFree;
 
         if (lastInsideArea) {
-            const info = isFreeLocation ? `Bebas (${lokasiTerdeteksi})` : `radius ${lokasiTerdeteksi}`;
-            displayText += `\n✅ Berada dalam area ${info}`;
-            if (!isFreeLocation) displayText += `\n📏 Jarak: ${Math.round(minDistance)} Meter`;
+            let label = isFree ? `Bebas (${lokasiTerpilih})` : lokasiTerpilih;
+            displayText += `\n✅ Berada dalam area ${label}`;
         } else {
             displayText += `\n❌ Di luar area absensi`;
-            if (minDistance !== Infinity) {
-                displayText += `\n📏 Jarak Terdekat: ${Math.round(minDistance)} Meter (Max. ${RADIUS_LIMIT}m)`;
-            }
+            displayText += `\n📏 Jarak Terdekat: ${Math.round(jarakTerkecil)} Meter (Max. ${RADIUS_LIMIT}m)`;
         }
     } else {
-        // Untuk status selain "hadir" (Sakit, Izin, Dinas), selalu lolos
         lastInsideArea = true;
     }
 
-    // 4. Update UI
     updateGPSDisplay(displayText);
 }
 
@@ -750,31 +728,20 @@ async function refreshTargetLocation(callback) {
     if (!userRequesting) return;
 
     const statusInput = document.getElementById("status");
-    const currentStatus = (statusInput ? statusInput.value : "").toLowerCase();
+    const currentStatus = statusInput ? statusInput.value : "";
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
 
-    // ===============================
-    // 1. VALIDASI STATUS
-    // ===============================
-    if (!currentStatus || currentStatus === "pilih status...") {
+    if (!currentStatus || currentStatus === "Pilih Status...") {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-        isLoading = false;
         return;
     }
 
-    // ===============================
-    // 2. STATUS TANPA KOORDINAT (Dinas, Izin, Sakit)
-    // ===============================
-    if (["dinas", "izin", "sakit"].includes(currentStatus)) {
+    if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
         if (tampil) tampil.value = "-";
         if (hidden) hidden.value = "-";
-
-        targetLocations = null; // Reset multi-lokasi
-        isLoading = false;
-
-        // Langsung update UI agar tombol absen aktif (karena status ini biasanya bebas)
-        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
+        targetLocations = null; 
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         return;
     }
 
@@ -782,25 +749,17 @@ async function refreshTargetLocation(callback) {
 
     try {
         isFetchingLocation = true;
-
-        // Action tetap getTargetLocation, tapi server sekarang mengirimkan objek kantor & wan
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
-
         const response = await fetch(url);
         const locs = await response.json(); 
 
-        // Validasi jika user mengubah status saat fetch sedang berjalan
-        if (document.getElementById("status")?.value.toLowerCase() !== currentStatus) return;
+        if (document.getElementById("status")?.value !== currentStatus) return;
 
-        // ===========================================
-        // 3. JIKA DATA LOKASI BERHASIL DIAMBIL
-        // ===========================================
         if (locs && (locs.kantor || locs.wan)) {
-            
-            // Simpan ke variabel global targetLocations (Bentuknya Objek Multi)
-            targetLocations = locs;
+            // Simpan objek multi ke variabel global
+            targetLocations = locs; 
 
-            // Update Tampilan Input (Hanya kosmetik)
+            // Tampilan di UI
             if (tampil) {
                 if (locs.kantor?.lat === "FREE" || locs.wan?.lat === "FREE") {
                     tampil.value = "Lokasi Bebas Aktif";
@@ -810,25 +769,18 @@ async function refreshTargetLocation(callback) {
             }
             if (hidden) hidden.value = "MULTI";
 
-            // 🚀 UPDATE UI SECEPATNYA JIKA GPS SUDAH ADA
             if (gpsData[0] !== 0) {
-                forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
+                forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
             }
-
         } else {
-            // Jika data kosong dari server
             targetLocations = null;
             if (tampil) tampil.value = "-";
-            forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
+            forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         }
-
     } catch (error) {
-        console.error("Gagal refresh lokasi:", error);
-        if (tampil) tampil.value = "❌ Gagal memuat data lokasi.";
+        console.error("Gagal refresh:", error);
     } finally {
         isFetchingLocation = false;
-        isLoading = false;
-
         if (typeof callback === "function") callback();
     }
 }
