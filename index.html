@@ -664,12 +664,13 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     if (!currentLat || currentLat === 0) return;
 
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
-    displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
+    displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter`;
 
+    // Logika cek lokasi untuk Hadir atau WAN
     if (status === "hadir" || status === "wan") {
         if (!targetLocations) {
             lastInsideArea = false;
-            updateGPSDisplay(displayText + "\n⌛ Menunggu data lokasi...");
+            updateGPSDisplay(displayText + "\n⌛ Memuat data lokasi...");
             return;
         }
 
@@ -677,45 +678,45 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         let jarakTerkecil = Infinity;
         let isFree = false;
 
-        // Cek semua lokasi yang ada (Kantor & WAN)
+        // Cek Kantor & WAN dalam loop
         for (let key in targetLocations) {
             let loc = targetLocations[key];
             if (!loc) continue;
 
-            // Jika lokasi ini kosong di spreadsheet (FREE)
+            // 1. Jika Lokasi BEBAS (Kolom Kosong di Spreadsheet)
             if (loc.lat === "FREE") {
                 lokasiTerpilih = loc.nama;
                 isFree = true;
-                break; 
+                break; // Langsung lolos
             }
 
-            // Hitung jarak
+            // 2. Jika Lokasi Koordinat (Hitung Jarak)
             let d = getDistanceFromLatLonInMeters(currentLat, currentLon, loc.lat, loc.lon);
             if (d < jarakTerkecil) jarakTerkecil = d;
 
             if (d <= RADIUS_LIMIT) {
                 lokasiTerpilih = loc.nama;
                 jarakTerkecil = d;
-                break;
+                break; // Masuk radius salah satu, stop loop
             }
         }
 
-        lastInsideArea = !!lokasiTerpilih || isFree;
+        lastInsideArea = (lokasiTerpilih !== null || isFree);
 
         if (lastInsideArea) {
             let label = isFree ? `Bebas (${lokasiTerpilih})` : lokasiTerpilih;
             displayText += `\n✅ Berada dalam area ${label}`;
         } else {
             displayText += `\n❌ Di luar area absensi`;
-            displayText += `\n📏 Jarak Terdekat: ${Math.round(jarakTerkecil)} Meter (Max. ${RADIUS_LIMIT}m)`;
+            displayText += `\n📏 Jarak: ${Math.round(jarakTerkecil)} Meter (Max. ${RADIUS_LIMIT}m)`;
         }
     } else {
+        // Selain hadir/wan, anggap selalu benar lokasinya
         lastInsideArea = true;
     }
 
     updateGPSDisplay(displayText);
 }
-
 
 // =====================================================
 // REFRESH TARGET LOCATION
@@ -725,63 +726,47 @@ let isFetchingLocation = false;
 async function refreshTargetLocation(callback) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     const userRequesting = userObj ? userObj.username : null;
-    if (!userRequesting) return;
-
     const statusInput = document.getElementById("status");
-    const currentStatus = statusInput ? statusInput.value : "";
+    const currentStatus = (statusInput ? statusInput.value : "").toLowerCase();
     const tampil = document.getElementById("titikKoordinatTampil");
-    const hidden = document.getElementById("titikKoordinat");
 
-    if (!currentStatus || currentStatus === "Pilih Status...") {
-        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-        return;
-    }
+    if (!userRequesting || !currentStatus || currentStatus.includes("pilih")) return;
 
-    if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
+    // Status yang tidak butuh cek lokasi
+    if (["dinas", "izin", "sakit"].includes(currentStatus)) {
+        targetLocations = null;
         if (tampil) tampil.value = "-";
-        if (hidden) hidden.value = "-";
-        targetLocations = null; 
+        lastInsideArea = true;
         forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         return;
     }
-
-    if (isFetchingLocation) return;
 
     try {
         isFetchingLocation = true;
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
         const response = await fetch(url);
-        const locs = await response.json(); 
+        const data = await response.json();
 
-        if (document.getElementById("status")?.value !== currentStatus) return;
-
-        if (locs && (locs.kantor || locs.wan)) {
-            // Simpan objek multi ke variabel global
-            targetLocations = locs; 
-
-            // Tampilan di UI
+        if (data) {
+            targetLocations = data;
             if (tampil) {
-                if (locs.kantor?.lat === "FREE" || locs.wan?.lat === "FREE") {
+                // Beri info jika ada lokasi yang bebas
+                if (data.kantor?.lat === "FREE" || data.wan?.lat === "FREE") {
                     tampil.value = "Lokasi Bebas Aktif";
                 } else {
                     tampil.value = "Multi Lokasi (Auto Detect)";
                 }
             }
-            if (hidden) hidden.value = "MULTI";
-
-            if (gpsData[0] !== 0) {
-                forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
-            }
-        } else {
-            targetLocations = null;
-            if (tampil) tampil.value = "-";
-            forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         }
-    } catch (error) {
-        console.error("Gagal refresh:", error);
+        
+        // Langsung update UI
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+
+    } catch (e) {
+        console.error("Gagal ambil lokasi:", e);
     } finally {
         isFetchingLocation = false;
-        if (typeof callback === "function") callback();
+        if (callback) callback();
     }
 }
 
