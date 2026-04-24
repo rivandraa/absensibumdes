@@ -659,61 +659,85 @@ function stopGPSLoading() {
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
+    acc = Number(acc) || 0;
+    lat = Number(lat) || 0;
+    lon = Number(lon) || 0;
+
     const status = (document.getElementById("status")?.value || "").toLowerCase();
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
-    if (!currentLat || currentLat === 0) return;
+    if (!currentLat || !currentLon || currentLat === 0 || currentLon === 0) {
+        updateGPSDisplay("📡 Menunggu sinyal GPS...");
+        return;
+    }
 
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
-    displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter`;
+    displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // Logika cek lokasi untuk Hadir atau WAN
-    if (status === "hadir" || status === "wan") {
+    if (status === "hadir") {
         if (!targetLocations) {
             lastInsideArea = false;
-            updateGPSDisplay(displayText + "\n⌛ Memuat data lokasi...");
+            updateGPSDisplay(displayText);
             return;
         }
 
-        let lokasiTerpilih = null;
-        let jarakTerkecil = Infinity;
-        let isFree = false;
+        let dKantor = Infinity;
+        let dWAN = Infinity;
+        let lokasiTerdeteksi = null;
+        let distance = null;
 
-        // Cek Kantor & WAN dalam loop
-        for (let key in targetLocations) {
-            let loc = targetLocations[key];
-            if (!loc) continue;
-
-            // 1. Jika Lokasi BEBAS (Kolom Kosong di Spreadsheet)
-            if (loc.lat === "FREE") {
-                lokasiTerpilih = loc.nama;
-                isFree = true;
-                break; // Langsung lolos
-            }
-
-            // 2. Jika Lokasi Koordinat (Hitung Jarak)
-            let d = getDistanceFromLatLonInMeters(currentLat, currentLon, loc.lat, loc.lon);
-            if (d < jarakTerkecil) jarakTerkecil = d;
-
-            if (d <= RADIUS_LIMIT) {
-                lokasiTerpilih = loc.nama;
-                jarakTerkecil = d;
-                break; // Masuk radius salah satu, stop loop
+        // --- CEK LOKASI 1: KANTOR ---
+        if (targetLocations.kantor?.lat === "FREE") {
+            lokasiTerdeteksi = targetLocations.kantor.nama;
+            distance = 0; 
+        } else if (targetLocations.kantor?.lat) {
+            dKantor = getDistanceFromLatLonInMeters(
+                currentLat, currentLon,
+                targetLocations.kantor.lat, targetLocations.kantor.lon
+            );
+            if (dKantor <= RADIUS_LIMIT) {
+                lokasiTerdeteksi = targetLocations.kantor.nama;
+                distance = dKantor;
             }
         }
 
-        lastInsideArea = (lokasiTerpilih !== null || isFree);
+        // --- CEK LOKASI 2: WAN (Hanya dicek jika Kantor tidak lolos/tidak FREE) ---
+        if (!lokasiTerdeteksi) {
+            if (targetLocations.wan?.lat === "FREE") {
+                lokasiTerdeteksi = targetLocations.wan.nama;
+                distance = 0;
+            } else if (targetLocations.wan?.lat) {
+                dWAN = getDistanceFromLatLonInMeters(
+                    currentLat, currentLon,
+                    targetLocations.wan.lat, targetLocations.wan.lon
+                );
+                if (dWAN <= RADIUS_LIMIT) {
+                    lokasiTerdeteksi = targetLocations.wan.nama;
+                    distance = dWAN;
+                }
+            }
+        }
 
+        // Jika semua lokasi tidak masuk radius, tentukan jarak terdekat untuk tampilan UI
+        if (lokasiTerdeteksi === null) {
+            distance = Math.min(dKantor, dWAN);
+            lastInsideArea = false;
+        } else {
+            lastInsideArea = true;
+        }
+
+        // --- FORMAT TAMPILAN ---
         if (lastInsideArea) {
-            let label = isFree ? `Bebas (${lokasiTerpilih})` : lokasiTerpilih;
-            displayText += `\n✅ Berada dalam area ${label}`;
+            // Jika distance 0 berarti statusnya lokasi bebas (kolom kosong di spreadsheet)
+            const labelArea = (distance === 0) ? `Bebas (${lokasiTerdeteksi})` : lokasiTerdeteksi;
+            displayText += `\n✅ Berada dalam area ${labelArea}`;
         } else {
             displayText += `\n❌ Di luar area absensi`;
-            displayText += `\n📏 Jarak: ${Math.round(jarakTerkecil)} Meter (Max. ${RADIUS_LIMIT}m)`;
         }
+
+        displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
     } else {
-        // Selain hadir/wan, anggap selalu benar lokasinya
         lastInsideArea = true;
     }
 
