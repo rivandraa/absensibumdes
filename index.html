@@ -750,69 +750,81 @@ async function refreshTargetLocation(callback) {
     if (!userRequesting) return;
 
     const statusInput = document.getElementById("status");
-    const currentStatus = statusInput ? statusInput.value : "";
+    const currentStatus = (statusInput ? statusInput.value : "").toLowerCase();
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
 
     // ===============================
     // 1. VALIDASI STATUS
     // ===============================
-    if (!currentStatus || currentStatus === "Pilih Status..." || currentStatus === "") {
+    if (!currentStatus || currentStatus === "pilih status...") {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
         isLoading = false;
         return;
     }
 
     // ===============================
-    // 2. STATUS TANPA LOKASI
+    // 2. STATUS TANPA KOORDINAT (Dinas, Izin, Sakit)
     // ===============================
-    if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
+    if (["dinas", "izin", "sakit"].includes(currentStatus)) {
         if (tampil) tampil.value = "-";
         if (hidden) hidden.value = "-";
 
-        targetLocations = null; // 🔥 pakai multi
+        targetLocations = null; // Reset multi-lokasi
         isLoading = false;
+
+        // Langsung update UI agar tombol absen aktif (karena status ini biasanya bebas)
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
         return;
     }
 
-        if (isFetchingLocation) return;
+    if (isFetchingLocation) return;
 
-        try {
-            isFetchingLocation = true;
+    try {
+        isFetchingLocation = true;
 
+        // Action tetap getTargetLocation, tapi server sekarang mengirimkan objek kantor & wan
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
+
         const response = await fetch(url);
+        const locs = await response.json(); 
 
-        const loc = await response.json(); // 🔥 langsung json saja (lebih bersih)
+        // Validasi jika user mengubah status saat fetch sedang berjalan
+        if (document.getElementById("status")?.value.toLowerCase() !== currentStatus) return;
 
-        // cegah data telat overwrite
-        if (document.getElementById("status")?.value !== currentStatus) return;
+        // ===========================================
+        // 3. JIKA DATA LOKASI BERHASIL DIAMBIL
+        // ===========================================
+        if (locs && (locs.kantor || locs.wan)) {
+            
+            // Simpan ke variabel global targetLocations (Bentuknya Objek Multi)
+            targetLocations = locs;
 
-        // ===============================
-        // 3. MULTI LOKASI (KANTOR + WAN)
-        // ===============================
-        if (loc && (loc.kantor || loc.wan)) {
+            // Update Tampilan Input (Hanya kosmetik)
+            if (tampil) {
+                if (locs.kantor?.lat === "FREE" || locs.wan?.lat === "FREE") {
+                    tampil.value = "Lokasi Bebas Aktif";
+                } else {
+                    tampil.value = "Multi Lokasi (Auto Detect)";
+                }
+            }
+            if (hidden) hidden.value = "MULTI";
 
-            targetLocations = loc; // 🔥 INI INTINYA
-
-            if (tampil) tampil.value = "Multi Lokasi (Auto Detect)";
-            if (hidden) hidden.value = "-";
-
-            // 🚀 update UI langsung kalau GPS sudah ada
+            // 🚀 UPDATE UI SECEPATNYA JIKA GPS SUDAH ADA
             if (gpsData[0] !== 0) {
-                setTimeout(() => {
-                    forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
-                }, 0);
+                forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
             }
 
         } else {
+            // Jika data kosong dari server
             targetLocations = null;
-
             if (tampil) tampil.value = "-";
+            forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
         }
 
     } catch (error) {
-        console.error("Gagal refresh:", error);
+        console.error("Gagal refresh lokasi:", error);
+        if (tampil) tampil.value = "❌ Gagal memuat data lokasi.";
     } finally {
         isFetchingLocation = false;
         isLoading = false;
