@@ -919,7 +919,7 @@ function startGPSMonitoring(onReady) {
 let isLoading = false;
 let loadingLoopId = 0;
 
-function updateLoadingDots(loopId) {
+/*function updateLoadingDots(loopId) {
     if (!isLoading || loopId !== loadingLoopId) return;
 
     const elNama = document.getElementById("titikKoordinatTampil");
@@ -930,7 +930,7 @@ function updateLoadingDots(loopId) {
     }
 
     setTimeout(() => updateLoadingDots(loopId), 200);
-}
+}*/
 
 document.addEventListener("DOMContentLoaded", () => {
     const statusEl = document.getElementById("status");
