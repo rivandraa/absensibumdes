@@ -657,87 +657,84 @@ function stopGPSLoading() {
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
-
-    acc = Number(acc) || 0;
-    lat = Number(lat) || 0;
-    lon = Number(lon) || 0;
-
+    // 1. Ambil input secepat mungkin
     const status = (document.getElementById("status")?.value || "").toLowerCase();
-
+    
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
-    // 🚫 Jika GPS belum siap
-    if (!currentLat || !currentLon || currentLat === 0 || currentLon === 0) {
-        updateGPSDisplay("📡 Menunggu sinyal GPS...");
-        return;
-    }
+    // Jika GPS belum aktif, jangan proses apa pun
+    if (!currentLat || currentLat === 0) return;
 
-    // 🧾 Tampilan dasar
+    // 2. Bangun teks dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // ===============================
-    // 🔥 LOGIKA HADIR MULTI LOKASI
-    // ===============================
+    if (acc && acc > MAX_ACCURACY) {
+        displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
+    }
+	
+    // 3. Logika Prioritas Tinggi (Status Hadir)
+    // Kita cek "hadir" karena WAN sekarang sudah masuk ke dalam multi-lokasi otomatis
     if (status === "hadir") {
-
-                if (!targetLocations) {
-                    lastInsideArea = false;
-                    updateGPSDisplay(displayText);
-                    return;
-                }
-
-        let dKantor = Infinity;
-        let dWAN = Infinity;
-
-        // ✅ Hitung jika ada
-        if (targetLocations.kantor?.lat) {
-            dKantor = getDistanceFromLatLonInMeters(
-                currentLat, currentLon,
-                targetLocations.kantor.lat,
-                targetLocations.kantor.lon
-            );
-        }
-
-        if (targetLocations.wan?.lat) {
-            dWAN = getDistanceFromLatLonInMeters(
-                currentLat, currentLon,
-                targetLocations.wan.lat,
-                targetLocations.wan.lon
-            );
+        
+        // JIKA DATA TARGET BELUM ADA (Sedang Fetching)
+        if (!targetLocations) {
+            lastInsideArea = false;
+            displayText += `\nMenghubungkan ke server lokasi${".".repeat(accDots)}`;
+            updateGPSDisplay(displayText);
+            return;
         }
 
         let lokasiTerdeteksi = null;
-        let distance = null;
+        let minDistance = Infinity;
+        let isFreeLocation = false;
 
-        if (dKantor <= RADIUS_LIMIT) {
-            lokasiTerdeteksi = targetLocations.kantor.nama;
-            distance = dKantor;
-        } else if (dWAN <= RADIUS_LIMIT) {
-            lokasiTerdeteksi = targetLocations.wan.nama;
-            distance = dWAN;
-        } else {
-            // 🔥 ambil jarak terdekat
-            distance = Math.min(dKantor, dWAN);
+        // Loop mengecek semua properti di targetLocations (kantor, wan, dll)
+        for (let key in targetLocations) {
+            const loc = targetLocations[key];
+            if (!loc) continue;
+
+            // CEK LOKASI BEBAS (Jika lat adalah "FREE")
+            if (loc.lat === "FREE") {
+                lokasiTerdeteksi = loc.nama;
+                isFreeLocation = true;
+                break; // Langsung lolos, tidak perlu cek lokasi lain
+            }
+
+            // CEK RADIUS (Jika koordinat ada)
+            if (loc.lat && loc.lon) {
+                const d = getDistanceFromLatLonInMeters(currentLat, currentLon, loc.lat, loc.lon);
+                
+                // Simpan jarak terkecil untuk ditampilkan jika user di luar semua radius
+                if (d < minDistance) minDistance = d;
+
+                if (d <= RADIUS_LIMIT) {
+                    lokasiTerdeteksi = loc.nama;
+                    minDistance = d; // Jarak ke lokasi yang match
+                    break; // Sudah ketemu satu yang masuk radius, berhenti loop
+                }
+            }
         }
 
         lastInsideArea = !!lokasiTerdeteksi;
 
-        // ===============================
-        // 🎯 FORMAT SESUAI KEINGINANMU
-        // ===============================
         if (lastInsideArea) {
-            displayText += `\n✅ Berada dalam area radius ${lokasiTerdeteksi}`;
+            const info = isFreeLocation ? `Bebas (${lokasiTerdeteksi})` : `radius ${lokasiTerdeteksi}`;
+            displayText += `\n✅ Berada dalam area ${info}`;
+            if (!isFreeLocation) displayText += `\n📏 Jarak: ${Math.round(minDistance)} Meter`;
         } else {
             displayText += `\n❌ Di luar area absensi`;
+            if (minDistance !== Infinity) {
+                displayText += `\n📏 Jarak Terdekat: ${Math.round(minDistance)} Meter (Max. ${RADIUS_LIMIT}m)`;
+            }
         }
-
-        displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
     } else {
+        // Untuk status selain "hadir" (Sakit, Izin, Dinas), selalu lolos
         lastInsideArea = true;
     }
 
+    // 4. Update UI
     updateGPSDisplay(displayText);
 }
 
