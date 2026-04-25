@@ -889,7 +889,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             if (isFinite(dWAN)) detail.push(`WAN: ${Math.round(dWAN)} Meter`);
 
             if (detail.length > 0) {
-                displayText += `\n📏 ${detail.join(" | ")}`;
+                displayText += `\n📏 ${detail.join(" | ")} || (Max. ${RADIUS_LIMIT} Meter)`;
             }
         }
 
