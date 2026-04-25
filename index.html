@@ -551,7 +551,9 @@ async function updateStatusOptions() {
 
     if (!selectStatus || !optLoading || !optHadir || !optPulang) return;
 
-    // 🔥 tampilkan loading
+    // ===============================
+    // 🔥 START LOADING
+    // ===============================
     selectStatus.disabled = true;
 
     optLoading.hidden = false;
@@ -560,7 +562,7 @@ async function updateStatusOptions() {
 
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     if (!userObj) {
-        optLoading.hidden = true;
+        optLoading.textContent = "❌ User tidak ditemukan";
         selectStatus.disabled = false;
         return;
     }
@@ -575,7 +577,7 @@ async function updateStatusOptions() {
         const sudahPulang = data.sudahPulang === true;
 
         // ===============================
-        // 🔥 RESET
+        // RESET SEMUA
         // ===============================
         optHadir.hidden = true;
         optIzin.hidden  = true;
@@ -584,31 +586,39 @@ async function updateStatusOptions() {
         optPulang.hidden = true;
 
         // ===============================
-        // 🔥 CEK WAKTU
+        // CEK WAKTU
         // ===============================
         const now = new Date();
-        const hari = now.getDay(); // 0 = Minggu, 6 = Sabtu
+        const hari = now.getDay();
         const jam = now.getHours();
         const menit = now.getMinutes();
-        const waktuSekarang = jam + (menit / 60);
+        const waktu = jam + menit / 60;
 
         let bolehPulang = false;
 
         if (hari >= 1 && hari <= 4) {
-            // Senin - Kamis → 14:00
-            bolehPulang = waktuSekarang >= 14;
+            bolehPulang = waktu >= 14;
         } else if (hari === 5) {
-            // Jumat → 13:00
-            bolehPulang = waktuSekarang >= 13;
+            bolehPulang = waktu >= 13;
         } else {
-            // Sabtu & Minggu → bebas
             bolehPulang = true;
         }
 
         // ===============================
-        // 🔥 LOGIKA STATUS
+        // HASIL AKHIR UI
         // ===============================
+        let mode = "default";
+
         if (!sudahMasuk) {
+            mode = "belumMasuk";
+        } else if (sudahMasuk && !sudahPulang) {
+            mode = bolehPulang ? "bolehPulang" : "belumWaktu";
+        }
+
+        // ===============================
+        // APPLY UI (SATU PINTU)
+        // ===============================
+        if (mode === "belumMasuk") {
             optHadir.hidden = false;
             optIzin.hidden  = false;
             optSakit.hidden = false;
@@ -616,37 +626,34 @@ async function updateStatusOptions() {
 
             optLoading.hidden = true;
             selectStatus.disabled = false;
-            return;
-        }
 
-        if (sudahMasuk && !sudahPulang) {
-            if (bolehPulang) {
-                optPulang.hidden = false;
+        } else if (mode === "bolehPulang") {
+            optPulang.hidden = false;
 
-                optLoading.hidden = true;
-                selectStatus.disabled = false;
-                return;
-            } else {
-                // 🔥 KUNCI DI SINI (TIDAK BOLEH RESET)
-                optLoading.hidden = false;
-                optLoading.selected = true;
-                optLoading.textContent = "⏳ Belum waktunya pulang";
+            optLoading.hidden = true;
+            selectStatus.disabled = false;
 
-                selectStatus.disabled = true; // opsional biar tidak bisa klik
-                return;
-            }
+        } else if (mode === "belumWaktu") {
+            optLoading.hidden = false;
+            optLoading.selected = true;
+            optLoading.textContent = "⏳ Belum waktunya pulang";
+
+            selectStatus.disabled = true;
+
+        } else {
+            // fallback
+            optLoading.hidden = true;
+            selectStatus.disabled = false;
         }
 
     } catch (err) {
         console.error("Error:", err);
-    } finally {
-            optLoading.hidden = true;
-            optLoading.selected = false;
 
-        // hanya matikan loading kalau tidak sedang dikunci
-        if (selectStatus.disabled === false) {
-            optLoading.hidden = true;
-        }
+        optLoading.hidden = false;
+        optLoading.selected = true;
+        optLoading.textContent = "❌ Gagal mengambil status";
+
+        selectStatus.disabled = false;
     }
 }
 
