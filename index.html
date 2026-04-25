@@ -815,24 +815,39 @@ async function refreshTargetLocation(callback) {
         // ===============================
         // TAMPILKAN DI INPUT
         // ===============================
+function isValidCoord(loc) {
+    return loc &&
+        typeof loc.lat === "number" && !isNaN(loc.lat) &&
+        typeof loc.lon === "number" && !isNaN(loc.lon);
+}
+
 if (tampil) {
-    if (!loc || (!loc.kantor && !loc.wan)) {
 
-        tampil.value = "Bebas Lokasi";
+    const kantorValid = isValidCoord(loc?.kantor);
+    const wanValid = isValidCoord(loc?.wan);
 
-    } else if (loc.kantor && loc.wan) {
+    // 🔥 Keduanya kosong → tampil "-"
+    if (!kantorValid && !wanValid) {
+
+        tampil.value = "-";
+
+    // 🔥 Dua-duanya ada → tampil dua nama
+    } else if (kantorValid && wanValid) {
 
         tampil.value = `${loc.kantor.nama} & ${loc.wan.nama}`;
 
-    } else if (loc.kantor) {
+    // 🔥 Hanya kantor
+    } else if (kantorValid) {
 
         tampil.value = loc.kantor.nama;
 
-    } else if (loc.wan) {
+    // 🔥 Hanya WAN
+    } else if (wanValid) {
 
         tampil.value = loc.wan.nama;
     }
 }
+
 
 
         if (hidden) hidden.value = "MULTI";
