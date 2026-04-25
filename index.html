@@ -546,7 +546,7 @@ let isLockedPulang = false;
 let loadingMode = "loading"; 
 
 async function updateStatusOptions() {
-
+if (!PULANG) return false;
     const selectStatus = document.getElementById("status");
     const optLoading = document.getElementById("opt-loading");
 
@@ -663,6 +663,7 @@ async function updateStatusOptions() {
 let dot = 0;
 
 setInterval(() => {
+	if (!PULANG) return false;
     const optLoading = document.getElementById("opt-loading");
 
     if (!optLoading || optLoading.hidden) return;
