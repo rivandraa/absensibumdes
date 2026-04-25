@@ -623,18 +623,21 @@ async function updateStatusOptions() {
     } catch (err) {
         console.error("Error:", err);
     } finally {
-		setInterval(() => {
-		    const optLoading = document.getElementById("opt-loading");
-		
-		    if (!optLoading || optLoading.hidden) return;
-		
-		    // 🔥 JANGAN override kalau locked
-		    if (loadingMode === "locked") return;
-		
-		    dot = (dot + 1) % 4;
-		    optLoading.textContent = "⏳ Mengambil status" + ".".repeat(dot);
-		
-		}, 500);
+	    setTimeout(() => {
+	
+	        // 🔥 kalau sedang dikunci, JANGAN reset
+	        if (isLockedPulang) {
+	            selectStatus.disabled = true;
+	            return;
+	        }
+	
+	        optLoading.hidden = true;
+	        optLoading.selected = false;
+	        selectStatus.disabled = false;
+	
+	        selectStatus.selectedIndex = 0;
+	
+	    }, 300);
 	}
 }
 
@@ -659,11 +662,16 @@ let dot = 0;
 setInterval(() => {
     const optLoading = document.getElementById("opt-loading");
 
-    if (optLoading && !optLoading.hidden) {
-        dot = (dot + 1) % 4;
-        optLoading.textContent = "⏳ Mengambil status" + ".".repeat(dot);
-    }
+    if (!optLoading || optLoading.hidden) return;
+
+    // 🔥 JANGAN override kalau locked
+    if (loadingMode === "locked") return;
+
+    dot = (dot + 1) % 4;
+    optLoading.textContent = "⏳ Mengambil status" + ".".repeat(dot);
+
 }, 500);
+
 
 /* =========================================================================================================
     BAGIAN KODE GPS (DIV DISPLAY)
