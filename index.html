@@ -2298,7 +2298,7 @@ async function loadLaporan_Absensi(bulan) {
                 `).join('');
                 tbody.html(rows);
             } else {
-                tbody.html(`<tr><td colspan="7" class="p-4">Data tidak ditemukan</td></tr>`);
+                tbody.html(`<tr><td colspan="8" class="p-4">Data tidak ditemukan</td></tr>`);
             }
         } else {
             tbody.html(`<tr><td colspan="7" class="p-4 text-danger">${res.message}</td></tr>`);
