@@ -540,6 +540,7 @@ function isPulangAllowed() {
 // 🔥 FUNGSI UPDATE STATUS
 // ===============================
 let isLockedPulang = false;
+let loadingMode = "loading"; 
 
 async function updateStatusOptions() {
 
@@ -561,7 +562,8 @@ async function updateStatusOptions() {
 
     optLoading.hidden = false;
     optLoading.selected = true;
-    optLoading.textContent = "⏳ Mengambil status...";
+	loadingMode = "loading";
+	optLoading.textContent = "⏳ Mengambil status...";
 
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     if (!userObj) {
@@ -611,7 +613,8 @@ async function updateStatusOptions() {
 			
 			    optLoading.hidden = false;
 			    optLoading.selected = true;
-			    optLoading.textContent = "⏳ Belum waktunya pulang";
+				loadingMode = "locked";
+				optLoading.textContent = "⏳ Belum waktunya pulang";
 			
 			    isLockedPulang = true; // 🔥 tandai jangan di-reset
 			}
@@ -620,21 +623,18 @@ async function updateStatusOptions() {
     } catch (err) {
         console.error("Error:", err);
     } finally {
-	    setTimeout(() => {
-	
-	        // 🔥 kalau sedang dikunci, JANGAN reset
-	        if (isLockedPulang) {
-	            selectStatus.disabled = true;
-	            return;
-	        }
-	
-	        optLoading.hidden = true;
-	        optLoading.selected = false;
-	        selectStatus.disabled = false;
-	
-	        selectStatus.selectedIndex = 0;
-	
-	    }, 300);
+		setInterval(() => {
+		    const optLoading = document.getElementById("opt-loading");
+		
+		    if (!optLoading || optLoading.hidden) return;
+		
+		    // 🔥 JANGAN override kalau locked
+		    if (loadingMode === "locked") return;
+		
+		    dot = (dot + 1) % 4;
+		    optLoading.textContent = "⏳ Mengambil status" + ".".repeat(dot);
+		
+		}, 500);
 	}
 }
 
