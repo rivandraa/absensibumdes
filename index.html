@@ -562,10 +562,11 @@ let lastTargetLocation = null;
 let areaErrorActive = false;
 let lastInsideArea = null;
 let fetchRequestId = 0;
-
 let targetLocations = null;
-let gpsSystemActive = false;
 
+let targetLocation = null;
+let gpsSystemActive = false;
+	
 const RADIUS_LIMIT = 30; // meter
 const MAX_ACCURACY = 50; // meter
 
@@ -613,11 +614,9 @@ function resetGPSState() {
     improvingAccuracy = false;
     wasGPSEnabled = false;
     lastGPSEnabled = null;
-    
-    // Gunakan yang jamak secara konsisten
-    targetLocations = null; 
+    targetLocation = null;
+    lastTargetLocation = null;
     isFetchingLocation = false;
-    isLoading = false; // Reset loading juga
 }
 
 // =====================================================
@@ -659,117 +658,66 @@ function stopGPSLoading() {
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
-    acc = Number(acc) || 0;
-    lat = Number(lat) || 0;
-    lon = Number(lon) || 0;
-
+    // 1. Ambil input secepat mungkin
     const status = (document.getElementById("status")?.value || "").toLowerCase();
+    const elNama = document.getElementById("titikKoordinatTampil");
+    const namaLokasi = elNama?.value || "Area Absensi";
+
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
-    if (!currentLat || !currentLon || currentLat === 0 || currentLon === 0) {
-        updateGPSDisplay("📡 Menunggu sinyal GPS...");
-        return;
-    }
+    // Jika GPS belum aktif, jangan proses apa pun
+    if (!currentLat || currentLat === 0) return;
 
+    // 2. Bangun teks dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    if (status === "hadir") {
+	// Baris Tambahan (Opsional): Animasi Akurasi
+    if (acc && acc > MAX_ACCURACY) {
+        displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
+    }
+	
+    // 3. Logika Prioritas Tinggi (Status Absensi)
+if (status === "hadir" || status === "wan") {
 
-        if (!targetLocations) {
-            lastInsideArea = false;
-            updateGPSDisplay(displayText + `\nMenunggu data lokasi...`);
-            return;
-        }
-
-        // ===============================
-        // ✅ MODE BEBAS
-        // ===============================
-        if (targetLocations.mode === "free") {
-            lastInsideArea = true;
-            displayText += `\n✅ Lokasi bebas (tanpa radius)`;
-            displayText += `\n📏 Jarak 0 Meter`;
-            updateGPSDisplay(displayText);
-            return;
-        }
-
-        let dKantor = null;
-        let dWAN = null;
-        let lokasiTerdeteksi = null;
-        let distance = null;
-
-        // ===============================
-        // KANTOR
-        // ===============================
-        if (targetLocations.kantor) {
-            dKantor = getDistanceFromLatLonInMeters(
-                currentLat, currentLon,
-                targetLocations.kantor.lat,
-                targetLocations.kantor.lon
-            );
-
-            if (dKantor <= RADIUS_LIMIT) {
-                lokasiTerdeteksi = targetLocations.kantor.nama;
-                distance = dKantor;
-            }
-        }
-
-        // ===============================
-        // WAN
-        // ===============================
-        if (!lokasiTerdeteksi && targetLocations.wan) {
-            dWAN = getDistanceFromLatLonInMeters(
-                currentLat, currentLon,
-                targetLocations.wan.lat,
-                targetLocations.wan.lon
-            );
-
-            if (dWAN <= RADIUS_LIMIT) {
-                lokasiTerdeteksi = targetLocations.wan.nama;
-                distance = dWAN;
-            }
-        }
-
-        // ===============================
-        // TIDAK MASUK AREA
-        // ===============================
-        if (!lokasiTerdeteksi) {
-
-            const safeKantor = dKantor ?? Infinity;
-            const safeWAN = dWAN ?? Infinity;
-
-            distance = Math.min(safeKantor, safeWAN);
-
-            if (!isFinite(distance)) {
-                displayText += `\n⚠️ Tidak ada lokasi absensi ditentukan`;
-                lastInsideArea = true;
-                updateGPSDisplay(displayText);
-                return;
-            }
-
-            lastInsideArea = false;
-        } else {
-            lastInsideArea = true;
-        }
-
-        // ===============================
-        // OUTPUT
-        // ===============================
-        if (lastInsideArea) {
-            displayText += `\n✅ Berada dalam area ${lokasiTerdeteksi}`;
-        } else {
-            displayText += `\n❌ Di luar area absensi`;
-        }
-
-        displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
-    } else {
-        lastInsideArea = true;
+    if (!targetLocations) {
+        lastInsideArea = false;
+        displayText += `\nSedang mengambil lokasi absensi...`;
+        updateGPSDisplay(displayText);
+        return;
     }
 
-    updateGPSDisplay(displayText);
-}
+    let dKantor = Infinity;
+    let dWAN = Infinity;
 
+    if (targetLocations.kantor) {
+        dKantor = getDistanceFromLatLonInMeters(
+            currentLat, currentLon,
+            targetLocations.kantor.lat,
+            targetLocations.kantor.lon
+        );
+    }
+
+    if (targetLocations.wan) {
+        dWAN = getDistanceFromLatLonInMeters(
+            currentLat, currentLon,
+            targetLocations.wan.lat,
+            targetLocations.wan.lon
+        );
+    }
+
+    const distance = Math.min(dKantor, dWAN);
+    lastInsideArea = distance <= RADIUS_LIMIT;
+
+    if (lastInsideArea) {
+        displayText += `\n✅ Berada dalam area absensi`;
+    } else {
+        displayText += `\n❌ Di luar area absensi`;
+    }
+
+    displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+}
 
 
 // =====================================================
@@ -782,66 +730,85 @@ async function refreshTargetLocation(callback) {
     const userRequesting = userObj ? userObj.username : null;
     if (!userRequesting) return;
 
+    const statusInput = document.getElementById("status");
+    const currentStatus = statusInput ? statusInput.value : "";
     const tampil = document.getElementById("titikKoordinatTampil");
+    const hidden = document.getElementById("titikKoordinat");
 
-    try {
-        if (tampil) tampil.value = "⏳ Mengambil lokasi...";
-
-        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
-
-        const response = await fetch(url);
-
-        // 🔥 CEK RESPONSE DULU
-        if (!response.ok) throw new Error("HTTP error");
-
-        const text = await response.text();
-
-        // 🔥 CEK APAKAH JSON VALID
-        let locs;
-        try {
-            locs = JSON.parse(text);
-        } catch {
-            throw new Error("Response bukan JSON");
-        }
-
-        // 🔥 SIMPAN AMAN
-        targetLocations = locs || {
-            mode: "normal",
-            kantor: null,
-            wan: null
-        };
-
-        if (tampil) {
-            if (locs.mode === "free") {
-                tampil.value = "Lokasi Bebas";
-            } else if (locs.kantor || locs.wan) {
-                tampil.value = "Multi Lokasi";
-            } else {
-                tampil.value = "Tidak ada lokasi";
-            }
-        }
-
-        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
-
-    } catch (error) {
-        console.error("ERROR FETCH:", error);
-
-        targetLocations = {
-            mode: "normal",
-            kantor: null,
-            wan: null
-        };
-
-        if (tampil) tampil.value = "❌ Gagal ambil lokasi";
-
-        // 🔥 tetap lanjut supaya UI tidak macet
-        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
+    // ===============================
+    // 1. VALIDASI STATUS
+    // ===============================
+    if (!currentStatus || currentStatus === "Pilih Status...") {
+        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+        isLoading = false;
+        return;
     }
 
-    if (typeof callback === "function") callback();
+    // ===============================
+    // 2. STATUS TANPA KOORDINAT
+    // ===============================
+    if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
+        if (tampil) tampil.value = "-";
+        if (hidden) hidden.value = "-";
+
+        targetLocation = null;
+        lastTargetLocation = null;
+        isLoading = false;
+
+        // langsung update UI (tanpa nunggu GPS)
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+        return;
+    }
+
+    if (isFetchingLocation) return;
+
+    try {
+        isFetchingLocation = true;
+
+        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
+
+const response = await fetch(url);
+const loc = await response.json();
+
+if (document.getElementById("status")?.value !== currentStatus) return;
+
+if (loc) {
+    targetLocations = loc;
+
+    if (tampil) {
+        if (loc.kantor && loc.wan) {
+            tampil.value = "Kantor & WAN Aktif";
+        } else if (loc.kantor) {
+            tampil.value = loc.kantor.nama;
+        } else if (loc.wan) {
+            tampil.value = loc.wan.nama;
+        } else {
+            tampil.value = "-";
+        }
+    }
+
+    if (hidden) hidden.value = "MULTI";
+
+    if (gpsData[0] !== 0) {
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+    }
+} else {
+    targetLocations = null;
+            if (tampil) tampil.value = "-";
+
+            // update juga biar UI tidak nunggu
+            forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+        }
+
+    } catch (error) {
+        console.error("Gagal refresh:", error);
+    } finally {
+        isFetchingLocation = false;
+        isLoading = false;
+
+        if (typeof callback === "function") callback();
+    }
 }
-
-
 
 // =====================================================
 // CALCULATION LOGIC
@@ -881,39 +848,39 @@ function startGPSMonitoring(onReady) {
         return;
     }
 
-        async function handleGPS() {
-            const gpsEnabled = await isGPSEnabledUniversal();
+	async function handleGPS() {
+    	const gpsEnabled = await isGPSEnabledUniversal();
 
-            // Jika status benar-benar berubah, baru kita proses berat
-            if (gpsEnabled !== lastGPSEnabled || (gpsEnabled && gpsWatcherId === null)) {
+    	// Jika status benar-benar berubah, baru kita proses berat
+    	if (gpsEnabled !== lastGPSEnabled || (gpsEnabled && gpsWatcherId === null)) {
         lastGPSEnabled = gpsEnabled;
 
         if (!gpsEnabled) {
             // Logika mematikan sistem
             if (gpsWatcherId !== null) navigator.geolocation.clearWatch(gpsWatcherId);
-                        gpsData = [0, 0];
+			gpsData = [0, 0];
             gpsWatcherId = null;
             wasGPSEnabled = false;
             stopGPSLoading();
             updateGPSDisplay("⚠️ GPS tidak aktif.");
-
+            
             if (!gpsErrorActive) {
                 gpsErrorActive = true;
                 showPopup("⚠️ Periksa GPS Anda.", "error", false);
             }
         } else {
             // Logika menyalakan kembali
-                        gpsData = [0, 0];
+			gpsData = [0, 0];
             wasGPSEnabled = true;
             gpsErrorActive = false;
             forceClosePopup();
             startGPSLoading();
             startWatch();
         }
-                    if (typeof onReady === "function") onReady(); // 🔥 biar tombol tidak nyangkut
+		    if (typeof onReady === "function") onReady(); // 🔥 biar tombol tidak nyangkut
             return;
-                }
-        }
+		}
+	}
 
     function startWatch() {
         if (!gpsSystemActive) return;
@@ -988,67 +955,66 @@ function startGPSMonitoring(onReady) {
     }
 }
 
-    // ====== EVENT LISTENER STATUS ======
-let isLoading = false;
-let loadingLoopId = 0;
+// ====== EVENT LISTENER STATUS ======
+let isLoading = false; // Gembok global
 
-function updateLoadingDots(loopId) {
-    if (!isLoading || loopId !== loadingLoopId) return;
+function updateLoadingDots(count) {
+    if (!isLoading) return; 
 
     const elNama = document.getElementById("titikKoordinatTampil");
     if (elNama) {
+        // Menggunakan array untuk menghindari kalkulasi berat saat UI sibuk
         const dots = ["", ".", "..", "..."];
-        const index = Math.floor(Date.now() / 600) % dots.length;
-        elNama.value = "Sedang update koordinat" + dots[index];
+        elNama.value = "Sedang update koordinat" + dots[count % 4];
     }
 
-    setTimeout(() => updateLoadingDots(loopId), 200);
+    // Gunakan 600ms agar ritme sinkron dengan mata manusia
+    setTimeout(() => updateLoadingDots(count + 1), 600);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     const statusEl = document.getElementById("status");
     const restartBtn = document.getElementById("restartGPS");
 
-        if (statusEl) {
-          statusEl.addEventListener("change", () => {
-                      // Reset state area sebelum cek baru
-                      targetLocations = null;
-                      lastInsideArea = false;
-          
-                      // Jalankan animasi loading
-                      isLoading = true;
-                      loadingLoopId++;
-                      updateLoadingDots(loadingLoopId);
-          
-                      // Panggil refresh. Di dalam refreshTargetLocation, 
-                      // variabel isLoading akan diset ke false setelah fetch selesai.
-                      refreshTargetLocation(() => {
-                          console.log("Koordinat berhasil diperbarui.");
-                      });
-                  });
-              }
-
+	if (statusEl) {
+		statusEl.addEventListener("change", () => {
+		    // A. RESET DATA & AKTIFKAN GEMBOK
+		    targetLocation = null;
+		    lastInsideArea = false;
+		
+		    // B. JALANKAN ANIMASI DOTS
+	        isLoading = false;      // matikan dulu (penting)
+	        isLoading = true;       // nyalakan lagi
+		    updateLoadingDots(0);
+		
+		    // C. UPDATE UI SEKETIKA
+		    // Menghilangkan status ✅/❌ karena targetLocation sekarang null
+		    forceUpdateDistanceUI();    
+		    
+		    // D. AMBIL DATA DARI SERVER
+		    // Memanggil Google Spreadsheet untuk mencari koordinat baru
+		    refreshTargetLocation(null, false);
+		});
+	}
+    
     // === restart gps ===
-        if (restartBtn) {
-            restartBtn.addEventListener("click", () => {
-                gpsSystemActive = false;
-                stopGPSMonitoring();
-
-                // 🔥 reset & start animasi
-                isLoading = false;      // matikan dulu (penting)
-                loadingLoopId++;        // invalid loop lama
-
-                isLoading = true;       // nyalakan lagi
-                updateLoadingDots(loadingLoopId);
-
-                restartBtn.innerHTML = "⏳ Restarting GPS";
-                restartBtn.disabled = true;
-                startGPS(() => {
-                    restartBtn.innerHTML = "🔄 Restart GPS";
-                    restartBtn.disabled = false;
-                        });
-                });
-        }
+	if (restartBtn) {
+	    restartBtn.addEventListener("click", () => {
+	        gpsSystemActive = false;
+	        stopGPSMonitoring();
+			
+	        isLoading = false;      // matikan dulu (penting)
+			isLoading = true; // nyalakan lagi
+			updateLoadingDots(0);
+			
+	        restartBtn.innerHTML = "⏳ Restarting GPS";
+	        restartBtn.disabled = true;
+	        startGPS(() => {
+	            restartBtn.innerHTML = "🔄 Restart GPS";
+	            restartBtn.disabled = false;
+			});
+		});
+	}
 });
 
 /* =========================================================================================================
