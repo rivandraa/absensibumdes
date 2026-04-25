@@ -679,34 +679,40 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // ===============================
     // 🔥 LOGIKA ABSENSI
     // ===============================
-if (status === "hadir" || status === "wan") {
+    if (status === "hadir" || status === "wan") {
 
-    if (!targetLocation) {
-        lastInsideArea = false;
-        displayText += `\nMenunggu lokasi absensi...`;
-        updateGPSDisplay(displayText);
-        return;
-    }
+        if (!targetLocation) {
+            lastInsideArea = false;
+            displayText += `\nMenunggu lokasi absensi...`;
+            updateGPSDisplay(displayText);
+            return;
+        }
 
-    const distance = getDistanceFromLatLonInMeters(
-        currentLat, currentLon,
-        targetLocation.lat, targetLocation.lon
-    );
+        const distance = getDistanceFromLatLonInMeters(
+            currentLat, currentLon,
+            targetLocation.lat, targetLocation.lon
+        );
 
-    lastInsideArea = distance <= RADIUS_LIMIT;
+        lastInsideArea = distance <= RADIUS_LIMIT;
 
-    if (lastInsideArea) {
-        displayText += `\n✅ Berada dalam area ${namaLokasi}`;
+        if (lastInsideArea) {
+            displayText += `\n✅ Berada dalam area ${namaLokasi}`;
+        } else {
+            displayText += `\n❌ Di luar area ${namaLokasi}`;
+            displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+        }
+
     } else {
-        displayText += `\n❌ Di luar area ${namaLokasi}`;
-        displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
-
-    } else {
+        // 🔥 selain hadir/wan dianggap valid (boleh absen)
         lastInsideArea = true;
     }
 
+    // ===============================
+    // UPDATE UI
+    // ===============================
     updateGPSDisplay(displayText);
 }
+
 
 
 // =====================================================
