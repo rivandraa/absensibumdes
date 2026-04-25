@@ -1687,55 +1687,91 @@ async function submitAbsensiForm() {
         }
     }
 
-        //  VALIDASI GPS & RADIUS
-        if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
-                showPopup("⚠️ GPS tidak aktif atau GPS Sedang memperbarui lokasi / meningkatkan akurasi.", "warning");
+// =====================================================
+// 🚫 VALIDASI GPS DASAR
+// =====================================================
+if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
+    showPopup("⚠️ GPS belum siap atau sedang meningkatkan akurasi.", "warning");
+    vibrateAlertShort();
+    isSubmitting = false;
+    return;
+}
+
+// =====================================================
+// 📍 VALIDASI ABSENSI (MULTI LOKASI + MODE BEBAS)
+// =====================================================
+if (status === "hadir" || status === "wan") {
+
+    const lat = gpsData[0];
+    const lon = gpsData[1];
+
+    // 🚫 GPS belum siap
+    if (!lat || lat === 0 || !lon || lon === 0) {
+        showPopup("⚠️ Koordinat GPS belum siap.", "warning");
+        vibrateAlertShort();
+        isSubmitting = false;
+        return;
+    }
+
+    // 🚫 Data lokasi belum ada
+    if (!targetLocations) {
+        showPopup("⚠️ Data lokasi belum tersedia.", "warning");
+        vibrateAlertShort();
+        isSubmitting = false;
+        return;
+    }
+
+    // ===============================
+    // 🔥 VALIDASI KOORDINAT
+    // ===============================
+    function isValidCoord(loc) {
+        return loc &&
+               typeof loc.lat === "number" && !isNaN(loc.lat) &&
+               typeof loc.lon === "number" && !isNaN(loc.lon);
+    }
+
+    const kantorValid = isValidCoord(targetLocations.kantor);
+    const wanValid = isValidCoord(targetLocations.wan);
+
+    // ===============================
+    // ✅ MODE BEBAS
+    // ===============================
+    if (!kantorValid || !wanValid) {
+        // langsung lolos (tidak perlu cek radius)
+    } 
+    // ===============================
+    // 🔒 MODE RADIUS
+    // ===============================
+    else {
+
+        const dKantor = getDistanceFromLatLonInMeters(
+            lat, lon,
+            targetLocations.kantor.lat,
+            targetLocations.kantor.lon
+        );
+
+        const dWAN = getDistanceFromLatLonInMeters(
+            lat, lon,
+            targetLocations.wan.lat,
+            targetLocations.wan.lon
+        );
+
+        const insideArea =
+            dKantor <= RADIUS_LIMIT ||
+            dWAN <= RADIUS_LIMIT;
+
+        if (!insideArea) {
+            showPopup(
+                `❌ Di luar area absensi!\nKantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`,
+                "danger"
+            );
             vibrateAlertShort();
             isSubmitting = false;
             return;
-          }
-
-        // 📏 Validasi Radius & Kesiapan Data
-        if (status === "hadir" || status === "wan") {
-
-            // 1. Ambil Nama Lokasi
-            const elNama = document.getElementById("titikKoordinatTampil");
-            const namaLokasi = (elNama && elNama.value) ? elNama.value : "-";
-
-            // 2. Jika lokasi ditentukan (bukan "-"), lakukan validasi ketat
-            if (namaLokasi !== "-" && namaLokasi !== "") {
-
-                // Cek apakah koordinat GPS sudah ada
-                const [lat, lon] = gpsFinal; // Menggunakan gpsFinal sesuai kode Anda
-                if (!useCamera && (!lat || lat === 0)) {
-                    showPopup("⚠️ Koordinat GPS belum siap. Mohon tunggu.", "warning");
-                                vibrateAlertShort();
-                    isSubmitting = false;
-                    return;
-                }
-
-                // Cek apakah data target lokasi sudah dimuat
-                const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
-                if (!useCamera && !hasTargetData) {
-                    showPopup("⚠️ Data lokasi tujuan belum tersedia.", "warning");
-                                vibrateAlertShort();
-                    isSubmitting = false;
-                    return;
-                }
-
-                // 3. Kalkulasi Ulang Jarak (Double Check saat Submit)
-                const distance = getDistanceFromLatLonInMeters(lat, lon, targetLocation.lat, targetLocation.lon);
-                const insideArea = distance <= RADIUS_LIMIT;
-
-                if (!useCamera && !insideArea) {
-                    showPopup(`❌ Di luar area ${namaLokasi}!<br>Jarak: ${distance.toFixed(0)}m (Maks: ${RADIUS_LIMIT}m)`, "danger");
-                    vibrateAlertShort();
-                    isSubmitting = false;
-                    return;
-                }
-            } 
-            // Jika namaLokasi === "-", maka otomatis lolos ke proses submit berikutnya
         }
+    }
+}
+
 
     // ======================================
     // PERSIAPAN DATA UNTUK DIKIRIM
