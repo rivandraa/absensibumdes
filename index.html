@@ -539,7 +539,10 @@ function isPulangAllowed() {
 // ===============================
 // 🔥 FUNGSI UPDATE STATUS
 // ===============================
+let isLockedPulang = false;
+
 async function updateStatusOptions() {
+
     const selectStatus = document.getElementById("status");
     const optLoading = document.getElementById("opt-loading");
 
@@ -552,7 +555,7 @@ async function updateStatusOptions() {
     if (!selectStatus || !optLoading || !optHadir || !optPulang) return;
 
     // ===============================
-    // 🔥 START LOADING
+    // 🔥 LOADING
     // ===============================
     selectStatus.disabled = true;
 
@@ -562,7 +565,8 @@ async function updateStatusOptions() {
 
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     if (!userObj) {
-        optLoading.textContent = "❌ User tidak ditemukan";
+        optLoading.hidden = true;
+        optLoading.selected = false;
         selectStatus.disabled = false;
         return;
     }
@@ -577,7 +581,7 @@ async function updateStatusOptions() {
         const sudahPulang = data.sudahPulang === true;
 
         // ===============================
-        // RESET SEMUA
+        // 🔄 RESET SEMUA OPSI
         // ===============================
         optHadir.hidden = true;
         optIzin.hidden  = true;
@@ -586,75 +590,52 @@ async function updateStatusOptions() {
         optPulang.hidden = true;
 
         // ===============================
-        // CEK WAKTU
+        // 🟢 BELUM ABSEN MASUK
         // ===============================
-        const now = new Date();
-        const hari = now.getDay();
-        const jam = now.getHours();
-        const menit = now.getMinutes();
-        const waktu = jam + menit / 60;
-
-        let bolehPulang = false;
-
-        if (hari >= 1 && hari <= 4) {
-            bolehPulang = waktu >= 14;
-        } else if (hari === 5) {
-            bolehPulang = waktu >= 13;
-        } else {
-            bolehPulang = true;
-        }
-
-        // ===============================
-        // HASIL AKHIR UI
-        // ===============================
-        let mode = "default";
-
         if (!sudahMasuk) {
-            mode = "belumMasuk";
-        } else if (sudahMasuk && !sudahPulang) {
-            mode = bolehPulang ? "bolehPulang" : "belumWaktu";
-        }
-
-        // ===============================
-        // APPLY UI (SATU PINTU)
-        // ===============================
-        if (mode === "belumMasuk") {
             optHadir.hidden = false;
             optIzin.hidden  = false;
             optSakit.hidden = false;
             optDinas.hidden = false;
+        } 
+        
+        // ===============================
+        // 🔵 SUDAH MASUK, BELUM PULANG
+        // ===============================
+        else if (sudahMasuk && !sudahPulang) {
 
-            optLoading.hidden = true;
-            selectStatus.disabled = false;
-
-        } else if (mode === "bolehPulang") {
-            optPulang.hidden = false;
-
-            optLoading.hidden = true;
-            selectStatus.disabled = false;
-
-        } else if (mode === "belumWaktu") {
-            optLoading.hidden = false;
-            optLoading.selected = true;
-            optLoading.textContent = "⏳ Belum waktunya pulang";
-
-            selectStatus.disabled = true;
-
-        } else {
-            // fallback
-            optLoading.hidden = true;
-            selectStatus.disabled = false;
+            if (isPulangAllowed()) {
+                optPulang.hidden = false;
+            } else {
+			    optPulang.hidden = true;
+			
+			    optLoading.hidden = false;
+			    optLoading.selected = true;
+			    optLoading.textContent = "⏳ Belum waktunya pulang";
+			
+			    isLockedPulang = true; // 🔥 tandai jangan di-reset
+			}
         }
 
     } catch (err) {
         console.error("Error:", err);
-
-        optLoading.hidden = false;
-        optLoading.selected = true;
-        optLoading.textContent = "❌ Gagal mengambil status";
-
-        selectStatus.disabled = false;
-    }
+    } finally {
+	    setTimeout(() => {
+	
+	        // 🔥 kalau sedang dikunci, JANGAN reset
+	        if (isLockedPulang) {
+	            selectStatus.disabled = true;
+	            return;
+	        }
+	
+	        optLoading.hidden = true;
+	        optLoading.selected = false;
+	        selectStatus.disabled = false;
+	
+	        selectStatus.selectedIndex = 0;
+	
+	    }, 300);
+	}
 }
 
 
