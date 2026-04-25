@@ -790,7 +790,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // ===============================
     // 🔥 LOGIKA HADIR
     // ===============================
-    if (status === "hadir") {
+    if (status === "hadir" || status === "pulang" || status === "wan") {
 
         if (!targetLocations) {
             displayText += `\nSedang mengambil data lokasi...`;
