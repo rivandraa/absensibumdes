@@ -995,7 +995,7 @@ async function refreshTargetLocation(callback) {
     // ===============================
     // VALIDASI STATUS
     // ===============================
-    if (!currentStatus || currentStatus === "Pilih Status...") {
+    if (!currentStatus) {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
         isLoading = false;
         return;
