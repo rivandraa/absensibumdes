@@ -604,6 +604,12 @@ async function updateStatusOptions() {
 
         const sudahMasuk = data.sudahAbsenMasuk === true;
         const sudahPulang = data.sudahPulang === true;
+console.log({
+  FEATURE: FEATURE.PULANG,
+  sudahMasuk,
+  sudahPulang,
+  pulangAllowed: isPulangAllowed()
+});
 
         // ===============================
         // RESET SEMUA OPSI
