@@ -782,60 +782,65 @@ async function refreshTargetLocation(callback) {
     const userRequesting = userObj ? userObj.username : null;
     if (!userRequesting) return;
 
-    const statusInput = document.getElementById("status");
-    const currentStatus = (statusInput ? statusInput.value : "").toLowerCase();
     const tampil = document.getElementById("titikKoordinatTampil");
-    const hidden = document.getElementById("titikKoordinat");
-
-    if (!currentStatus || currentStatus === "pilih status...") {
-        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-        return;
-    }
-
-    if (["dinas", "izin", "sakit"].includes(currentStatus)) {
-        if (tampil) tampil.value = "-";
-        if (hidden) hidden.value = "-";
-        targetLocations = null;
-
-        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
-        return;
-    }
 
     try {
-        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
-        const response = await fetch(url);
-        const locs = await response.json();
+        if (tampil) tampil.value = "⏳ Mengambil lokasi...";
 
-        targetLocations = locs || { mode: "normal", kantor: null, wan: null };
+        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
+
+        const response = await fetch(url);
+
+        // 🔥 CEK RESPONSE DULU
+        if (!response.ok) throw new Error("HTTP error");
+
+        const text = await response.text();
+
+        // 🔥 CEK APAKAH JSON VALID
+        let locs;
+        try {
+            locs = JSON.parse(text);
+        } catch {
+            throw new Error("Response bukan JSON");
+        }
+
+        // 🔥 SIMPAN AMAN
+        targetLocations = locs || {
+            mode: "normal",
+            kantor: null,
+            wan: null
+        };
 
         if (tampil) {
             if (locs.mode === "free") {
                 tampil.value = "Lokasi Bebas";
             } else if (locs.kantor || locs.wan) {
-                tampil.value = "Multi Lokasi (Auto Detect)";
+                tampil.value = "Multi Lokasi";
             } else {
                 tampil.value = "Tidak ada lokasi";
             }
         }
 
-        if (hidden) hidden.value = "MULTI";
-
-        if (gpsData[0] !== 0) {
-            forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
-        }
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
 
     } catch (error) {
-        console.error("Gagal refresh lokasi:", error);
+        console.error("ERROR FETCH:", error);
 
-        targetLocations = { mode: "normal", kantor: null, wan: null };
+        targetLocations = {
+            mode: "normal",
+            kantor: null,
+            wan: null
+        };
 
-        if (tampil) tampil.value = "Tidak ada lokasi";
+        if (tampil) tampil.value = "❌ Gagal ambil lokasi";
 
+        // 🔥 tetap lanjut supaya UI tidak macet
         forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy || 0);
     }
 
     if (typeof callback === "function") callback();
 }
+
 
 
 // =====================================================
