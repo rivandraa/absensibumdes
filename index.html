@@ -2218,10 +2218,11 @@ async function showLaporan_Absensi() {
                             <th>Izin</th>
                             <th>Sakit</th>
                             <th>Dinas</th>
+							<th>Pulang</th>
                         </tr>
                     </thead>
                     <tbody id="laporanBody" class="text-center">
-                        <tr><td colspan="7" class="p-4"></td></tr>
+                        <tr><td colspan="8" class="p-4"></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -2292,6 +2293,7 @@ async function loadLaporan_Absensi(bulan) {
                         <td class="text-warning">${r.izin}</td>
                         <td class="text-danger">${r.sakit}</td>
                         <td class="text-info">${r.dinas}</td>
+						<td class="text-info">${r.pulang}</td>
                     </tr>
                 `).join('');
                 tbody.html(rows);
