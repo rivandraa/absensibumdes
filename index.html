@@ -525,25 +525,29 @@ function isPulangAllowed() {
 
     const now = new Date();
 
-    const hari = now.getDay();
+    const hari = now.getDay(); // 0=minggu, 1=senin ... 6=sabtu
     const jam = now.getHours();
     const menit = now.getMinutes();
 
     const totalMenit = jam * 60 + menit;
 
-    // Senin - Kamis
+    // ✅ Sabtu & Minggu → bebas
+   // if (hari === 0 || hari === 6) {
+   //     return true;
+   // }
+
+    // ✅ Senin - Kamis → >= 14:00
     if (hari >= 1 && hari <= 4) {
         return totalMenit >= (14 * 60);
     }
 
-    // Jumat
+    // ✅ Jumat → >= 13:00
     if (hari === 5) {
         return totalMenit >= (13 * 60);
     }
 
     return false;
 }
-
 
 // ===============================
 // 🔥 STATUS UI CONTROL
