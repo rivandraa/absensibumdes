@@ -658,7 +658,7 @@ function stopGPSLoading() {
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
-    // 1. Ambil input secepat mungkin
+
     const status = (document.getElementById("status")?.value || "").toLowerCase();
     const elNama = document.getElementById("titikKoordinatTampil");
     const namaLokasi = elNama?.value || "Area Absensi";
@@ -666,57 +666,72 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
-    // Jika GPS belum aktif, jangan proses apa pun
+    // 🚫 Jika GPS belum aktif
     if (!currentLat || currentLat === 0) return;
 
-    // 2. Bangun teks dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-	// Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
-	
-    // 3. Logika Prioritas Tinggi (Status Absensi)
-if (status === "hadir" || status === "wan") {
 
-    if (!targetLocations) {
-        lastInsideArea = false;
-        displayText += `\nSedang mengambil lokasi absensi...`;
-        updateGPSDisplay(displayText);
-        return;
-    }
+    // ===============================
+    // 🔥 LOGIKA ABSENSI
+    // ===============================
+    if (status === "hadir" || status === "wan") {
 
-    let dKantor = Infinity;
-    let dWAN = Infinity;
+        if (!targetLocations) {
+            lastInsideArea = false;
+            displayText += `\nSedang mengambil lokasi absensi...`;
+            updateGPSDisplay(displayText);
+            return;
+        }
 
-    if (targetLocations.kantor) {
-        dKantor = getDistanceFromLatLonInMeters(
-            currentLat, currentLon,
-            targetLocations.kantor.lat,
-            targetLocations.kantor.lon
-        );
-    }
+        let dKantor = Infinity;
+        let dWAN = Infinity;
 
-    if (targetLocations.wan) {
-        dWAN = getDistanceFromLatLonInMeters(
-            currentLat, currentLon,
-            targetLocations.wan.lat,
-            targetLocations.wan.lon
-        );
-    }
+        if (targetLocations.kantor?.lat && targetLocations.kantor?.lon) {
+            dKantor = getDistanceFromLatLonInMeters(
+                currentLat, currentLon,
+                targetLocations.kantor.lat,
+                targetLocations.kantor.lon
+            );
+        }
 
-    const distance = Math.min(dKantor, dWAN);
-    lastInsideArea = distance <= RADIUS_LIMIT;
+        if (targetLocations.wan?.lat && targetLocations.wan?.lon) {
+            dWAN = getDistanceFromLatLonInMeters(
+                currentLat, currentLon,
+                targetLocations.wan.lat,
+                targetLocations.wan.lon
+            );
+        }
 
-    if (lastInsideArea) {
-        displayText += `\n✅ Berada dalam area absensi`;
+        let distance = Math.min(dKantor, dWAN);
+
+        // 🔥 FIX: kalau tidak ada lokasi sama sekali
+        if (!isFinite(distance)) {
+            displayText += `\n⚠️ Tidak ada lokasi absensi ditentukan`;
+            lastInsideArea = true;
+            updateGPSDisplay(displayText);
+            return;
+        }
+
+        lastInsideArea = distance <= RADIUS_LIMIT;
+
+        if (lastInsideArea) {
+            displayText += `\n✅ Berada dalam area absensi`;
+        } else {
+            displayText += `\n❌ Di luar area absensi`;
+        }
+
+        displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+
     } else {
-        displayText += `\n❌ Di luar area absensi`;
+        lastInsideArea = true;
     }
 
-    displayText += `\n📏 Jarak ${Math.round(distance)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
+    updateGPSDisplay(displayText);
 }
 
 
