@@ -1512,7 +1512,7 @@ if (gpsAccuracy > MAX_ACCURACY) {
 
 const statusLower = status.toLowerCase();
 
-if (statusLower === "hadir" || statusLower === "wan") {
+if (statusLower === "hadir" || statusLower === "wan" || statusLower === "pulang") {
 
     const lat = gpsData[0];
     const lon = gpsData[1];
@@ -1902,9 +1902,9 @@ async function submitAbsensiForm() {
     }
 
     // 📸 Validasi Foto
-    const wajibFoto = ["hadir", "dinas", "wan"].includes(status);
+    const wajibFoto = ["hadir", "dinas", "wan", "pulang"].includes(status);
     if (useCamera && wajibFoto && !fotoData) {
-        showPopup("Foto Kehadiran wajib untuk status " + statusRaw + "!", "warning");
+        showPopup("Foto wajib untuk status " + statusRaw + "!", "warning");
         vibrateAlertShort();
         isSubmitting = false;
         return;
@@ -1937,7 +1937,7 @@ if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy)
 // =====================================================
 // 📍 VALIDASI ABSENSI (MULTI LOKASI + MODE BEBAS)
 // =====================================================
-if (status === "hadir" || status === "wan") {
+if (status === "hadir" || status === "wan" || status === "pulang") {
 
     const lat = gpsData[0];
     const lon = gpsData[1];
@@ -2052,7 +2052,7 @@ if (status === "hadir" || status === "wan") {
                     const waktuID = formatIndonesia(res.waktu);
                     let pesan = "";
 
-                    if (status === "Hadir") {
+                    if (status === "HADIR") {
                         pesan = `✅ Absensi Kehadiran Berhasil<br>
                         Pegawai: <b>${res.nama}</b><br>
                         🕒 Waktu: <b>${waktuID}</b><br>
@@ -2085,6 +2085,13 @@ if (status === "hadir" || status === "wan") {
                     Pegawai: <b>${res.nama}</b><br>
                     🕒 Waktu: <b>${waktuID}</b><br>
                     Selamat menjalankan tugas dinas.`;
+                        }
+
+                        else if (status === "PULANG") {
+                    pesan = `✅ Absensi Pulang Berhasil<br>
+                    Pegawai: <b>${res.nama}</b><br>
+                    🕒 Waktu: <b>${waktuID}</b><br>
+                    Semoga selamat sampai di rumah.`;
                         }
 
                     else {
