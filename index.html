@@ -815,17 +815,25 @@ async function refreshTargetLocation(callback) {
         // ===============================
         // TAMPILKAN DI INPUT
         // ===============================
-        if (tampil) {
-            if (!loc || (!loc.kantor && !loc.wan)) {
-                tampil.value = "Bebas Lokasi";
-            } else if (loc.kantor && loc.wan) {
-                tampil.value = "Multi Lokasi (Auto Detect)";
-            } else if (loc.kantor) {
-                tampil.value = loc.kantor.nama;
-            } else if (loc.wan) {
-                tampil.value = loc.wan.nama;
-            }
-        }
+if (tampil) {
+    if (!loc || (!loc.kantor && !loc.wan)) {
+
+        tampil.value = "Bebas Lokasi";
+
+    } else if (loc.kantor && loc.wan) {
+
+        tampil.value = `${loc.kantor.nama} & ${loc.wan.nama}`;
+
+    } else if (loc.kantor) {
+
+        tampil.value = loc.kantor.nama;
+
+    } else if (loc.wan) {
+
+        tampil.value = loc.wan.nama;
+    }
+}
+
 
         if (hidden) hidden.value = "MULTI";
 
