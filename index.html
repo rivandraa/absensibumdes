@@ -505,8 +505,42 @@ async function loginUser() {
     }
 }
 
-/* FUNGSI STATUS */
+// ===============================
+// 🔥 CEK APAKAH SUDAH BOLEH PULANG
+// ===============================
+function isPulangAllowed() {
+    const now = new Date();
+
+    const hari = now.getDay(); // 0=minggu, 1=senin ... 6=sabtu
+    const jam = now.getHours();
+    const menit = now.getMinutes();
+
+    const totalMenit = jam * 60 + menit;
+
+    // ✅ Sabtu & Minggu → bebas
+    if (hari === 0 || hari === 6) {
+        return true;
+    }
+
+    // ✅ Senin - Kamis → >= 14:00
+    if (hari >= 1 && hari <= 4) {
+        return totalMenit >= (14 * 60);
+    }
+
+    // ✅ Jumat → >= 13:00
+    if (hari === 5) {
+        return totalMenit >= (13 * 60);
+    }
+
+    return false;
+}
+
+
+// ===============================
+// 🔥 FUNGSI UPDATE STATUS
+// ===============================
 async function updateStatusOptions() {
+
     const selectStatus = document.getElementById("status");
     const optLoading = document.getElementById("opt-loading");
 
@@ -519,12 +553,12 @@ async function updateStatusOptions() {
     if (!selectStatus || !optLoading || !optHadir || !optPulang) return;
 
     // ===============================
-    // 🔥 TAMPILKAN LOADING
+    // 🔥 LOADING
     // ===============================
     selectStatus.disabled = true;
 
     optLoading.hidden = false;
-    optLoading.selected = true; // 🔥 wajib biar muncul
+    optLoading.selected = true;
     optLoading.textContent = "⏳ Mengambil status...";
 
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
@@ -545,7 +579,7 @@ async function updateStatusOptions() {
         const sudahPulang = data.sudahPulang === true;
 
         // ===============================
-        // RESET SEMUA
+        // 🔄 RESET SEMUA OPSI
         // ===============================
         optHadir.hidden = true;
         optIzin.hidden  = true;
@@ -554,7 +588,7 @@ async function updateStatusOptions() {
         optPulang.hidden = true;
 
         // ===============================
-        // LOGIKA
+        // 🟢 BELUM ABSEN MASUK
         // ===============================
         if (!sudahMasuk) {
             optHadir.hidden = false;
@@ -562,8 +596,22 @@ async function updateStatusOptions() {
             optSakit.hidden = false;
             optDinas.hidden = false;
         } 
+        
+        // ===============================
+        // 🔵 SUDAH MASUK, BELUM PULANG
+        // ===============================
         else if (sudahMasuk && !sudahPulang) {
-            optPulang.hidden = false;
+
+            if (isPulangAllowed()) {
+                optPulang.hidden = false;
+            } else {
+                optPulang.hidden = true;
+
+                // 🔥 optional info ke user
+                optLoading.hidden = false;
+                optLoading.selected = true;
+                optLoading.textContent = "⏳ Belum waktunya pulang";
+            }
         }
 
     } catch (err) {
@@ -572,17 +620,22 @@ async function updateStatusOptions() {
         // ===============================
         // 🔥 MATIKAN LOADING
         // ===============================
-        optLoading.hidden = true;
-        optLoading.selected = false;
+        setTimeout(() => {
+            optLoading.hidden = true;
+            optLoading.selected = false;
+            selectStatus.disabled = false;
 
-        selectStatus.disabled = false;
-
-        // balik ke default
-        selectStatus.selectedIndex = 0;
+            // reset ke default
+            selectStatus.selectedIndex = 0;
+        }, 300); // sedikit delay biar halus
     }
 }
 
-	window.addEventListener("load", function () {
+
+// ===============================
+// 🔥 DEFAULT TEXT SAAT LOAD
+// ===============================
+window.addEventListener("load", function () {
     const elTampil = document.getElementById("titikKoordinatTampil");
 
     if (elTampil) {
@@ -590,8 +643,9 @@ async function updateStatusOptions() {
     }
 });
 
+
 // ===============================
-// ANIMASI LOADING STATUS
+// 🔥 ANIMASI DOT LOADING
 // ===============================
 let dot = 0;
 
