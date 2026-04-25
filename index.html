@@ -691,16 +691,23 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             return;
         }
 
-        // 🔥 MODE BEBAS (salah satu kosong)
-        const kantorKosong = !targetLocations.kantor;
-        const wanKosong = !targetLocations.wan;
+// 🔥 VALIDASI KOORDINAT
+function isValidCoord(loc) {
+    return loc && 
+           typeof loc.lat === "number" && !isNaN(loc.lat) &&
+           typeof loc.lon === "number" && !isNaN(loc.lon);
+}
 
-        if (kantorKosong || wanKosong) {
-            lastInsideArea = true;
-            displayText += `\n✅ Mode Bebas Lokasi Aktif`;
-            updateGPSDisplay(displayText);
-            return;
-        }
+const kantorValid = isValidCoord(targetLocations.kantor);
+const wanValid = isValidCoord(targetLocations.wan);
+
+// 🔥 MODE BEBAS (jika salah satu tidak valid)
+if (!kantorValid || !wanValid) {
+    lastInsideArea = true;
+    displayText += `\n✅ Mode Bebas Lokasi Aktif`;
+    updateGPSDisplay(displayText);
+    return;
+}
 
         // ===============================
         // NORMAL (ADA 2 LOKASI)
