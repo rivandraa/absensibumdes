@@ -508,13 +508,16 @@ async function loginUser() {
 // ===============================
 // 🔥 FEATURE TOGGLE GLOBAL
 // ===============================
+// ===============================
+// 🔥 FEATURE TOGGLE
+// ===============================
 const FEATURE = {
-    PULANG: false // 👈 ubah ini true/false
+    PULANG: false // true / false
 };
 
 
 // ===============================
-// 🔥 CEK APAKAH SUDAH BOLEH PULANG
+// 🔥 CEK JAM PULANG
 // ===============================
 function isPulangAllowed() {
 
@@ -522,7 +525,7 @@ function isPulangAllowed() {
 
     const now = new Date();
 
-    const hari = now.getDay(); // 0 Minggu - 6 Sabtu
+    const hari = now.getDay();
     const jam = now.getHours();
     const menit = now.getMinutes();
 
@@ -543,10 +546,11 @@ function isPulangAllowed() {
 
 
 // ===============================
-// 🔥 UPDATE STATUS OPTIONS
+// 🔥 STATUS UI CONTROL
 // ===============================
 let isLockedPulang = false;
 let loadingMode = "loading";
+let dot = 0;
 
 async function updateStatusOptions() {
 
@@ -562,29 +566,46 @@ async function updateStatusOptions() {
     if (!selectStatus || !optLoading) return;
 
     // ===============================
-    // 🔄 LOADING
+    // 🔄 RESET STATE
     // ===============================
+    isLockedPulang = false;
+    loadingMode = "loading";
+
     selectStatus.disabled = true;
 
     optLoading.hidden = false;
     optLoading.selected = true;
-    loadingMode = "loading";
     optLoading.textContent = "⏳ Mengambil status...";
 
+    // ===============================
+    // 🔍 USER DATA CHECK
+    // ===============================
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
-    if (!userObj) return;
+
+    if (!userObj) {
+
+        optLoading.hidden = true;
+        selectStatus.disabled = false;
+        return;
+    }
 
     try {
 
         const url = `${GAS_URL}?action=getStatusUI&username=${encodeURIComponent(userObj.username)}&spreadsheetId=${encodeURIComponent(userObj.spreadsheetId)}`;
+
         const res = await fetch(url);
+
+        if (!res.ok) throw new Error("Network error");
+
         const data = await res.json();
+
+        if (!data) throw new Error("Data kosong");
 
         const sudahMasuk = data.sudahAbsenMasuk === true;
         const sudahPulang = data.sudahPulang === true;
 
         // ===============================
-        // 🔄 RESET SEMUA OPSI
+        // RESET OPSI
         // ===============================
         optHadir.hidden = true;
         optIzin.hidden  = true;
@@ -593,7 +614,7 @@ async function updateStatusOptions() {
         optPulang.hidden = !FEATURE.PULANG;
 
         // ===============================
-        // 🟢 BELUM ABSEN MASUK
+        // BELUM MASUK
         // ===============================
         if (!sudahMasuk) {
 
@@ -608,7 +629,7 @@ async function updateStatusOptions() {
         }
 
         // ===============================
-        // 🔵 SUDAH MASUK
+        // SUDAH MASUK
         // ===============================
         else if (sudahMasuk && !sudahPulang) {
 
@@ -626,15 +647,14 @@ async function updateStatusOptions() {
         }
 
     } catch (err) {
-        console.error(err);
+        console.error("STATUS ERROR:", err);
+
     } finally {
 
+        // ===============================
+        // 🔥 ALWAYS RESET UI (ANTI STUCK)
+        // ===============================
         setTimeout(() => {
-
-            if (isLockedPulang) {
-                selectStatus.disabled = true;
-                return;
-            }
 
             optLoading.hidden = true;
             optLoading.selected = false;
@@ -648,13 +668,12 @@ async function updateStatusOptions() {
 
 
 // ===============================
-// 🔥 ANIMASI LOADING DOT
+// 🔥 LOADING ANIMATION DOT
 // ===============================
-let dot = 0;
-
 setInterval(() => {
 
     const optLoading = document.getElementById("opt-loading");
+
     if (!optLoading || optLoading.hidden) return;
 
     if (loadingMode === "locked") return;
@@ -663,8 +682,6 @@ setInterval(() => {
     optLoading.textContent = "⏳ Mengambil status" + ".".repeat(dot);
 
 }, 500);
-
-
 
 /* =========================================================================================================
     BAGIAN KODE GPS (DIV DISPLAY)
