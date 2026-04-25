@@ -645,13 +645,13 @@ async function updateStatusOptions() {
 // ===============================
 // 🔥 DEFAULT TEXT SAAT LOAD
 // ===============================
-window.addEventListener("load", function () {
-    const elTampil = document.getElementById("titikKoordinatTampil");
+//window.addEventListener("load", function () {
+//    const elTampil = document.getElementById("titikKoordinatTampil");
 
-    if (elTampil) {
-        elTampil.value = "⚠️ Status Absen belum dipilih.";
-    }
-});
+//    if (elTampil) {
+//        elTampil.value = "⚠️ Status Absen belum dipilih.";
+//    }
+//});
 
 
 // ===============================
@@ -840,16 +840,6 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     acc = Number(acc) || 0;
     lat = Number(lat) || 0;
     lon = Number(lon) || 0;
-
-    const statusRaw = document.getElementById("status")?.value || "";
-    const status = statusRaw.toLowerCase();
-
-    // ⛔ STOP TOTAL kalau belum pilih status
-    if (!statusRaw || statusRaw === "Pilih Status Absen") {
-        updateGPSDisplay("⚠️ Status Absen belum dipilih.");
-        lastInsideArea = false;
-        return;
-    }
 
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
@@ -1243,10 +1233,7 @@ function startGPSMonitoring(onReady) {
         gpsMonitorInterval = setInterval(() => {
             if (!gpsSystemActive) return; // cek setiap 5 detik
             handleGPS();
-			const statusVal = document.getElementById("status")?.value;
-			if (statusVal) {
-			    refreshTargetLocation(null, true);
-			}
+			refreshTargetLocation(null, true);
         }, 3000);
     }
 }
