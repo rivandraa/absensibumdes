@@ -683,66 +683,69 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // ===============================
     // 🔥 LOGIKA HADIR
     // ===============================
-if (status === "hadir") {
+    if (status === "hadir") {
 
-    if (!targetLocations) {
-        displayText += `\nSedang mengambil data lokasi...`;
-        updateGPSDisplay(displayText);
-        return;
-    }
+        if (!targetLocations) {
+            displayText += `\nSedang mengambil data lokasi...`;
+            updateGPSDisplay(displayText);
+            return;
+        }
 
-    // 🔥 CEK MODE BEBAS
-    const kantorKosong = !targetLocations.kantor;
-    const wanKosong = !targetLocations.wan;
+        // 🔥 MODE BEBAS (salah satu kosong)
+        const kantorKosong = !targetLocations.kantor;
+        const wanKosong = !targetLocations.wan;
 
-    // ✅ JIKA SALAH SATU KOSONG → BEBAS
-    if (kantorKosong || wanKosong) {
-        lastInsideArea = true;
-        displayText += `\n✅ Mode Bebas Lokasi Aktif`;
-        updateGPSDisplay(displayText);
-        return;
-    }
+        if (kantorKosong || wanKosong) {
+            lastInsideArea = true;
+            displayText += `\n✅ Mode Bebas Lokasi Aktif`;
+            updateGPSDisplay(displayText);
+            return;
+        }
 
-    // ===============================
-    // NORMAL (ADA 2 LOKASI)
-    // ===============================
-    let dKantor = getDistanceFromLatLonInMeters(
-        currentLat, currentLon,
-        targetLocations.kantor.lat,
-        targetLocations.kantor.lon
-    );
+        // ===============================
+        // NORMAL (ADA 2 LOKASI)
+        // ===============================
+        let dKantor = getDistanceFromLatLonInMeters(
+            currentLat, currentLon,
+            targetLocations.kantor.lat,
+            targetLocations.kantor.lon
+        );
 
-    let dWAN = getDistanceFromLatLonInMeters(
-        currentLat, currentLon,
-        targetLocations.wan.lat,
-        targetLocations.wan.lon
-    );
+        let dWAN = getDistanceFromLatLonInMeters(
+            currentLat, currentLon,
+            targetLocations.wan.lat,
+            targetLocations.wan.lon
+        );
 
-    let lokasiTerdeteksi = null;
-    let jarak = 0;
+        let lokasiTerdeteksi = null;
+        let jarak = 0;
 
-    if (dKantor <= RADIUS_LIMIT) {
-        lokasiTerdeteksi = targetLocations.kantor.nama;
-        jarak = dKantor;
-    } else if (dWAN <= RADIUS_LIMIT) {
-        lokasiTerdeteksi = targetLocations.wan.nama;
-        jarak = dWAN;
-    }
+        if (dKantor <= RADIUS_LIMIT) {
+            lokasiTerdeteksi = targetLocations.kantor.nama;
+            jarak = dKantor;
+        } else if (dWAN <= RADIUS_LIMIT) {
+            lokasiTerdeteksi = targetLocations.wan.nama;
+            jarak = dWAN;
+        }
 
-    if (lokasiTerdeteksi) {
-        lastInsideArea = true;
-        displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
+        if (lokasiTerdeteksi) {
+            lastInsideArea = true;
+            displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
+        } else {
+            lastInsideArea = false;
+            displayText += `\n❌ Di luar area absensi`;
+            displayText += `\n📏 Kantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`;
+        }
+
     } else {
-        lastInsideArea = false;
-        displayText += `\n❌ Di luar area absensi`;
-        displayText += `\n📏 Kantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`;
-
-	} else {
+        // selain hadir → bebas
         lastInsideArea = true;
     }
 
+    // 🔥 WAJIB DI LUAR BLOK
     updateGPSDisplay(displayText);
 }
+
 
 
 
