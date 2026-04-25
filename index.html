@@ -640,8 +640,9 @@ async function updateStatusOptions() {
     } catch (err) {
         console.error("Error:", err);
     } finally {
-        // 🔥 JANGAN RESET selectedIndex DI SINI
-        // selectStatus.selectedIndex = 0; ❌ HAPUS INI
+            optLoading.hidden = true;
+            optLoading.selected = false;
+            selectStatus.disabled = false;
 
         // hanya matikan loading kalau tidak sedang dikunci
         if (selectStatus.disabled === false) {
