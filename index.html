@@ -835,6 +835,14 @@ function stopGPSLoading() {
 // =====================================================
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
+const statusVal = document.getElementById("status")?.value;
+
+// ⛔ STOP TOTAL kalau belum pilih status
+if (!statusVal) {
+    updateGPSDisplay("⚠️ Status Absen belum dipilih.");
+    return;
+}
+
 function forceUpdateDistanceUI(lat, lon, acc) {
 
     acc = Number(acc) || 0;
@@ -1240,7 +1248,10 @@ function startGPSMonitoring(onReady) {
         gpsMonitorInterval = setInterval(() => {
             if (!gpsSystemActive) return; // cek setiap 5 detik
             handleGPS();
-            refreshTargetLocation(null, true);
+			const statusVal = document.getElementById("status")?.value;
+			if (statusVal) {
+			    refreshTargetLocation(null, true);
+			}
         }, 3000);
     }
 }
