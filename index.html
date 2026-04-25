@@ -1336,9 +1336,9 @@ if (statusLower === "hadir" || statusLower === "wan") {
             showPopup(
                 `❌ Di luar area absensi!\nKantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`,
                 "danger"
+            );
 			vibrateAlertShort();
     		isSnapping = false;
-            );
             return;
         }
     }
