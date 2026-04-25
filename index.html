@@ -1260,12 +1260,16 @@ document.getElementById('snap').addEventListener('click', async () => {
 // 🚫 VALIDASI GPS MINIMAL
 if (gpsData[0] === 0 || gpsData[1] === 0) {
     showPopup("⚠️ GPS belum aktif.", "warning");
+    vibrateAlertShort();
+    isSnapping = false;
     return;
 }
 
 // 🚫 VALIDASI AKURASI
 if (gpsAccuracy > MAX_ACCURACY) {
     showPopup("⚠️ Akurasi GPS masih lemah, tunggu sebentar...", "warning");
+    vibrateAlertShort();
+    isSnapping = false;
     return;
 }
 
@@ -1279,12 +1283,16 @@ if (statusLower === "hadir" || statusLower === "wan") {
     // 🚫 GPS belum siap
     if (!lat || lat === 0 || !lon || lon === 0) {
         showPopup("⚠️ Koordinat GPS belum siap.", "warning");
+	    vibrateAlertShort();
+	    isSnapping = false;
         return;
     }
 
     // 🚫 DATA LOKASI BELUM ADA
     if (!targetLocations) {
         showPopup("⚠️ Data lokasi belum siap.", "warning");
+	    vibrateAlertShort();
+   		isSnapping = false;
         return;
     }
 
@@ -1328,6 +1336,8 @@ if (statusLower === "hadir" || statusLower === "wan") {
             showPopup(
                 `❌ Di luar area absensi!\nKantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`,
                 "danger"
+			vibrateAlertShort();
+    		isSnapping = false;
             );
             return;
         }
