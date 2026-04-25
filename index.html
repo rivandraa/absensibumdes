@@ -506,31 +506,34 @@ async function loginUser() {
 }
 
 // ===============================
+// 🔥 FEATURE TOGGLE GLOBAL
+// ===============================
+const FEATURE = {
+    PULANG: false // 👈 ubah ini true/false
+};
+
+
+// ===============================
 // 🔥 CEK APAKAH SUDAH BOLEH PULANG
 // ===============================
-const PULANG = false; // 🔥 ubah ke false kalau mau nonaktifkan
-	
 function isPulangAllowed() {
-	if (!PULANG) return false;
+
+    if (!FEATURE.PULANG) return false;
+
     const now = new Date();
 
-    const hari = now.getDay(); // 0=minggu, 1=senin ... 6=sabtu
+    const hari = now.getDay(); // 0 Minggu - 6 Sabtu
     const jam = now.getHours();
     const menit = now.getMinutes();
 
     const totalMenit = jam * 60 + menit;
 
-    // ✅ Sabtu & Minggu → bebas
-   // if (hari === 0 || hari === 6) {
-   //     return true;
-   // }
-
-    // ✅ Senin - Kamis → >= 14:00
+    // Senin - Kamis
     if (hari >= 1 && hari <= 4) {
         return totalMenit >= (14 * 60);
     }
 
-    // ✅ Jumat → >= 13:00
+    // Jumat
     if (hari === 5) {
         return totalMenit >= (13 * 60);
     }
@@ -540,13 +543,13 @@ function isPulangAllowed() {
 
 
 // ===============================
-// 🔥 FUNGSI UPDATE STATUS
+// 🔥 UPDATE STATUS OPTIONS
 // ===============================
 let isLockedPulang = false;
-let loadingMode = "loading"; 
+let loadingMode = "loading";
 
 async function updateStatusOptions() {
-if (!PULANG) return false;
+
     const selectStatus = document.getElementById("status");
     const optLoading = document.getElementById("opt-loading");
 
@@ -556,29 +559,24 @@ if (!PULANG) return false;
     const optDinas = document.getElementById('opt-dinas');
     const optPulang = document.getElementById('opt-pulang');
 
-    if (!selectStatus || !optLoading || !optHadir || !optPulang) return;
+    if (!selectStatus || !optLoading) return;
 
     // ===============================
-    // 🔥 LOADING
+    // 🔄 LOADING
     // ===============================
     selectStatus.disabled = true;
 
     optLoading.hidden = false;
     optLoading.selected = true;
-	loadingMode = "loading";
-	optLoading.textContent = "⏳ Mengambil status...";
+    loadingMode = "loading";
+    optLoading.textContent = "⏳ Mengambil status...";
 
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
-    if (!userObj) {
-        optLoading.hidden = true;
-        optLoading.selected = false;
-        selectStatus.disabled = false;
-        return;
-    }
+    if (!userObj) return;
 
     try {
+
         const url = `${GAS_URL}?action=getStatusUI&username=${encodeURIComponent(userObj.username)}&spreadsheetId=${encodeURIComponent(userObj.spreadsheetId)}`;
-        
         const res = await fetch(url);
         const data = await res.json();
 
@@ -592,89 +590,80 @@ if (!PULANG) return false;
         optIzin.hidden  = true;
         optSakit.hidden = true;
         optDinas.hidden = true;
-        optPulang.hidden = true;
+        optPulang.hidden = !FEATURE.PULANG;
 
         // ===============================
         // 🟢 BELUM ABSEN MASUK
         // ===============================
         if (!sudahMasuk) {
+
             optHadir.hidden = false;
             optIzin.hidden  = false;
             optSakit.hidden = false;
             optDinas.hidden = false;
-        } 
-        
+
+            if (FEATURE.PULANG) {
+                optPulang.hidden = false;
+            }
+        }
+
         // ===============================
-        // 🔵 SUDAH MASUK, BELUM PULANG
+        // 🔵 SUDAH MASUK
         // ===============================
         else if (sudahMasuk && !sudahPulang) {
 
-            if (isPulangAllowed()) {
+            optHadir.hidden = true;
+            optIzin.hidden  = true;
+            optSakit.hidden = true;
+            optDinas.hidden = true;
+
+            if (FEATURE.PULANG && isPulangAllowed()) {
                 optPulang.hidden = false;
             } else {
-			    optPulang.hidden = true;
-			
-			    optLoading.hidden = false;
-			    optLoading.selected = true;
-				loadingMode = "locked";
-				optLoading.textContent = "⏳ Belum waktunya pulang";
-			
-			    isLockedPulang = true; // 🔥 tandai jangan di-reset
-			}
+                optPulang.hidden = true;
+                isLockedPulang = true;
+            }
         }
 
     } catch (err) {
-        console.error("Error:", err);
+        console.error(err);
     } finally {
-	    setTimeout(() => {
-	
-	        // 🔥 kalau sedang dikunci, JANGAN reset
-	        if (isLockedPulang) {
-	            selectStatus.disabled = true;
-	            return;
-	        }
-	
-	        optLoading.hidden = true;
-	        optLoading.selected = false;
-	        selectStatus.disabled = false;
-	
-	        selectStatus.selectedIndex = 0;
-	
-	    }, 300);
-	}
+
+        setTimeout(() => {
+
+            if (isLockedPulang) {
+                selectStatus.disabled = true;
+                return;
+            }
+
+            optLoading.hidden = true;
+            optLoading.selected = false;
+
+            selectStatus.disabled = false;
+            selectStatus.selectedIndex = 0;
+
+        }, 300);
+    }
 }
 
 
 // ===============================
-// 🔥 DEFAULT TEXT SAAT LOAD
-// ===============================
-//window.addEventListener("load", function () {
-//    const elTampil = document.getElementById("titikKoordinatTampil");
-
-//    if (elTampil) {
-//        elTampil.value = "⚠️ Status Absen belum dipilih.";
-//    }
-//});
-
-
-// ===============================
-// 🔥 ANIMASI DOT LOADING
+// 🔥 ANIMASI LOADING DOT
 // ===============================
 let dot = 0;
 
 setInterval(() => {
-	if (!PULANG) return false;
-    const optLoading = document.getElementById("opt-loading");
 
+    const optLoading = document.getElementById("opt-loading");
     if (!optLoading || optLoading.hidden) return;
 
-    // 🔥 JANGAN override kalau locked
     if (loadingMode === "locked") return;
 
     dot = (dot + 1) % 4;
     optLoading.textContent = "⏳ Mengambil status" + ".".repeat(dot);
 
 }, 500);
+
 
 
 /* =========================================================================================================
