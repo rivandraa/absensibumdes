@@ -540,7 +540,6 @@ function isPulangAllowed() {
 // 🔥 FUNGSI UPDATE STATUS
 // ===============================
 async function updateStatusOptions() {
-
     const selectStatus = document.getElementById("status");
     const optLoading = document.getElementById("opt-loading");
 
@@ -552,9 +551,7 @@ async function updateStatusOptions() {
 
     if (!selectStatus || !optLoading || !optHadir || !optPulang) return;
 
-    // ===============================
-    // 🔥 LOADING
-    // ===============================
+    // 🔥 tampilkan loading
     selectStatus.disabled = true;
 
     optLoading.hidden = false;
@@ -564,7 +561,6 @@ async function updateStatusOptions() {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     if (!userObj) {
         optLoading.hidden = true;
-        optLoading.selected = false;
         selectStatus.disabled = false;
         return;
     }
@@ -579,7 +575,7 @@ async function updateStatusOptions() {
         const sudahPulang = data.sudahPulang === true;
 
         // ===============================
-        // 🔄 RESET SEMUA OPSI
+        // 🔥 RESET
         // ===============================
         optHadir.hidden = true;
         optIzin.hidden  = true;
@@ -588,46 +584,69 @@ async function updateStatusOptions() {
         optPulang.hidden = true;
 
         // ===============================
-        // 🟢 BELUM ABSEN MASUK
+        // 🔥 CEK WAKTU
+        // ===============================
+        const now = new Date();
+        const hari = now.getDay(); // 0 = Minggu, 6 = Sabtu
+        const jam = now.getHours();
+        const menit = now.getMinutes();
+        const waktuSekarang = jam + (menit / 60);
+
+        let bolehPulang = false;
+
+        if (hari >= 1 && hari <= 4) {
+            // Senin - Kamis → 14:00
+            bolehPulang = waktuSekarang >= 14;
+        } else if (hari === 5) {
+            // Jumat → 13:00
+            bolehPulang = waktuSekarang >= 13;
+        } else {
+            // Sabtu & Minggu → bebas
+            bolehPulang = true;
+        }
+
+        // ===============================
+        // 🔥 LOGIKA STATUS
         // ===============================
         if (!sudahMasuk) {
             optHadir.hidden = false;
             optIzin.hidden  = false;
             optSakit.hidden = false;
             optDinas.hidden = false;
-        } 
-        
-        // ===============================
-        // 🔵 SUDAH MASUK, BELUM PULANG
-        // ===============================
-        else if (sudahMasuk && !sudahPulang) {
 
-            if (isPulangAllowed()) {
+            optLoading.hidden = true;
+            selectStatus.disabled = false;
+            return;
+        }
+
+        if (sudahMasuk && !sudahPulang) {
+            if (bolehPulang) {
                 optPulang.hidden = false;
-            } else {
-                optPulang.hidden = true;
 
-                // 🔥 optional info ke user
+                optLoading.hidden = true;
+                selectStatus.disabled = false;
+                return;
+            } else {
+                // 🔥 KUNCI DI SINI (TIDAK BOLEH RESET)
                 optLoading.hidden = false;
                 optLoading.selected = true;
                 optLoading.textContent = "⏳ Belum waktunya pulang";
+
+                selectStatus.disabled = true; // opsional biar tidak bisa klik
+                return;
             }
         }
 
     } catch (err) {
         console.error("Error:", err);
     } finally {
-        // ===============================
-        // 🔥 MATIKAN LOADING
-        // ===============================
-        setTimeout(() => {
-            optLoading.hidden = true;
-            optLoading.selected = false;
-            selectStatus.disabled = false;
+        // 🔥 JANGAN RESET selectedIndex DI SINI
+        // selectStatus.selectedIndex = 0; ❌ HAPUS INI
 
-            // reset ke default
-            selectStatus.selectedIndex = 0;
-        }, 300); // sedikit delay biar halus
+        // hanya matikan loading kalau tidak sedang dikunci
+        if (selectStatus.disabled === false) {
+            optLoading.hidden = true;
+        }
     }
 }
 
