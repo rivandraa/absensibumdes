@@ -512,12 +512,12 @@ async function loginUser() {
 // 🔥 FEATURE TOGGLE
 // ===============================
 const FEATURE = {
-    PULANG: false // true / false
+    PULANG: false // true = aktifkan sistem pulang, false = mode normal
 };
 
 
 // ===============================
-// 🔥 CEK JAM PULANG
+// 🔥 CEK JADWAL PULANG
 // ===============================
 function isPulangAllowed() {
 
@@ -566,7 +566,7 @@ async function updateStatusOptions() {
     if (!selectStatus || !optLoading) return;
 
     // ===============================
-    // 🔄 RESET STATE
+    // RESET STATE
     // ===============================
     isLockedPulang = false;
     loadingMode = "loading";
@@ -578,12 +578,11 @@ async function updateStatusOptions() {
     optLoading.textContent = "⏳ Mengambil status...";
 
     // ===============================
-    // 🔍 USER DATA CHECK
+    // USER DATA
     // ===============================
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
 
     if (!userObj) {
-
         optLoading.hidden = true;
         selectStatus.disabled = false;
         return;
@@ -594,55 +593,67 @@ async function updateStatusOptions() {
         const url = `${GAS_URL}?action=getStatusUI&username=${encodeURIComponent(userObj.username)}&spreadsheetId=${encodeURIComponent(userObj.spreadsheetId)}`;
 
         const res = await fetch(url);
-
         if (!res.ok) throw new Error("Network error");
 
         const data = await res.json();
-
         if (!data) throw new Error("Data kosong");
 
         const sudahMasuk = data.sudahAbsenMasuk === true;
         const sudahPulang = data.sudahPulang === true;
 
         // ===============================
-        // RESET OPSI
+        // RESET SEMUA OPSI
         // ===============================
         optHadir.hidden = true;
         optIzin.hidden  = true;
         optSakit.hidden = true;
         optDinas.hidden = true;
-        optPulang.hidden = !FEATURE.PULANG;
+        optPulang.hidden = true; // default selalu hidden
 
         // ===============================
-        // BELUM MASUK
+        // MODE 1: PULANG DISABLE (NORMAL MODE)
         // ===============================
-        if (!sudahMasuk) {
+        if (!FEATURE.PULANG) {
 
             optHadir.hidden = false;
             optIzin.hidden  = false;
             optSakit.hidden = false;
             optDinas.hidden = false;
 
-            if (FEATURE.PULANG) {
-                optPulang.hidden = false;
-            }
+            // Pulang TIDAK PERNAH muncul
+            optPulang.hidden = true;
         }
 
         // ===============================
-        // SUDAH MASUK
+        // MODE 2: PULANG ENABLED (SMART MODE)
         // ===============================
-        else if (sudahMasuk && !sudahPulang) {
+        else {
 
-            optHadir.hidden = true;
-            optIzin.hidden  = true;
-            optSakit.hidden = true;
-            optDinas.hidden = true;
+            // belum absen
+            if (!sudahMasuk) {
 
-            if (FEATURE.PULANG && isPulangAllowed()) {
-                optPulang.hidden = false;
-            } else {
+                optHadir.hidden = false;
+                optIzin.hidden  = false;
+                optSakit.hidden = false;
+                optDinas.hidden = false;
+
                 optPulang.hidden = true;
-                isLockedPulang = true;
+            }
+
+            // sudah absen → hanya pulang
+            else if (sudahMasuk && !sudahPulang) {
+
+                if (isPulangAllowed()) {
+                    optPulang.hidden = false;
+                } else {
+                    optPulang.hidden = true;
+                    isLockedPulang = true;
+                }
+            }
+
+            // sudah pulang
+            else {
+                optPulang.hidden = true;
             }
         }
 
@@ -651,9 +662,6 @@ async function updateStatusOptions() {
 
     } finally {
 
-        // ===============================
-        // 🔥 ALWAYS RESET UI (ANTI STUCK)
-        // ===============================
         setTimeout(() => {
 
             optLoading.hidden = true;
@@ -668,7 +676,7 @@ async function updateStatusOptions() {
 
 
 // ===============================
-// 🔥 LOADING ANIMATION DOT
+// 🔥 ANIMASI LOADING DOT
 // ===============================
 setInterval(() => {
 
@@ -682,6 +690,7 @@ setInterval(() => {
     optLoading.textContent = "⏳ Mengambil status" + ".".repeat(dot);
 
 }, 500);
+
 
 /* =========================================================================================================
     BAGIAN KODE GPS (DIV DISPLAY)
