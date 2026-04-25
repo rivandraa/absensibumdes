@@ -751,11 +751,9 @@ async function refreshTargetLocation(callback) {
         if (tampil) tampil.value = "-";
         if (hidden) hidden.value = "-";
 
-        targetLocation = null;
-        lastTargetLocation = null;
+        targetLocations = null; // ✅ fix
         isLoading = false;
 
-        // langsung update UI (tanpa nunggu GPS)
         forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         return;
     }
@@ -765,43 +763,48 @@ async function refreshTargetLocation(callback) {
     try {
         isFetchingLocation = true;
 
-        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
+        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
 
-const response = await fetch(url);
-const loc = await response.json();
+        const response = await fetch(url);
+        const loc = await response.json();
 
-if (document.getElementById("status")?.value !== currentStatus) return;
+        // ===============================
+        // CEK STATUS BERUBAH
+        // ===============================
+        if (document.getElementById("status")?.value !== currentStatus) return;
 
-if (loc) {
-    targetLocations = loc;
+        // ===============================
+        // SET DATA MULTI LOKASI
+        // ===============================
+        if (loc) {
+            targetLocations = loc;
 
-    if (tampil) {
-        if (loc.kantor && loc.wan) {
-            tampil.value = "Kantor & WAN Aktif";
-        } else if (loc.kantor) {
-            tampil.value = loc.kantor.nama;
-        } else if (loc.wan) {
-            tampil.value = loc.wan.nama;
+            if (tampil) {
+                if (loc.kantor && loc.wan) {
+                    tampil.value = "Kantor & WAN Aktif";
+                } else if (loc.kantor) {
+                    tampil.value = loc.kantor.nama;
+                } else if (loc.wan) {
+                    tampil.value = loc.wan.nama;
+                } else {
+                    tampil.value = "-";
+                }
+            }
+
+            if (hidden) hidden.value = "MULTI";
+
+            if (gpsData[0] !== 0) {
+                forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+            }
+
         } else {
-            tampil.value = "-";
-        }
-    }
-
-    if (hidden) hidden.value = "MULTI";
-
-    if (gpsData[0] !== 0) {
-        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
-    }
-} else {
-    targetLocations = null;
+            targetLocations = null;
             if (tampil) tampil.value = "-";
-
-            // update juga biar UI tidak nunggu
-            forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         }
 
     } catch (error) {
         console.error("Gagal refresh:", error);
+        if (tampil) tampil.value = "❌ Gagal memuat lokasi";
     } finally {
         isFetchingLocation = false;
         isLoading = false;
@@ -809,6 +812,7 @@ if (loc) {
         if (typeof callback === "function") callback();
     }
 }
+
 
 // =====================================================
 // CALCULATION LOGIC
