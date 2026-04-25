@@ -877,7 +877,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         if (lokasiTerdeteksi) {
             lastInsideArea = true;
             displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
-            displayText += `\n📏 Jarak ${Math.round(jarak)} Meter`;
+            displayText += `\n📏 Jarak ${Math.round(jarak)} Meter || (Max. ${RADIUS_LIMIT} Meter)`;
         } else {
             lastInsideArea = false;
 
@@ -885,8 +885,8 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 
             // tampilkan detail hanya kalau valid
             let detail = [];
-            if (isFinite(dKantor)) detail.push(`Kantor: ${Math.round(dKantor)}m`);
-            if (isFinite(dWAN)) detail.push(`WAN: ${Math.round(dWAN)}m`);
+            if (isFinite(dKantor)) detail.push(`Kantor: ${Math.round(dKantor)} Meter`);
+            if (isFinite(dWAN)) detail.push(`WAN: ${Math.round(dWAN)} Meter`);
 
             if (detail.length > 0) {
                 displayText += `\n📏 ${detail.join(" | ")}`;
