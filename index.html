@@ -508,7 +508,10 @@ async function loginUser() {
 // ===============================
 // 🔥 CEK APAKAH SUDAH BOLEH PULANG
 // ===============================
+const PULANG = false; // 🔥 ubah ke false kalau mau nonaktifkan
+	
 function isPulangAllowed() {
+	if (!PULANG) return false;
     const now = new Date();
 
     const hari = now.getDay(); // 0=minggu, 1=senin ... 6=sabtu
@@ -528,8 +531,8 @@ function isPulangAllowed() {
     }
 
     // ✅ Jumat → >= 13:00
-    if (hari === 6) {
-        return totalMenit >= (20 * 60);
+    if (hari === 5) {
+        return totalMenit >= (13 * 60);
     }
 
     return false;
