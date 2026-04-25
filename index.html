@@ -683,79 +683,61 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // ===============================
     // 🔥 LOGIKA HADIR
     // ===============================
-    if (status === "hadir") {
+if (status === "hadir") {
 
-        const noKantor = !targetLocations?.kantor;
-        const noWAN = !targetLocations?.wan;
+    if (!targetLocations) {
+        displayText += `\nSedang mengambil data lokasi...`;
+        updateGPSDisplay(displayText);
+        return;
+    }
 
-        // ===============================
-        // ✅ MODE BEBAS LOKASI
-        // ===============================
-        if (!targetLocations || (noKantor && noWAN)) {
-            lastInsideArea = true;
-            displayText += `\n✅ Bebas lokasi (tidak ada titik absensi)`;
-            updateGPSDisplay(displayText);
-            return;
-        }
+    // 🔥 CEK MODE BEBAS
+    const kantorKosong = !targetLocations.kantor;
+    const wanKosong = !targetLocations.wan;
 
-        // ===============================
-        // 🔥 HITUNG JARAK VALID SAJA
-        // ===============================
-        let distances = [];
+    // ✅ JIKA SALAH SATU KOSONG → BEBAS
+    if (kantorKosong || wanKosong) {
+        lastInsideArea = true;
+        displayText += `\n✅ Mode Bebas Lokasi Aktif`;
+        updateGPSDisplay(displayText);
+        return;
+    }
 
-        if (targetLocations.kantor?.lat && targetLocations.kantor?.lon) {
-            const d = getDistanceFromLatLonInMeters(
-                currentLat, currentLon,
-                targetLocations.kantor.lat,
-                targetLocations.kantor.lon
-            );
+    // ===============================
+    // NORMAL (ADA 2 LOKASI)
+    // ===============================
+    let dKantor = getDistanceFromLatLonInMeters(
+        currentLat, currentLon,
+        targetLocations.kantor.lat,
+        targetLocations.kantor.lon
+    );
 
-            distances.push({
-                jarak: d,
-                nama: targetLocations.kantor.nama || "Kantor"
-            });
-        }
+    let dWAN = getDistanceFromLatLonInMeters(
+        currentLat, currentLon,
+        targetLocations.wan.lat,
+        targetLocations.wan.lon
+    );
 
-        if (targetLocations.wan?.lat && targetLocations.wan?.lon) {
-            const d = getDistanceFromLatLonInMeters(
-                currentLat, currentLon,
-                targetLocations.wan.lat,
-                targetLocations.wan.lon
-            );
+    let lokasiTerdeteksi = null;
+    let jarak = 0;
 
-            distances.push({
-                jarak: d,
-                nama: targetLocations.wan.nama || "WAN"
-            });
-        }
+    if (dKantor <= RADIUS_LIMIT) {
+        lokasiTerdeteksi = targetLocations.kantor.nama;
+        jarak = dKantor;
+    } else if (dWAN <= RADIUS_LIMIT) {
+        lokasiTerdeteksi = targetLocations.wan.nama;
+        jarak = dWAN;
+    }
 
-        // ===============================
-        // ✅ JIKA TIDAK ADA KOORDINAT VALID
-        // ===============================
-        if (distances.length === 0) {
-            lastInsideArea = true;
-            displayText += `\n✅ Bebas lokasi`;
-            updateGPSDisplay(displayText);
-            return;
-        }
-
-        // ===============================
-        // 🔥 AMBIL YANG TERDEKAT
-        // ===============================
-        distances.sort((a, b) => a.jarak - b.jarak);
-        const terdekat = distances[0];
-
-        lastInsideArea = terdekat.jarak <= RADIUS_LIMIT;
-
-        if (lastInsideArea) {
-            displayText += `\n✅ Berada dalam area ${terdekat.nama}`;
-        } else {
-            displayText += `\n❌ Di luar area absensi`;
-        }
-
-        displayText += `\n📏 Jarak ${Math.round(terdekat.jarak)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
-
+    if (lokasiTerdeteksi) {
+        lastInsideArea = true;
+        displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
     } else {
+        lastInsideArea = false;
+        displayText += `\n❌ Di luar area absensi`;
+        displayText += `\n📏 Kantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`;
+
+	} else {
         lastInsideArea = true;
     }
 
