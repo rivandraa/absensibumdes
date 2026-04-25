@@ -531,10 +531,10 @@ function isPulangAllowed() {
 
     const totalMenit = jam * 60 + menit;
 
-    // ✅ Sabtu & Minggu → bebas
-   // if (hari === 0 || hari === 6) {
-   //     return true;
-   // }
+     ✅ Sabtu & Minggu → bebas
+    if (hari === 0 || hari === 6) {
+        return true;
+    }
 
     // ✅ Senin - Kamis → >= 14:00
     if (hari >= 1 && hari <= 4) {
@@ -604,12 +604,6 @@ async function updateStatusOptions() {
 
         const sudahMasuk = data.sudahAbsenMasuk === true;
         const sudahPulang = data.sudahPulang === true;
-console.log({
-  FEATURE: FEATURE.PULANG,
-  sudahMasuk,
-  sudahPulang,
-  pulangAllowed: isPulangAllowed()
-});
 
         // ===============================
         // RESET SEMUA OPSI
