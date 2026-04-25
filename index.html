@@ -691,57 +691,99 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             return;
         }
 
-// 🔥 VALIDASI KOORDINAT
-function isValidCoord(loc) {
-    return loc && 
-           typeof loc.lat === "number" && !isNaN(loc.lat) &&
-           typeof loc.lon === "number" && !isNaN(loc.lon);
-}
-
-const kantorValid = isValidCoord(targetLocations.kantor);
-const wanValid = isValidCoord(targetLocations.wan);
-
-// 🔥 MODE BEBAS (jika salah satu tidak valid)
-if (!kantorValid || !wanValid) {
-    lastInsideArea = true;
-    displayText += `\n✅ Mode Bebas Lokasi Aktif`;
-    updateGPSDisplay(displayText);
-    return;
-}
-
         // ===============================
-        // NORMAL (ADA 2 LOKASI)
+        // 🔧 HELPER
         // ===============================
-        let dKantor = getDistanceFromLatLonInMeters(
-            currentLat, currentLon,
-            targetLocations.kantor.lat,
-            targetLocations.kantor.lon
-        );
-
-        let dWAN = getDistanceFromLatLonInMeters(
-            currentLat, currentLon,
-            targetLocations.wan.lat,
-            targetLocations.wan.lon
-        );
-
-        let lokasiTerdeteksi = null;
-        let jarak = 0;
-
-        if (dKantor <= RADIUS_LIMIT) {
-            lokasiTerdeteksi = targetLocations.kantor.nama;
-            jarak = dKantor;
-        } else if (dWAN <= RADIUS_LIMIT) {
-            lokasiTerdeteksi = targetLocations.wan.nama;
-            jarak = dWAN;
+        function isValidCoord(loc) {
+            return loc &&
+                typeof loc.lat === "number" && !isNaN(loc.lat) &&
+                typeof loc.lon === "number" && !isNaN(loc.lon);
         }
 
+        function isBlocked(loc) {
+            return loc && loc.blocked === true;
+        }
+
+        const kantorValid = isValidCoord(targetLocations.kantor);
+        const wanValid = isValidCoord(targetLocations.wan);
+
+        const kantorBlocked = isBlocked(targetLocations.kantor);
+        const wanBlocked = isBlocked(targetLocations.wan);
+
+        // ===============================
+        // ⛔ BLOKIR TOTAL
+        // ===============================
+        if (kantorBlocked && wanBlocked) {
+            lastInsideArea = false;
+            displayText += `\n⛔ Semua lokasi absensi diblokir`;
+            updateGPSDisplay(displayText);
+            return;
+        }
+
+        // ===============================
+        // ✅ BEBAS LOKASI (dua-duanya kosong & tidak diblokir)
+        // ===============================
+        if (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked) {
+            lastInsideArea = true;
+            displayText += `\n✅ Bebas lokasi`;
+            updateGPSDisplay(displayText);
+            return;
+        }
+
+        // ===============================
+        // 📏 HITUNG JARAK (hanya yang valid & tidak diblokir)
+        // ===============================
+        let dKantor = Infinity;
+        let dWAN = Infinity;
+
+        if (kantorValid && !kantorBlocked) {
+            dKantor = getDistanceFromLatLonInMeters(
+                currentLat, currentLon,
+                targetLocations.kantor.lat,
+                targetLocations.kantor.lon
+            );
+        }
+
+        if (wanValid && !wanBlocked) {
+            dWAN = getDistanceFromLatLonInMeters(
+                currentLat, currentLon,
+                targetLocations.wan.lat,
+                targetLocations.wan.lon
+            );
+        }
+
+        // ===============================
+        // 🎯 PILIH TERDEKAT
+        // ===============================
+        let lokasiTerdeteksi = null;
+        let jarak = Math.min(dKantor, dWAN);
+
+        if (jarak === dKantor && dKantor <= RADIUS_LIMIT) {
+            lokasiTerdeteksi = targetLocations.kantor.nama;
+        } else if (jarak === dWAN && dWAN <= RADIUS_LIMIT) {
+            lokasiTerdeteksi = targetLocations.wan.nama;
+        }
+
+        // ===============================
+        // 📊 HASIL
+        // ===============================
         if (lokasiTerdeteksi) {
             lastInsideArea = true;
             displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
+            displayText += `\n📏 Jarak ${Math.round(jarak)} Meter`;
         } else {
             lastInsideArea = false;
+
             displayText += `\n❌ Di luar area absensi`;
-            displayText += `\n📏 Kantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`;
+
+            // tampilkan detail hanya kalau valid
+            let detail = [];
+            if (isFinite(dKantor)) detail.push(`Kantor: ${Math.round(dKantor)}m`);
+            if (isFinite(dWAN)) detail.push(`WAN: ${Math.round(dWAN)}m`);
+
+            if (detail.length > 0) {
+                displayText += `\n📏 ${detail.join(" | ")}`;
+            }
         }
 
     } else {
@@ -749,9 +791,12 @@ if (!kantorValid || !wanValid) {
         lastInsideArea = true;
     }
 
-    // 🔥 WAJIB DI LUAR BLOK
+    // ===============================
+    // 🔥 UPDATE UI (WAJIB DI AKHIR)
+    // ===============================
     updateGPSDisplay(displayText);
 }
+
 
 
 
