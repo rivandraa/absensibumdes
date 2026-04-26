@@ -1009,6 +1009,7 @@ async function refreshTargetLocation(callback) {
 
     const statusInput = document.getElementById("status");
     const currentStatus = statusInput ? statusInput.value : "";
+
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
 
@@ -1017,7 +1018,6 @@ async function refreshTargetLocation(callback) {
     // ===============================
     if (!currentStatus) {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-        isLoading = false;
         return;
     }
 
@@ -1029,8 +1029,8 @@ async function refreshTargetLocation(callback) {
         if (hidden) hidden.value = "-";
 
         targetLocations = null;
-        isLoading = false;
-		forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         return;
     }
 
@@ -1046,73 +1046,63 @@ async function refreshTargetLocation(callback) {
 
         const loc = await response.json();
 
-        // cegah overwrite jika status berubah
         if (document.getElementById("status")?.value !== currentStatus) return;
 
         // ===============================
-        // SET DATA
+        // IF / ELSE UTAMA
         // ===============================
-        targetLocations = loc || { kantor: null, wan: null };
+        if (loc) {
 
-        // ===============================
-        // VALIDASI KOORDINAT
-        // ===============================
-        function isValidCoord(loc) {
-            return loc &&
-                typeof loc.lat === "number" && !isNaN(loc.lat) &&
-                typeof loc.lon === "number" && !isNaN(loc.lon);
-        }
+            targetLocations = loc || { kantor: null, wan: null };
 
-        // ===============================
-        // TAMPILKAN DI INPUT
-        // ===============================
-        if (tampil) {
-            const kantorValid = isValidCoord(loc?.kantor);
-            const wanValid = isValidCoord(loc?.wan);
+            const isValidCoord = (l) =>
+                l &&
+                typeof l.lat === "number" && !isNaN(l.lat) &&
+                typeof l.lon === "number" && !isNaN(l.lon);
 
-            // 🔥 Keduanya kosong → tampil "-"
-            if (!kantorValid && !wanValid) {
-                tampil.value = "-";
+            if (tampil) {
+                const kantorValid = isValidCoord(loc?.kantor);
+                const wanValid = isValidCoord(loc?.wan);
 
-            // 🔥 Dua-duanya ada → tampil dua nama
-            } else if (kantorValid && wanValid) {
-                tampil.value = `${loc.kantor.nama} & ${loc.wan.nama}`;
-
-            // 🔥 Hanya kantor
-            } else if (kantorValid) {
-                tampil.value = loc.kantor.nama;
-
-            // 🔥 Hanya WAN
-            } else if (wanValid) {
-                tampil.value = loc.wan.nama;
+                if (!kantorValid && !wanValid) {
+                    tampil.value = "-";
+                } else if (kantorValid && wanValid) {
+                    tampil.value = `${loc.kantor.nama} & ${loc.wan.nama}`;
+                } else if (kantorValid) {
+                    tampil.value = loc.kantor.nama;
+                } else if (wanValid) {
+                    tampil.value = loc.wan.nama;
+                }
             }
-        }
 
-        if (hidden) hidden.value = "MULTI";
+            if (hidden) hidden.value = "MULTI";
 
-        // 🚀 langsung update UI
-        if (gpsData[0] !== 0) {
+            // 🚀 UPDATE LANGSUNG TANPA DELAY
+            if (gpsData[0] !== 0) {
+                forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+            }
+
+        } else {
+            targetLocations = null;
+
+            if (tampil) tampil.value = "-";
+
             forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         }
-	} else {
-		targetLocation = null;
-		if (tampil) tampil.value = "-";
-		
-		// update juga biar UI tidak nunggu
-		forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
-	}
-} catch (error) {
-	console.error("Gagal refresh:", error);
-	if (tampil) tampil.value = "❌ Gagal memuat lokasi";
-	
-	// fallback aman → dianggap bebas
-	targetLocations = { kantor: null, wan: null };
-	} finally {
-		isFetchingLocation = false;
-		isLoading = false;
-		if (typeof callback === "function") callback();
-	}
-	}
+
+    } catch (error) {
+        console.error("Gagal refresh:", error);
+
+        if (tampil) tampil.value = "❌ Gagal memuat lokasi";
+
+        targetLocations = { kantor: null, wan: null };
+
+    } finally {
+        isFetchingLocation = false;
+
+        if (typeof callback === "function") callback();
+    }
+}
 
 // =====================================================
 // CALCULATION LOGIC
