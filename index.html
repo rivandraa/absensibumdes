@@ -854,14 +854,15 @@ function stopGPSLoading() {
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
 
-    acc = Number(acc) || 0;
-    lat = Number(lat) || 0;
-    lon = Number(lon) || 0;
+    //acc = Number(acc) || 0;
+    //lat = Number(lat) || 0;
+    //lon = Number(lon) || 0;
 
     const status = (document.getElementById("status")?.value || "").toLowerCase();
 
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
+	const currentacc = gpsAccuracy || 0;
 
     // 🚫 GPS belum siap
     if (!currentLat || !currentLon || currentLat === 0 || currentLon === 0) {
@@ -1029,6 +1030,7 @@ async function refreshTargetLocation(callback) {
 
         targetLocations = null;
         isLoading = false;
+		forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         return;
     }
 
@@ -1090,27 +1092,27 @@ async function refreshTargetLocation(callback) {
 
         // 🚀 langsung update UI
         if (gpsData[0] !== 0) {
-            forceUpdateDistanceUI(
-                gpsData[0],
-                gpsData[1],
-                typeof gpsAccuracy !== "undefined" ? gpsAccuracy : 0
-            );
+            forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         }
-
-    } catch (error) {
-        console.error("Gagal refresh:", error);
-
-        if (tampil) tampil.value = "❌ Gagal memuat lokasi";
-
-        // fallback aman → dianggap bebas
-        targetLocations = { kantor: null, wan: null };
-    } finally {
-        isFetchingLocation = false;
-        isLoading = false;
-
-        if (typeof callback === "function") callback();
-    }
-}
+	} else {
+		targetLocation = null;
+		if (tampil) tampil.value = "-";
+		
+		// update juga biar UI tidak nunggu
+		forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+	}
+} catch (error) {
+	console.error("Gagal refresh:", error);
+	if (tampil) tampil.value = "❌ Gagal memuat lokasi";
+	
+	// fallback aman → dianggap bebas
+	targetLocations = { kantor: null, wan: null };
+	} finally {
+		isFetchingLocation = false;
+		isLoading = false;
+		if (typeof callback === "function") callback();
+	}
+	}
 
 // =====================================================
 // CALCULATION LOGIC
