@@ -860,11 +860,10 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     acc = Number(acc ?? gpsAccuracy ?? 0);
     if (isNaN(acc)) acc = 0;
 
-
     const status = (document.getElementById("status")?.value || "").toLowerCase();
 
-    const currentLat = lat || gpsData[0];
-    const currentLon = lon || gpsData[1];
+    const currentLat = lat;
+    const currentLon = lon;
 
     // 🚫 GPS belum siap
     if (!currentLat || !currentLon || currentLat === 0 || currentLon === 0) {
