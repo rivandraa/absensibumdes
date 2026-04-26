@@ -508,13 +508,9 @@ async function loginUser() {
 // ===============================
 // 🔥 FEATURE TOGGLE GLOBAL
 // ===============================
-// ===============================
-// 🔥 FEATURE TOGGLE
-// ===============================
 const FEATURE = {
     PULANG: true // true = aktifkan sistem pulang, false = mode normal
 };
-
 
 // ===============================
 // 🔥 CEK JADWAL PULANG
@@ -678,7 +674,6 @@ async function updateStatusOptions() {
     }
 }
 
-
 // ===============================
 // 🔥 ANIMASI LOADING DOT
 // ===============================
@@ -694,7 +689,6 @@ setInterval(() => {
     optLoading.textContent = "⏳ Mengambil status" + ".".repeat(dot);
 
 }, 500);
-
 
 /* =========================================================================================================
     BAGIAN KODE GPS (DIV DISPLAY)
@@ -823,6 +817,8 @@ function resetGPSState() {
 // =====================================================
 // UI UPDATE & ANIMATION
 // =====================================================
+let dots = 0;
+
 function updateGPSDisplay(text) {
     const gpsDiv = document.getElementById("gps");
     const gpsHidden = document.getElementById("gpsHidden");
@@ -835,16 +831,11 @@ function updateGPSDisplay(text) {
 
 function startGPSLoading() {
     animatingGPS = true;
-
-    const dotsArr = ["", ".", "..", "..."];
-    let i = 0;
-
     stopGPSLoading();
-
     gpsLoadingInterval = setInterval(() => {
-        updateGPSDisplay("Sedang memperbarui lokasi" + dotsArr[i]);
-        i = (i + 1) % dotsArr.length;
-    }, 600);
+        dots = (dots + 1) % 4;
+        updateGPSDisplay("Sedang memperbarui lokasi" + ".".repeat(dots));
+    }, 500);
 }
 
 function stopGPSLoading() {
@@ -878,7 +869,12 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // 🧾 Info dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
-
+    
+	// Baris Tambahan (Opsional): Animasi Akurasi
+    if (acc && acc > MAX_ACCURACY) {
+        displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
+    }
+	
     // ===============================
     // 🔥 LOGIKA HADIR
     // ===============================
@@ -1054,42 +1050,38 @@ async function refreshTargetLocation(callback) {
         targetLocations = loc || { kantor: null, wan: null };
 
         // ===============================
+        // VALIDASI KOORDINAT
+        // ===============================
+        function isValidCoord(loc) {
+            return loc &&
+                typeof loc.lat === "number" && !isNaN(loc.lat) &&
+                typeof loc.lon === "number" && !isNaN(loc.lon);
+        }
+
+        // ===============================
         // TAMPILKAN DI INPUT
         // ===============================
-function isValidCoord(loc) {
-    return loc &&
-        typeof loc.lat === "number" && !isNaN(loc.lat) &&
-        typeof loc.lon === "number" && !isNaN(loc.lon);
-}
+        if (tampil) {
+            const kantorValid = isValidCoord(loc?.kantor);
+            const wanValid = isValidCoord(loc?.wan);
 
-if (tampil) {
+            // 🔥 Keduanya kosong → tampil "-"
+            if (!kantorValid && !wanValid) {
+                tampil.value = "-";
 
-    const kantorValid = isValidCoord(loc?.kantor);
-    const wanValid = isValidCoord(loc?.wan);
+            // 🔥 Dua-duanya ada → tampil dua nama
+            } else if (kantorValid && wanValid) {
+                tampil.value = `${loc.kantor.nama} & ${loc.wan.nama}`;
 
-    // 🔥 Keduanya kosong → tampil "-"
-    if (!kantorValid && !wanValid) {
+            // 🔥 Hanya kantor
+            } else if (kantorValid) {
+                tampil.value = loc.kantor.nama;
 
-        tampil.value = "-";
-
-    // 🔥 Dua-duanya ada → tampil dua nama
-    } else if (kantorValid && wanValid) {
-
-        tampil.value = `${loc.kantor.nama} & ${loc.wan.nama}`;
-
-    // 🔥 Hanya kantor
-    } else if (kantorValid) {
-
-        tampil.value = loc.kantor.nama;
-
-    // 🔥 Hanya WAN
-    } else if (wanValid) {
-
-        tampil.value = loc.wan.nama;
-    }
-}
-
-
+            // 🔥 Hanya WAN
+            } else if (wanValid) {
+                tampil.value = loc.wan.nama;
+            }
+        }
 
         if (hidden) hidden.value = "MULTI";
 
@@ -1116,8 +1108,6 @@ if (tampil) {
         if (typeof callback === "function") callback();
     }
 }
-
-
 
 // =====================================================
 // CALCULATION LOGIC
@@ -1267,19 +1257,19 @@ function startGPSMonitoring(onReady) {
 
 // ====== EVENT LISTENER STATUS ======
 let isLoading = false; // Gembok global
+let loadDots = 0;  // Khusus untuk Loading Dots
 
-function updateLoadingDots(count) {
+function updateLoadingDots() {
     if (!isLoading) return; 
 
     const elNama = document.getElementById("titikKoordinatTampil");
     if (elNama) {
-        // Menggunakan array untuk menghindari kalkulasi berat saat UI sibuk
-        const dots = ["", ".", "..", "..."];
-        elNama.value = "Sedang update koordinat" + dots[count % 4];
+        // Pakai loadDots, jangan accDots!
+        loadDots = (loadDots + 1) % 4;
+        elNama.value = "Sedang update koordinat" + ".".repeat(loadDots);
     }
 
-    // Gunakan 600ms agar ritme sinkron dengan mata manusia
-    setTimeout(() => updateLoadingDots(count + 1), 600);
+    setTimeout(updateLoadingDots, 500);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1469,145 +1459,154 @@ let fotoTimestamp = null;
 let isSnapping = false;
 
 document.getElementById('snap').addEventListener('click', async () => {
-  if (isSnapping) {
-    showTempPopup("⏳ Sedang memproses foto, harap tunggu...", "warning");
+    if (isSnapping) {
+        showTempPopup("⏳ Sedang memproses foto, harap tunggu...", "warning");
         vibrateAlertShort();
-    return;
-  }
-
-  isSnapping = true; // Kunci proses
-
-  const video = document.getElementById('video');
-  const statusInput = document.getElementById("status");
-  const status = statusInput ? statusInput.value : "";
-  const ketField = document.getElementById("keterangan");
-  const keterangan = ketField ? ketField.value.trim() : "";
-  const tampil = document.getElementById("titikKoordinatTampil");
-  const koordinatValue = tampil ? tampil.value : "";
-  const statusRaw = statusInput ? statusInput.options[statusInput.selectedIndex].text : status;
-
-  // 1. VALIDASI DASAR
-  if (!status) {
-    showPopup("⚠️ Pilih Status Absen terlebih dahulu.", "warning");
-    vibrateAlertShort();
-    isSnapping = false;
-    statusInput.focus();
-    return;
-  }
-
-  const ketWajib = ["izin", "sakit", "dinas"].includes(status.toLowerCase());
-  if (ketWajib && !keterangan) {
-    showPopup("⚠️ Keterangan wajib diisi untuk status " + statusRaw + "!", "warning");
-    vibrateAlertShort();
-    ketField.focus();
-    ketField.scrollIntoView({ behavior: "smooth", block: "center" });
-    isSnapping = false;
-    return;
-  }
-
-   // VALIDASI FOTO
-  if (fotoData) {
-    showPopup("⚠️ Tekan tombol Reset dahulu.", "warning");
-    vibrateAlertShort();
-    isSnapping = false;
-    return;
-  }
-
-  // VALIDASI KAMERA
-  if (!stream) {
-    showPopup("️ Kamera tidak tersedia / tidak diizinkan!", "error");
-    vibrateAlertShort();
-    isSnapping = false;
-    return;
-  }
-
-// 🚫 VALIDASI GPS MINIMAL
-if (gpsData[0] === 0 || gpsData[1] === 0) {
-    showPopup("⚠️ GPS belum aktif.", "warning");
-    vibrateAlertShort();
-    isSnapping = false;
-    return;
-}
-
-// 🚫 VALIDASI AKURASI
-if (gpsAccuracy > MAX_ACCURACY) {
-    showPopup("⚠️ Akurasi GPS masih lemah, tunggu sebentar...", "warning");
-    vibrateAlertShort();
-    isSnapping = false;
-    return;
-}
-
-const statusLower = status.toLowerCase();
-
-if (statusLower === "hadir" || statusLower === "wan" || statusLower === "pulang") {
-
-    const lat = gpsData[0];
-    const lon = gpsData[1];
-
-    // 🚫 GPS belum siap
-    if (!lat || lat === 0 || !lon || lon === 0) {
-        showPopup("⚠️ Koordinat GPS belum siap.", "warning");
-	    vibrateAlertShort();
-	    isSnapping = false;
         return;
     }
 
-    // 🚫 DATA LOKASI BELUM ADA
-    if (!targetLocations) {
-        showPopup("⚠️ Data lokasi belum siap.", "warning");
-	    vibrateAlertShort();
-   		isSnapping = false;
+    isSnapping = true; // Kunci proses
+
+    const video = document.getElementById('video');
+    const statusInput = document.getElementById("status");
+    const status = statusInput ? statusInput.value : "";
+    const ketField = document.getElementById("keterangan");
+    const keterangan = ketField ? ketField.value.trim() : "";
+    const tampil = document.getElementById("titikKoordinatTampil");
+    const koordinatValue = tampil ? tampil.value : "";
+    const statusRaw = statusInput ? statusInput.options[statusInput.selectedIndex].text : status;
+
+    // ===============================
+    // 1. VALIDASI DASAR
+    // ===============================
+    if (!status) {
+        showPopup("⚠️ Pilih Status Absen terlebih dahulu.", "warning");
+        vibrateAlertShort();
+        isSnapping = false;
+        statusInput.focus();
         return;
     }
 
-    // 🔥 VALIDASI KOORDINAT
-    function isValidCoord(loc) {
-        return loc &&
-               typeof loc.lat === "number" && !isNaN(loc.lat) &&
-               typeof loc.lon === "number" && !isNaN(loc.lon);
+    const ketWajib = ["izin", "sakit", "dinas"].includes(status.toLowerCase());
+    if (ketWajib && !keterangan) {
+        showPopup("⚠️ Keterangan wajib diisi untuk status " + statusRaw + "!", "warning");
+        vibrateAlertShort();
+        ketField.focus();
+        ketField.scrollIntoView({ behavior: "smooth", block: "center" });
+        isSnapping = false;
+        return;
     }
 
-    const kantorValid = isValidCoord(targetLocations.kantor);
-    const wanValid = isValidCoord(targetLocations.wan);
+    // ===============================
+    // VALIDASI FOTO
+    // ===============================
+    if (fotoData) {
+        showPopup("⚠️ Tekan tombol Reset dahulu.", "warning");
+        vibrateAlertShort();
+        isSnapping = false;
+        return;
+    }
 
     // ===============================
-    // ✅ MODE BEBAS
+    // VALIDASI KAMERA
     // ===============================
-    if (!kantorValid || !wanValid) {
-        // langsung lolos
-    } else {
+    if (!stream) {
+        showPopup("️ Kamera tidak tersedia / tidak diizinkan!", "error");
+        vibrateAlertShort();
+        isSnapping = false;
+        return;
+    }
 
-        // ===============================
-        // 🔒 MODE RADIUS
-        // ===============================
-        const dKantor = getDistanceFromLatLonInMeters(
-            lat, lon,
-            targetLocations.kantor.lat,
-            targetLocations.kantor.lon
-        );
+    // ===============================
+    // VALIDASI GPS MINIMAL
+    // ===============================
+    if (gpsData[0] === 0 || gpsData[1] === 0) {
+        showPopup("⚠️ GPS belum aktif.", "warning");
+        vibrateAlertShort();
+        isSnapping = false;
+        return;
+    }
 
-        const dWAN = getDistanceFromLatLonInMeters(
-            lat, lon,
-            targetLocations.wan.lat,
-            targetLocations.wan.lon
-        );
+    // ===============================
+    // VALIDASI AKURASI
+    // ===============================
+    if (gpsAccuracy > MAX_ACCURACY) {
+        showPopup("⚠️ Akurasi GPS masih lemah, tunggu sebentar...", "warning");
+        vibrateAlertShort();
+        isSnapping = false;
+        return;
+    }
 
-        const insideArea =
-            dKantor <= RADIUS_LIMIT ||
-            dWAN <= RADIUS_LIMIT;
+    const statusLower = status.toLowerCase();
 
-        if (!insideArea) {
-            showPopup(
-                `❌ Di luar area absensi!\nKantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`,
-                "danger"
-            );
-			vibrateAlertShort();
-    		isSnapping = false;
+    if (statusLower === "hadir" || statusLower === "wan" || statusLower === "pulang") {
+
+        const lat = gpsData[0];
+        const lon = gpsData[1];
+
+        // 🚫 GPS belum siap
+        if (!lat || lat === 0 || !lon || lon === 0) {
+            showPopup("⚠️ Koordinat GPS belum siap.", "warning");
+            vibrateAlertShort();
+            isSnapping = false;
             return;
         }
-    }
-}
 
+        // 🚫 DATA LOKASI BELUM ADA
+        if (!targetLocations) {
+            showPopup("⚠️ Data lokasi belum siap.", "warning");
+            vibrateAlertShort();
+            isSnapping = false;
+            return;
+        }
+
+        // 🔥 VALIDASI KOORDINAT
+        function isValidCoord(loc) {
+            return loc &&
+                typeof loc.lat === "number" && !isNaN(loc.lat) &&
+                typeof loc.lon === "number" && !isNaN(loc.lon);
+        }
+
+        const kantorValid = isValidCoord(targetLocations.kantor);
+        const wanValid = isValidCoord(targetLocations.wan);
+
+        // ===============================
+        // ✅ MODE BEBAS
+        // ===============================
+        if (!kantorValid || !wanValid) {
+            // langsung lolos
+        } else {
+
+            // ===============================
+            // 🔒 MODE RADIUS
+            // ===============================
+            const dKantor = getDistanceFromLatLonInMeters(
+                lat, lon,
+                targetLocations.kantor.lat,
+                targetLocations.kantor.lon
+            );
+
+            const dWAN = getDistanceFromLatLonInMeters(
+                lat, lon,
+                targetLocations.wan.lat,
+                targetLocations.wan.lon
+            );
+
+            const insideArea =
+                dKantor <= RADIUS_LIMIT ||
+                dWAN <= RADIUS_LIMIT;
+
+            if (!insideArea) {
+                showPopup(
+                    `❌ Di luar area absensi!\nKantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`,
+                    "danger"
+                );
+                vibrateAlertShort();
+                isSnapping = false;
+                return;
+            }
+        }
+    }
 
   // 3. PROSES PENGAMBILAN GAMBAR
   showPopup("Mengambil foto...", "loading");
@@ -1937,10 +1936,10 @@ async function submitAbsensiForm() {
         return;
     }
 
-        // 🔥 TENTUKAN SUMBER GPS
+    // 🔥 TENTUKAN SUMBER GPS
     const gpsFinal = fotoData?.gps || gpsData;
 
-        // 📍 Validasi GPS
+    // 📍 Validasi GPS
     const gpsWajib = !["izin", "sakit"].includes(status);
     if (gpsWajib) {
         if (!gpsFinal || (gpsFinal[0] === 0 && gpsFinal[1] === 0)) {
@@ -1951,219 +1950,225 @@ async function submitAbsensiForm() {
         }
     }
 
-// =====================================================
-// 🚫 VALIDASI GPS DASAR
-// =====================================================
-if ((gpsData[0] === 0 && gpsData[1] === 0) || animatingGPS || improvingAccuracy) {
-    showPopup("⚠️ GPS belum siap atau sedang meningkatkan akurasi.", "warning");
-    vibrateAlertShort();
-    isSubmitting = false;
-    return;
-}
-
-// =====================================================
-// 📍 VALIDASI ABSENSI (MULTI LOKASI + MODE BEBAS)
-// =====================================================
-if (status === "hadir" || status === "wan" || status === "pulang") {
-
-    const lat = gpsData[0];
-    const lon = gpsData[1];
-
-    // 🚫 GPS belum siap
-    if (!lat || lat === 0 || !lon || lon === 0) {
-        showPopup("⚠️ Koordinat GPS belum siap.", "warning");
+    // =====================================================
+    // 🚫 VALIDASI GPS DASAR
+    // =====================================================
+    if (
+        (gpsData[0] === 0 && gpsData[1] === 0) ||
+        animatingGPS ||
+        improvingAccuracy
+    ) {
+        showPopup("⚠️ GPS belum siap atau sedang meningkatkan akurasi.", "warning");
         vibrateAlertShort();
         isSubmitting = false;
         return;
     }
 
-    // 🚫 Data lokasi belum ada
-    if (!targetLocations) {
-        showPopup("⚠️ Data lokasi belum tersedia.", "warning");
-        vibrateAlertShort();
-        isSubmitting = false;
-        return;
-    }
+    // =====================================================
+    // 📍 VALIDASI ABSENSI (MULTI LOKASI + MODE BEBAS)
+    // =====================================================
+    if (status === "hadir" || status === "wan" || status === "pulang") {
 
-    // ===============================
-    // 🔥 VALIDASI KOORDINAT
-    // ===============================
-    function isValidCoord(loc) {
-        return loc &&
-               typeof loc.lat === "number" && !isNaN(loc.lat) &&
-               typeof loc.lon === "number" && !isNaN(loc.lon);
-    }
+        const lat = gpsData[0];
+        const lon = gpsData[1];
 
-    const kantorValid = isValidCoord(targetLocations.kantor);
-    const wanValid = isValidCoord(targetLocations.wan);
-
-    // ===============================
-    // ✅ MODE BEBAS
-    // ===============================
-    if (!kantorValid || !wanValid) {
-        // langsung lolos (tidak perlu cek radius)
-    } 
-    // ===============================
-    // 🔒 MODE RADIUS
-    // ===============================
-    else {
-
-        const dKantor = getDistanceFromLatLonInMeters(
-            lat, lon,
-            targetLocations.kantor.lat,
-            targetLocations.kantor.lon
-        );
-
-        const dWAN = getDistanceFromLatLonInMeters(
-            lat, lon,
-            targetLocations.wan.lat,
-            targetLocations.wan.lon
-        );
-
-        const insideArea =
-            dKantor <= RADIUS_LIMIT ||
-            dWAN <= RADIUS_LIMIT;
-
-        if (!insideArea) {
-            showPopup(
-                `❌ Di luar area absensi!\nKantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`,
-                "danger"
-            );
+        // 🚫 GPS belum siap
+        if (!lat || lat === 0 || !lon || lon === 0) {
+            showPopup("⚠️ Koordinat GPS belum siap.", "warning");
             vibrateAlertShort();
             isSubmitting = false;
             return;
         }
+
+        // 🚫 Data lokasi belum ada
+        if (!targetLocations) {
+            showPopup("⚠️ Data lokasi belum tersedia.", "warning");
+            vibrateAlertShort();
+            isSubmitting = false;
+            return;
+        }
+
+        // ===============================
+        // 🔥 VALIDASI KOORDINAT
+        // ===============================
+        function isValidCoord(loc) {
+            return loc &&
+                typeof loc.lat === "number" && !isNaN(loc.lat) &&
+                typeof loc.lon === "number" && !isNaN(loc.lon);
+        }
+
+        const kantorValid = isValidCoord(targetLocations.kantor);
+        const wanValid = isValidCoord(targetLocations.wan);
+
+        // ===============================
+        // ✅ MODE BEBAS
+        // ===============================
+        if (!kantorValid || !wanValid) {
+            // langsung lolos (tidak perlu cek radius)
+        }
+
+        // ===============================
+        // 🔒 MODE RADIUS
+        // ===============================
+        else {
+
+            const dKantor = getDistanceFromLatLonInMeters(
+                lat, lon,
+                targetLocations.kantor.lat,
+                targetLocations.kantor.lon
+            );
+
+            const dWAN = getDistanceFromLatLonInMeters(
+                lat, lon,
+                targetLocations.wan.lat,
+                targetLocations.wan.lon
+            );
+
+            const insideArea =
+                dKantor <= RADIUS_LIMIT ||
+                dWAN <= RADIUS_LIMIT;
+
+            if (!insideArea) {
+                showPopup(
+                    `❌ Di luar area absensi!\nKantor: ${Math.round(dKantor)}m | WAN: ${Math.round(dWAN)}m`,
+                    "danger"
+                );
+                vibrateAlertShort();
+                isSubmitting = false;
+                return;
+            }
+        }
     }
+
+// ======================================
+// PERSIAPAN DATA UNTUK DIKIRIM
+// ======================================
+const payload = {
+    action: "submitAbsensi", // Memberitahu GAS action apa yang dijalankan
+    nama: val[0],
+    jabatan: val[1],
+    status: statusRaw,
+    keterangan: keterangan,
+    statusPegawai: userData.statusPegawai,
+    spreadsheetId: userData.spreadsheetId,
+    folderId: userData.folderId
+};
+
+if (!["izin", "sakit"].includes(status)) {
+    payload.foto = fotoData; // {base64, name, type, dll}
+    payload.gps = gpsFinal;
 }
 
+// Kunci UI
+document.getElementById('snap').disabled = true;
+document.getElementById('reset').disabled = true;
+showPopup("Memproses absensi...", "loading");
 
-    // ======================================
-    // PERSIAPAN DATA UNTUK DIKIRIM
-    // ======================================
-    const payload = {
-        action: "submitAbsensi", // Memberitahu GAS action apa yang dijalankan
-        nama: val[0],
-        jabatan: val[1],
-        status: statusRaw,
-        keterangan: keterangan,
-        statusPegawai: userData.statusPegawai,
-        spreadsheetId: userData.spreadsheetId,
-        folderId: userData.folderId
-    };
+try {
+    // 🔥 KIRIM DATA KE GAS MENGGUNAKAN FETCH (POST)
+    const response = await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+    });
 
-    if (!["izin", "sakit"].includes(status)) {
-        payload.foto = fotoData; // Ini berisi {base64, name, type, dll}
-        payload.gps = gpsFinal;
+    const res = await response.json();
+
+    // Buka Kunci UI
+    document.getElementById('snap').disabled = false;
+    document.getElementById('reset').disabled = false;
+    isSubmitting = false;
+
+    if (res.status === "berhasil") {
+        const waktuID = formatIndonesia(res.waktu);
+        let pesan = "";
+
+        if (status === "HADIR") {
+            pesan = `✅ Absensi Kehadiran Berhasil<br>
+            Pegawai: <b>${res.nama}</b><br>
+            🕒 Waktu: <b>${waktuID}</b><br>
+            Terima kasih, selamat menjalankan tugas.`;
+        } 
+
+        else if (status === "WAN") {
+            pesan = `✅ Absensi Kehadiran Berhasil<br>
+            Pegawai: <b>${res.nama}</b><br>
+            🕒 Waktu: <b>${waktuID}</b><br>
+            Tetap semangat bekerja dari rumah.`;
+        } 
+
+        else if (status === "Izin") {
+            pesan = `✅ Pengajuan Izin Berhasil<br>
+            Pegawai: <b>${res.nama}</b><br>
+            🕒 Waktu: <b>${waktuID}</b><br>
+            Permohonan izin telah dicatat.`;
+        } 
+
+        else if (status === "Sakit") {
+            pesan = `✅ Laporan Sakit Berhasil<br>
+            Pegawai: <b>${res.nama}</b><br>
+            🕒 Waktu: <b>${waktuID}</b><br>
+            Semoga lekas pulih.`;
+        } 
+
+        else if (status === "Dinas") {
+            pesan = `✅ Absensi Dinas Berhasil<br>
+            Pegawai: <b>${res.nama}</b><br>
+            🕒 Waktu: <b>${waktuID}</b><br>
+            Selamat menjalankan tugas dinas.`;
+        } 
+
+        else if (status === "PULANG") {
+            pesan = `✅ Absensi Pulang Berhasil<br>
+            Pegawai: <b>${res.nama}</b><br>
+            🕒 Waktu: <b>${waktuID}</b><br>
+            Semoga selamat sampai di rumah.`;
+        } 
+
+        else {
+            // fallback kalau status tidak terdeteksi
+            pesan = `✅ Absensi berhasil!<br>
+            Pegawai: <b>${res.nama}</b><br>
+            🕒 Waktu: <b>${waktuID}</b>`;
+        }
+
+        showPopup(pesan, "success", 6000);
+        vibrateAlertLong();
+
+        // Reset Form
+        $('#status').val('');
+        $('#keterangan').val('');
+        fotoData = null;
+        resetFoto();
+        updateStatusOptions();
+
+    } else if (res.status === "sudah_absen") {
+        const waktuID = formatIndonesia(res.waktu);
+
+        showPopup(
+            `⚠️ Absensi sudah tercatat hari ini<br>
+            🕒 Waktu terakhir: <b>${waktuID}</b>`,
+            "warning",
+            6000
+        );
+
+        vibrateAlertLong();
+
+    } else {
+        throw new Error(res.message || "Gagal menyimpan");
     }
 
-    // Kunci UI
-    document.getElementById('snap').disabled = true;
-    document.getElementById('reset').disabled = true;
-    showPopup("Memproses absensi...", "loading");
+} catch (err) {
+    document.getElementById('snap').disabled = false;
+    document.getElementById('reset').disabled = false;
+    isSubmitting = false;
 
-    try {
-        // 🔥 KIRIM DATA KE GAS MENGGUNAKAN FETCH (POST)
-        const response = await fetch(GAS_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-        });
+    showPopup(
+        `❌ Terjadi kesalahan saat mengirim data<br>
+        <small>${err.message}</small>`,
+        "error"
+    );
 
-        const res = await response.json();
-
-        // Buka Kunci UI
-        document.getElementById('snap').disabled = false;
-        document.getElementById('reset').disabled = false;
-        isSubmitting = false;
-
-                if (res.status === "berhasil") {
-                    const waktuID = formatIndonesia(res.waktu);
-                    let pesan = "";
-
-                    if (status === "HADIR") {
-                        pesan = `✅ Absensi Kehadiran Berhasil<br>
-                        Pegawai: <b>${res.nama}</b><br>
-                        🕒 Waktu: <b>${waktuID}</b><br>
-                        Terima kasih, selamat menjalankan tugas.`;
-                    } 
-
-                    else if (status === "WAN") {
-                        pesan = `✅ Absensi Kehadiran Berhasil<br>
-                        Pegawai: <b>${res.nama}</b><br>
-                        🕒 Waktu: <b>${waktuID}</b><br>
-                        Tetap semangat bekerja dari rumah.`;
-                    } 
-
-                    else if (status === "Izin") {
-                        pesan = `✅ Pengajuan Izin Berhasil<br>
-                        Pegawai: <b>${res.nama}</b><br>
-                        🕒 Waktu: <b>${waktuID}</b><br>
-                        Permohonan izin telah dicatat.`;
-                    } 
-
-                    else if (status === "Sakit") {
-                        pesan = `✅ Laporan Sakit Berhasil<br>
-                        Pegawai: <b>${res.nama}</b><br>
-                        🕒 Waktu: <b>${waktuID}</b><br>
-                        Semoga lekas pulih.`;
-                    }
-
-                        else if (status === "Dinas") {
-                    pesan = `✅ Absensi Dinas Berhasil<br>
-                    Pegawai: <b>${res.nama}</b><br>
-                    🕒 Waktu: <b>${waktuID}</b><br>
-                    Selamat menjalankan tugas dinas.`;
-                        }
-
-                        else if (status === "PULANG") {
-                    pesan = `✅ Absensi Pulang Berhasil<br>
-                    Pegawai: <b>${res.nama}</b><br>
-                    🕒 Waktu: <b>${waktuID}</b><br>
-                    Semoga selamat sampai di rumah.`;
-                        }
-
-                    else {
-                        // fallback kalau status tidak terdeteksi
-                        pesan = `✅ Absensi berhasil!<br>
-                        Pegawai: <b>${res.nama}</b><br>
-                        🕒 Waktu: <b>${waktuID}</b>`;
-                    }
-
-                    showPopup(pesan, "success", 6000);
-                    vibrateAlertLong();
-
-                    // Reset Form
-                    $('#status').val('');
-                    $('#keterangan').val('');
-                    fotoData = null;
-                    resetFoto();
-					updateStatusOptions();
-
-                } else if (res.status === "sudah_absen") {
-                    const waktuID = formatIndonesia(res.waktu);
-                    showPopup(
-                        `⚠️ Absensi sudah tercatat hari ini<br>
-                        🕒 Waktu terakhir: <b>${waktuID}</b>`,
-                        "warning", 6000
-                    );
-                    vibrateAlertLong();
-
-                } else {
-                    throw new Error(res.message || "Gagal menyimpan");
-                }
-
-                } catch (err) {
-                    document.getElementById('snap').disabled = false;
-                    document.getElementById('reset').disabled = false;
-                    isSubmitting = false;
-
-                    showPopup(
-                        `❌ Terjadi kesalahan saat mengirim data<br>
-                        <small>${err.message}</small>`,
-                        "error"
-                    );
-
-                    vibrateAlertLong();
-                }
+    vibrateAlertLong();
 }
 
 // =========================================================================================================
