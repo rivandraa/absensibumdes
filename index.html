@@ -784,6 +784,7 @@ let lastTargetLocation = null;
 let areaErrorActive = false;
 let lastInsideArea = null;
 let fetchRequestId = 0;
+let gpsAccuracy = 0;
 
 let targetLocation = null;
 let gpsSystemActive = false;
@@ -1124,6 +1125,7 @@ function startGPSMonitoring(onReady) {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
                 const acc = pos.coords.accuracy;
+				gpsAccuracy = acc; // 🔥 simpan ke global
 
                 stopGPSLoading();
 
