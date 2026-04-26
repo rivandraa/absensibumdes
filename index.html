@@ -2077,47 +2077,51 @@ try {
     document.getElementById('snap').disabled = false;
     document.getElementById('reset').disabled = false;
     isSubmitting = false;
+console.log("DEBUG status:", status);
+console.log("DEBUG statusRaw:", statusRaw);
+console.log("DEBUG typeof status:", typeof status);
+console.log("DEBUG panjang:", status?.length);
 
     if (res.status === "berhasil") {
         const waktuID = formatIndonesia(res.waktu);
         let pesan = "";
 
-        if (status === "HADIR") {
+        if (status === "hadir") {
             pesan = `✅ Absensi Kehadiran Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
             Terima kasih, selamat menjalankan tugas.`;
         } 
 
-        else if (status === "WAN") {
+        else if (status === "wan") {
             pesan = `✅ Absensi Kehadiran Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
             Tetap semangat bekerja dari rumah.`;
         } 
 
-        else if (status === "Izin") {
+        else if (status === "izin") {
             pesan = `✅ Pengajuan Izin Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
             Permohonan izin telah dicatat.`;
         } 
 
-        else if (status === "Sakit") {
+        else if (status === "sakit") {
             pesan = `✅ Laporan Sakit Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
             Semoga lekas pulih.`;
         } 
 
-        else if (status === "Dinas") {
+        else if (status === "dinas") {
             pesan = `✅ Absensi Dinas Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
             Selamat menjalankan tugas dinas.`;
         } 
 
-        else if (status === "PULANG") {
+        else if (status === "pulang") {
             pesan = `✅ Absensi Pulang Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
