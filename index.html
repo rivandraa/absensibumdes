@@ -2044,7 +2044,7 @@ async function submitAbsensiForm() {
 // PERSIAPAN DATA UNTUK DIKIRIM
 // ======================================
 const payload = {
-    action: "submitAbsensi", // Memberitahu GAS action apa yang dijalankan
+    action: "submitAbsensi",
     nama: val[0],
     jabatan: val[1],
     status: statusRaw,
@@ -2055,7 +2055,7 @@ const payload = {
 };
 
 if (!["izin", "sakit"].includes(status)) {
-    payload.foto = fotoData; // {base64, name, type, dll}
+    payload.foto = fotoData;
     payload.gps = gpsFinal;
 }
 
@@ -2065,7 +2065,6 @@ document.getElementById('reset').disabled = true;
 showPopup("Memproses absensi...", "loading");
 
 try {
-    // 🔥 KIRIM DATA KE GAS MENGGUNAKAN FETCH (POST)
     const response = await fetch(GAS_URL, {
         method: "POST",
         body: JSON.stringify(payload)
@@ -2077,51 +2076,54 @@ try {
     document.getElementById('snap').disabled = false;
     document.getElementById('reset').disabled = false;
     isSubmitting = false;
-console.log("DEBUG status:", status);
-console.log("DEBUG statusRaw:", statusRaw);
-console.log("DEBUG typeof status:", typeof status);
-console.log("DEBUG panjang:", status?.length);
+
+    // ===============================
+    // 🔥 NORMALISASI STATUS (FIX UTAMA)
+    // ===============================
+    const cleanStatus = (statusRaw || "").trim().toLowerCase();
+
+    console.log("DEBUG status:", cleanStatus);
 
     if (res.status === "berhasil") {
         const waktuID = formatIndonesia(res.waktu);
         let pesan = "";
 
-        if (status === "hadir") {
+        if (cleanStatus === "hadir") {
             pesan = `✅ Absensi Kehadiran Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
             Terima kasih, selamat menjalankan tugas.`;
         } 
 
-        else if (status === "wan") {
+        else if (cleanStatus === "wan") {
             pesan = `✅ Absensi Kehadiran Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
             Tetap semangat bekerja dari rumah.`;
         } 
 
-        else if (status === "izin") {
+        else if (cleanStatus === "izin") {
             pesan = `✅ Pengajuan Izin Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
             Permohonan izin telah dicatat.`;
         } 
 
-        else if (status === "sakit") {
+        else if (cleanStatus === "sakit") {
             pesan = `✅ Laporan Sakit Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
             Semoga lekas pulih.`;
         } 
 
-        else if (status === "dinas") {
+        else if (cleanStatus === "dinas") {
             pesan = `✅ Absensi Dinas Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
             Selamat menjalankan tugas dinas.`;
         } 
 
-        else if (status === "pulang") {
+        else if (cleanStatus === "pulang") {
             pesan = `✅ Absensi Pulang Berhasil<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b><br>
@@ -2129,7 +2131,6 @@ console.log("DEBUG panjang:", status?.length);
         } 
 
         else {
-            // fallback kalau status tidak terdeteksi
             pesan = `✅ Absensi berhasil!<br>
             Pegawai: <b>${res.nama}</b><br>
             🕒 Waktu: <b>${waktuID}</b>`;
