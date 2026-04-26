@@ -1273,19 +1273,12 @@ async function refreshTargetLocation(callback) {
             const kantorValid = isValidCoord(loc?.kantor);
             const wanValid = isValidCoord(loc?.wan);
 
-            // 🔥 Keduanya kosong → tampil "-"
             if (!kantorValid && !wanValid) {
                 tampil.value = "-";
-
-            // 🔥 Dua-duanya ada → tampil dua nama
             } else if (kantorValid && wanValid) {
                 tampil.value = `${loc.kantor.nama} & ${loc.wan.nama}`;
-
-            // 🔥 Hanya kantor
             } else if (kantorValid) {
                 tampil.value = loc.kantor.nama;
-
-            // 🔥 Hanya WAN
             } else if (wanValid) {
                 tampil.value = loc.wan.nama;
             }
@@ -1293,26 +1286,30 @@ async function refreshTargetLocation(callback) {
 
         if (hidden) hidden.value = "MULTI";
 
-        // 🚀 langsung update UI
-		// 🚀 langsung update UI (anti reset flicker)
-		if (gpsData[0] !== 0) {
-		    setTimeout(() => {
-		        forceUpdateDistanceUI(
-		            gpsData[0],
-		            gpsData[1],
-		            typeof gpsAccuracy !== "undefined" ? gpsAccuracy : 0
-		        );
-		    }, 0);
-		} else {
-		    targetLocations = null;
-		    if (tampil) tampil.value = "-";
-		} catch (error) {
+        // ===============================
+        // UPDATE UI GPS (ANTI RESET FLICKER)
+        // ===============================
+        if (gpsData[0] !== 0) {
+            setTimeout(() => {
+                forceUpdateDistanceUI(
+                    gpsData[0],
+                    gpsData[1],
+                    typeof gpsAccuracy !== "undefined" ? gpsAccuracy : 0
+                );
+            }, 0);
+        } else {
+            targetLocations = null;
+            if (tampil) tampil.value = "-";
+        }
+
+    } catch (error) {
         console.error("Gagal refresh:", error);
 
         if (tampil) tampil.value = "❌ Gagal memuat lokasi";
 
-        // fallback aman → dianggap bebas
+        // fallback aman
         targetLocations = { kantor: null, wan: null };
+
     } finally {
         isFetchingLocation = false;
         isLoading = false;
