@@ -1233,6 +1233,7 @@ async function refreshTargetLocation(callback) {
         if (hidden) hidden.value = "-";
 
         targetLocations = null;
+		lastTargetLocation = null;
         isLoading = false;
         return;
     }
