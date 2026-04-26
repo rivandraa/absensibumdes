@@ -1490,7 +1490,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	if (statusEl) {
 		statusEl.addEventListener("change", () => {
 		    // A. RESET DATA & AKTIFKAN GEMBOK
-		    //targetLocation = null;
+		    targetLocation = null;
 		    lastInsideArea = false;
 		
 		    // B. JALANKAN ANIMASI DOTS
@@ -1500,7 +1500,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		
 		    // C. UPDATE UI SEKETIKA
 		    // Menghilangkan status ✅/❌ karena targetLocation sekarang null
-		    //forceUpdateDistanceUI();    
+		    forceUpdateDistanceUI();    
 		    
 		    // D. AMBIL DATA DARI SERVER
 		    // Memanggil Google Spreadsheet untuk mencari koordinat baru
