@@ -1073,15 +1073,12 @@ function stopGPSLoading() {
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
 
-	const currentLat = Number(lat) || 0;
-    const currentLon = Number(lon) || 0;
-    const currentAcc = Number(acc) || 0;
-
     const statusEl = document.getElementById("status");
     const status = (statusEl?.value || "").toLowerCase();
 
-    const currentLat = lat || gpsData[0];
-    const currentLon = lon || gpsData[1];
+	const currentLat = Number(lat) || gpsData[0] || 0;
+    const currentLon = Number(lon) || gpsData[1] || 0;
+    const currentAcc = Number(acc) || gpsData[2] || 0;
 
     // 🚫 GPS belum siap
     if (!currentLat || !currentLon) {
