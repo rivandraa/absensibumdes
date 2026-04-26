@@ -850,145 +850,56 @@ function stopGPSLoading() {
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
-
-    acc = Number(acc) || 0;
-    lat = Number(lat) || 0;
-    lon = Number(lon) || 0;
-
+    // 1. Ambil input secepat mungkin
     const status = (document.getElementById("status")?.value || "").toLowerCase();
+    const elNama = document.getElementById("titikKoordinatTampil");
+    const namaLokasi = elNama?.value || "Area Absensi";
 
     const currentLat = lat || gpsData[0];
     const currentLon = lon || gpsData[1];
 
-    // 🚫 GPS belum siap
-    if (!currentLat || !currentLon || currentLat === 0 || currentLon === 0) {
-        updateGPSDisplay("📡 Menunggu sinyal GPS...");
-        return;
-    }
+    // Jika GPS belum aktif, jangan proses apa pun
+    if (!currentLat || currentLat === 0) return;
 
-    // 🧾 Info dasar
+    // 2. Bangun teks dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
-    
-	// Baris Tambahan (Opsional): Animasi Akurasi
-    if (acc && acc > MAX_ACCURACY) {
-        displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
-    }
-	
-    // ===============================
-    // 🔥 LOGIKA HADIR
-    // ===============================
-    if (status === "hadir" || status === "pulang" || status === "wan") {
 
-        if (!targetLocations) {
-            displayText += `\nSedang mengambil data lokasi...`;
+    // 3. Logika Prioritas Tinggi (Status Absensi)
+    if (status === "hadir" || status === "wan") {
+        
+        // JIKA LOKASI BEBAS: Langsung keluar dari fungsi (Sangat Cepat)
+        if (namaLokasi === "-") {
+            lastInsideArea = true;
             updateGPSDisplay(displayText);
-            return;
+            return; 
         }
 
-        // ===============================
-        // 🔧 HELPER
-        // ===============================
-        function isValidCoord(loc) {
-            return loc &&
-                typeof loc.lat === "number" && !isNaN(loc.lat) &&
-                typeof loc.lon === "number" && !isNaN(loc.lon);
-        }
-
-        function isBlocked(loc) {
-            return loc && loc.blocked === true;
-        }
-
-        const kantorValid = isValidCoord(targetLocations.kantor);
-        const wanValid = isValidCoord(targetLocations.wan);
-
-        const kantorBlocked = isBlocked(targetLocations.kantor);
-        const wanBlocked = isBlocked(targetLocations.wan);
-
-        // ===============================
-        // ⛔ BLOKIR TOTAL
-        // ===============================
-        if (kantorBlocked && wanBlocked) {
+        // JIKA DATA TARGET BELUM ADA: Tampilkan loading dan langsung berhenti di sini
+        const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
+        
+        if (!hasTargetData) {
             lastInsideArea = false;
-            displayText += `\n⛔ Semua lokasi absensi diblokir`;
+            displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
             updateGPSDisplay(displayText);
-            return;
+            return; // Berhenti di sini agar tidak memproses kode di bawahnya
         }
 
-        // ===============================
-        // ✅ BEBAS LOKASI (dua-duanya kosong & tidak diblokir)
-        // ===============================
-        if (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked) {
-            lastInsideArea = true;
-            displayText += `\n✅ Bebas lokasi`;
-            updateGPSDisplay(displayText);
-            return;
-        }
+        // JIKA DATA SUDAH FIX: Hitung jarak
+        const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
+        lastInsideArea = distance <= RADIUS_LIMIT;
 
-        // ===============================
-        // 📏 HITUNG JARAK (hanya yang valid & tidak diblokir)
-        // ===============================
-        let dKantor = Infinity;
-        let dWAN = Infinity;
-
-        if (kantorValid && !kantorBlocked) {
-            dKantor = getDistanceFromLatLonInMeters(
-                currentLat, currentLon,
-                targetLocations.kantor.lat,
-                targetLocations.kantor.lon
-            );
-        }
-
-        if (wanValid && !wanBlocked) {
-            dWAN = getDistanceFromLatLonInMeters(
-                currentLat, currentLon,
-                targetLocations.wan.lat,
-                targetLocations.wan.lon
-            );
-        }
-
-        // ===============================
-        // 🎯 PILIH TERDEKAT
-        // ===============================
-        let lokasiTerdeteksi = null;
-        let jarak = Math.min(dKantor, dWAN);
-
-        if (jarak === dKantor && dKantor <= RADIUS_LIMIT) {
-            lokasiTerdeteksi = targetLocations.kantor.nama;
-        } else if (jarak === dWAN && dWAN <= RADIUS_LIMIT) {
-            lokasiTerdeteksi = targetLocations.wan.nama;
-        }
-
-        // ===============================
-        // 📊 HASIL
-        // ===============================
-        if (lokasiTerdeteksi) {
-            lastInsideArea = true;
-            displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
-            displayText += `\n📏 Jarak ${Math.round(jarak)} Meter || (Max. ${RADIUS_LIMIT} Meter)`;
+        if (lastInsideArea) {
+            displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
         } else {
-            lastInsideArea = false;
-
-            displayText += `\n❌ Di luar area absensi`;
-
-            // tampilkan detail hanya kalau valid
-            let detail = [];
-            if (isFinite(dKantor)) detail.push(`Kantor: ${Math.round(dKantor)} Meter`);
-            if (isFinite(dWAN)) detail.push(`WAN: ${Math.round(dWAN)} Meter`);
-
-            if (detail.length > 0) {
-                displayText += `\n📏 ${detail.join(" | ")} || (Max. ${RADIUS_LIMIT} Meter)`;
-            }
+            displayText += `\n❌ Di luar area ${namaLokasi}`;
+            displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
         }
-
     } else {
-        // selain hadir → bebas
         lastInsideArea = true;
     }
 
-    // ===============================
-    // 🔥 UPDATE UI (WAJIB DI AKHIR)
-    // ===============================
+    // 4. Update UI
     updateGPSDisplay(displayText);
 }
 
