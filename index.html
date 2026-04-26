@@ -1294,15 +1294,19 @@ async function refreshTargetLocation(callback) {
         if (hidden) hidden.value = "MULTI";
 
         // 🚀 langsung update UI
-        if (gpsData[0] !== 0) {
-            forceUpdateDistanceUI(
-                gpsData[0],
-                gpsData[1],
-                typeof gpsAccuracy !== "undefined" ? gpsAccuracy : 0
-            );
-        }
-
-    } catch (error) {
+		// 🚀 langsung update UI (anti reset flicker)
+		if (gpsData[0] !== 0) {
+		    setTimeout(() => {
+		        forceUpdateDistanceUI(
+		            gpsData[0],
+		            gpsData[1],
+		            typeof gpsAccuracy !== "undefined" ? gpsAccuracy : 0
+		        );
+		    }, 0);
+		} else {
+		    targetLocations = null;
+		    if (tampil) tampil.value = "-";
+		} catch (error) {
         console.error("Gagal refresh:", error);
 
         if (tampil) tampil.value = "❌ Gagal memuat lokasi";
