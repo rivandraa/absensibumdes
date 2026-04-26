@@ -849,6 +849,9 @@ function stopGPSLoading() {
 // =====================================================
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
+// =====================================================
+// FUNGSI HITUNG INSTAN (ANTI-DELAY)
+// =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
 
     acc = Number(acc) || 0;
@@ -1047,7 +1050,7 @@ async function refreshTargetLocation(callback) {
         // ===============================
         // SET DATA
         // ===============================
-        targetLocations = loc || { kantor: null, wan: null };
+        //targetLocations = loc || { kantor: null, wan: null };
 
         // ===============================
         // VALIDASI KOORDINAT
