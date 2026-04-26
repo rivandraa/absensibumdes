@@ -850,56 +850,132 @@ function stopGPSLoading() {
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
-    // 1. Ambil input secepat mungkin
-    const status = (document.getElementById("status")?.value || "").toLowerCase();
-    const elNama = document.getElementById("titikKoordinatTampil");
-    const namaLokasi = elNama?.value || "Area Absensi";
 
-    const currentLat = lat || gpsData[0];
-    const currentLon = lon || gpsData[1];
+    const statusEl = document.getElementById("status");
+    const status = (statusEl?.value || "").toLowerCase();
 
-    // Jika GPS belum aktif, jangan proses apa pun
-    if (!currentLat || currentLat === 0) return;
+	const currentLat = Number(lat) || gpsData[0] || 0;
+    const currentLon = Number(lon) || gpsData[1] || 0;
+    const currentAcc = Number(acc) || gpsData[2] || 0;
 
-    // 2. Bangun teks dasar
+    // 🚫 GPS belum siap
+    if (!currentLat || !currentLon) {
+        updateGPSDisplay("📡 Menunggu sinyal GPS...");
+        return;
+    }
+
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // 3. Logika Prioritas Tinggi (Status Absensi)
-    if (status === "hadir" || status === "wan") {
-        
-        // JIKA LOKASI BEBAS: Langsung keluar dari fungsi (Sangat Cepat)
-        if (namaLokasi === "-") {
-            lastInsideArea = true;
-            updateGPSDisplay(displayText);
-            return; 
-        }
-
-        // JIKA DATA TARGET BELUM ADA: Tampilkan loading dan langsung berhenti di sini
-        const hasTargetData = targetLocation && targetLocation.lat && targetLocation.lat !== 0;
-        
-        if (!hasTargetData) {
-            lastInsideArea = false;
-            displayText += `\nSedang menghitung jarak anda dengan titik koordinat absensi`;
-            updateGPSDisplay(displayText);
-            return; // Berhenti di sini agar tidak memproses kode di bawahnya
-        }
-
-        // JIKA DATA SUDAH FIX: Hitung jarak
-        const distance = getDistanceFromLatLonInMeters(currentLat, currentLon, targetLocation.lat, targetLocation.lon);
-        lastInsideArea = distance <= RADIUS_LIMIT;
-
-        if (lastInsideArea) {
-            displayText += `\n✅ Berada dalam area radius ${namaLokasi}`;
-        } else {
-            displayText += `\n❌ Di luar area ${namaLokasi}`;
-            displayText += `\n📏 Jarak ${distance.toFixed(0)} Meter (Max. ${RADIUS_LIMIT} Meter)`;
-        }
-    } else {
-        lastInsideArea = true;
+    if (acc > MAX_ACCURACY) {
+        displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
 
-    // 4. Update UI
+    // ===============================
+    // 🔥 HANYA UNTUK STATUS ABSENSI
+    // ===============================
+    const isAbsensi = (status === "hadir" || status === "pulang" || status === "wan");
+
+    if (!isAbsensi) {
+        lastInsideArea = true;
+        updateGPSDisplay(displayText);
+        return;
+    }
+
+    // ===============================
+    // 📡 DATA BELUM SIAP
+    // ===============================
+    if (!targetLocations?.kantor && !targetLocations?.wan) {
+        updateGPSDisplay(displayText + "\nSedang mengambil data lokasi...");
+        return;
+    }
+
+    const kantor = targetLocations.kantor;
+    const wan = targetLocations.wan;
+
+    const isValid = (loc) =>
+        loc &&
+        typeof loc.lat === "number" &&
+        typeof loc.lon === "number" &&
+        !isNaN(loc.lat) &&
+        !isNaN(loc.lon);
+
+    const isBlocked = (loc) => loc?.blocked === true;
+
+    const kantorValid = isValid(kantor);
+    const wanValid = isValid(wan);
+
+    const kantorBlocked = isBlocked(kantor);
+    const wanBlocked = isBlocked(wan);
+
+    // ===============================
+    // ⛔ BLOKIR TOTAL
+    // ===============================
+    if (kantorBlocked && wanBlocked) {
+        lastInsideArea = false;
+        updateGPSDisplay(displayText + "\n⛔ Semua lokasi absensi diblokir");
+        return;
+    }
+
+    // ===============================
+    // ✅ BEBAS LOKASI
+    // ===============================
+    if (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked) {
+        lastInsideArea = true;
+        updateGPSDisplay(displayText + "\n✅ Bebas lokasi");
+        return;
+    }
+
+    // ===============================
+    // 📏 HITUNG JARAK
+    // ===============================
+    let dKantor = Infinity;
+    let dWan = Infinity;
+
+    if (kantorValid && !kantorBlocked) {
+        dKantor = getDistanceFromLatLonInMeters(
+            currentLat, currentLon,
+            kantor.lat, kantor.lon
+        );
+    }
+
+    if (wanValid && !wanBlocked) {
+        dWan = getDistanceFromLatLonInMeters(
+            currentLat, currentLon,
+            wan.lat, wan.lon
+        );
+    }
+
+    const jarak = Math.min(dKantor, dWan);
+    let lokasi = null;
+
+    if (jarak === dKantor && dKantor <= RADIUS_LIMIT) {
+        lokasi = kantor?.nama;
+    } else if (jarak === dWan && dWan <= RADIUS_LIMIT) {
+        lokasi = wan?.nama;
+    }
+
+    // ===============================
+    // 📊 OUTPUT
+    // ===============================
+    if (lokasi) {
+        lastInsideArea = true;
+        displayText += `\n✅ Hadir di ${lokasi}`;
+        displayText += `\n📏 Jarak ${Math.round(jarak)} Meter || (Max. ${RADIUS_LIMIT} Meter)`;
+    } else {
+        lastInsideArea = false;
+
+        displayText += `\n❌ Di luar area absensi`;
+
+        let detail = [];
+        if (isFinite(dKantor)) detail.push(`Kantor: ${Math.round(dKantor)} Meter`);
+        if (isFinite(dWan)) detail.push(`WAN: ${Math.round(dWan)} Meter`);
+
+        if (detail.length) {
+            displayText += `\n📏 ${detail.join(" | ")} || (Max. ${RADIUS_LIMIT} Meter)`;
+        }
+    }
+
     updateGPSDisplay(displayText);
 }
 
@@ -909,7 +985,6 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 // =====================================================
 let isFetchingLocation = false;
 
-// Tambahkan parameter 'isSilent' untuk membedakan interval dan manual
 async function refreshTargetLocation(callback) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
     const userRequesting = userObj ? userObj.username : null;
@@ -920,66 +995,104 @@ async function refreshTargetLocation(callback) {
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
 
-	// 1. CEK STATUS DULU (Prioritas Utama)
-	if (!currentStatus || currentStatus === "Pilih Status..." || currentStatus === "") {
-	    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-		isLoading = false;
-	    return; 
-	}
-	
-    // Jika status non-lokasi, langsung set dan berhenti
+    // ===============================
+    // VALIDASI STATUS
+    // ===============================
+    if (!currentStatus) {
+        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+        isLoading = false;
+        return;
+    }
+
+    // ===============================
+    // STATUS TANPA LOKASI
+    // ===============================
     if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
         if (tampil) tampil.value = "-";
         if (hidden) hidden.value = "-";
-        targetLocation = null;
-        lastTargetLocation = null;
-		isLoading = false;
-        return; 
+
+        targetLocations = null;
+        isLoading = false;
+        return;
     }
 
     if (isFetchingLocation) return;
 
     try {
         isFetchingLocation = true;
-        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
-        const response = await fetch(url);
-		const text = await response.text();
-		
-		// kasih napas ke UI dulu
-		await new Promise(r => setTimeout(r, 0));
-		
-		const loc = JSON.parse(text);
 
-        // Validasi agar data yang telat tidak menimpa status yang sudah berubah
+        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
+        const response = await fetch(url);
+
+        if (!response.ok) throw new Error("Response tidak OK");
+
+        const loc = await response.json();
+
+        // cegah overwrite jika status berubah
         if (document.getElementById("status")?.value !== currentStatus) return;
 
-        if (loc && loc.lat && loc.lon) {
-            const newLocation = { lat: parseFloat(loc.lat), lon: parseFloat(loc.lon) };
-            
-            // Update memori
-            targetLocation = newLocation;
-            lastTargetLocation = newLocation;
+        // ===============================
+        // SET DATA
+        // ===============================
+        //targetLocations = loc || { kantor: null, wan: null };
 
-            // Update Tampilan (Tanpa kedip karena isSilent menangani ini)
-            const koordinatMurni = `${newLocation.lat.toFixed(6)}, ${newLocation.lon.toFixed(6)}`;
-            if (tampil) tampil.value = (loc.nama && loc.nama.trim() !== "") ? loc.nama : koordinatMurni;
-            if (hidden) hidden.value = koordinatMurni;
-
-			if (gpsData[0] !== 0) {
-			    setTimeout(() => {
-			        forceUpdateDistanceUI();
-			    }, 0);
-			}
-        } else {
-            targetLocation = null;
-            if (tampil) tampil.value = "-";
+        // ===============================
+        // VALIDASI KOORDINAT
+        // ===============================
+        function isValidCoord(loc) {
+            return loc &&
+                typeof loc.lat === "number" && !isNaN(loc.lat) &&
+                typeof loc.lon === "number" && !isNaN(loc.lon);
         }
+
+        // ===============================
+        // TAMPILKAN DI INPUT
+        // ===============================
+        if (tampil) {
+            const kantorValid = isValidCoord(loc?.kantor);
+            const wanValid = isValidCoord(loc?.wan);
+
+            // 🔥 Keduanya kosong → tampil "-"
+            if (!kantorValid && !wanValid) {
+                tampil.value = "-";
+
+            // 🔥 Dua-duanya ada → tampil dua nama
+            } else if (kantorValid && wanValid) {
+                tampil.value = `${loc.kantor.nama} & ${loc.wan.nama}`;
+
+            // 🔥 Hanya kantor
+            } else if (kantorValid) {
+                tampil.value = loc.kantor.nama;
+
+            // 🔥 Hanya WAN
+            } else if (wanValid) {
+                tampil.value = loc.wan.nama;
+            }
+        }
+
+        if (hidden) hidden.value = "MULTI";
+
+        // 🚀 langsung update UI
+        if (gpsData[0] !== 0) {
+            forceUpdateDistanceUI(
+                gpsData[0],
+                gpsData[1],
+                typeof gpsAccuracy !== "undefined" ? gpsAccuracy : 0
+            );
+        }
+
     } catch (error) {
         console.error("Gagal refresh:", error);
+
+        if (tampil) tampil.value = "❌ Gagal memuat lokasi";
+
+        // fallback aman → dianggap bebas
+        targetLocations = { kantor: null, wan: null };
     } finally {
         isFetchingLocation = false;
-		isLoading = false;
-		if (typeof callback === "function") callback();
+        isLoading = false;
+
+        if (typeof callback === "function") callback();
     }
 }
 
