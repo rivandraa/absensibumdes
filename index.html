@@ -486,15 +486,16 @@ async function loginUser() {
                 lastTargetLocation = targetLocation;
             }
 
-			showPopup(
-			  "Login Berhasil! Selamat Datang<br><br>" +
-			  "<table>" +
-			  "<tr><td>Pegawai</td><td>: " + res.nama + "</td></tr>" +
-			  "<tr><td>Jabatan</td><td>: " + res.jabatan + "</td></tr>" +
-			  "</table>",
-			  "success",
-			  5000
-			);
+showPopup(
+  "Login Berhasil! Selamat Datang<br><br>" +
+  "<table>" +
+  "<tr><td>Pegawai</td><td>:</td><td>" + res.nama + "</td></tr>" +
+  "<tr><td>Jabatan</td><td>:</td><td>" + res.jabatan + "</td></tr>" +
+  "</table>",
+  "success",
+  50000
+);
+
 
 			updateStatusOptions();
             setTimeout(() => {
