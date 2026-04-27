@@ -856,7 +856,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     acc = Number(acc ?? gpsAccuracy ?? 0);
     if (isNaN(acc)) acc = 0;
 
-    const status = (document.getElementById("status")?.value || "").toLowerCase();
+    const statusInput = (document.getElementById("status")?.value || "").toUpperCase();
 
     const currentLat = lat;
     const currentLon = lon;
@@ -878,11 +878,13 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // ===============================
     // 🔥 LOGIKA HADIR
     // ===============================
-    if (status === "hadir" || status === "pulang" || status === "wan") {
+    if (statusInput === "HADIR" || statusInput === "PULANG" || statusInput === "WAN") {
 
         // --- AMBIL DATA USER UNTUK CEK STATUS AWAL ---
         const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
-        const isAwalDinas = (userObj && userObj.status_absen_masuk === "Dinas");
+        // Standarisasi ke UPPERCASE untuk perbandingan aman
+        const statusAwal = (userObj && userObj.status_absen_masuk) ? String(userObj.status_absen_masuk).toUpperCase() : "";
+        const isAwalDinas = (statusAwal === "DINAS");
 
         // 🔧 HELPER
         function isValidCoord(loc) {
@@ -901,12 +903,12 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         const wanBlocked = targetLocations ? isBlocked(targetLocations.wan) : false;
 
         // ===============================
-        // ✅ PRIORITAS 1: BEBAS LOKASI (Dinas / Pulang Dinas)
+        // ✅ PRIORITAS 1: BEBAS LOKASI (Status Pulang dari awal Dinas)
         // ===============================
-        if ((status === "pulang" && isAwalDinas) || (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked && targetLocations)) {
+        if ((statusInput === "PULANG" && isAwalDinas) || (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked && targetLocations)) {
             lastInsideArea = true;
-            if (status === "pulang" && isAwalDinas) {
-                displayText += `\n✅ Bebas lokasi karena pagi tadi Dinas Luar`;
+            if (statusInput === "PULANG" && isAwalDinas) {
+                displayText += `\n✅ Bebas lokasi (Pulang Dinas)`;
             } else {
                 displayText += `\n✅ Bebas lokasi`;
             }
@@ -925,7 +927,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         }
 
         // ===============================
-        // ⏳ PRIORITAS 3: TUNGGU DATA (Jika bukan Dinas)
+        // ⏳ PRIORITAS 3: TUNGGU DATA
         // ===============================
         if (!targetLocations) {
             displayText += `\nSedang mengambil data lokasi...`;
@@ -1008,8 +1010,9 @@ async function refreshTargetLocation(callback) {
         return;
     }
 
-    // Ambil status awal (dari penyimpanan lokal sementara)
-    const isAwalDinas = (userObj && userObj.status_absen_masuk === "Dinas");
+    // Ambil status awal dari session storage
+    const statusAwal = (userObj && userObj.status_absen_masuk) ? String(userObj.status_absen_masuk).toUpperCase() : "";
+    const isAwalDinas = (statusAwal === "DINAS");
 
     // STATUS TANPA LOKASI ATAU PULANG SETELAH DINAS
     if (["Dinas", "Izin", "Sakit"].includes(currentStatus) || (currentStatus === "Pulang" && isAwalDinas)) {
@@ -1034,7 +1037,7 @@ async function refreshTargetLocation(callback) {
         if (document.getElementById("status")?.value !== currentStatus) return;
 
         if (loc) {
-            // 🔥 UPDATE DATA USER DENGAN STATUS TERBARU DARI GAS
+            // 🔥 UPDATE DATA MEMORI (PENTING!)
             if (loc.status_absen_masuk) {
                 if (!userData) userData = userObj || {};
                 userData.status_absen_masuk = loc.status_absen_masuk;
