@@ -549,6 +549,7 @@ function isPulangAllowed() {
 // ===============================
 let isLockedPulang = false;
 let loadingMode = "loading";
+let lastStatusServer = "";
 let dot = 0;
 
 async function updateStatusOptions() {
@@ -596,7 +597,7 @@ async function updateStatusOptions() {
 
         const data = await res.json();
         if (!data) throw new Error("Data kosong");
-
+		lastStatusServer = (data.lastStatus || "").toLowerCase();
         const sudahMasuk = data.sudahAbsenMasuk === true;
         const sudahPulang = data.sudahPulang === true;
 
@@ -882,12 +883,12 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 if (status === "hadir" || status === "pulang" || status === "wan") {
 
     // ✅ KHUSUS: kalau sebelumnya DINAS dan sekarang PULANG → bebas lokasi
-    if (status === "pulang" && lastStatus.toLowerCase() === "dinas") {
-        lastInsideArea = true;
-        displayText += `\n✅ Pulang dari Dinas (bebas lokasi)`;
-        updateGPSDisplay(displayText);
-        return;
-    }
+if (status === "pulang" && lastStatusServer === "dinas") {
+    lastInsideArea = true;
+    displayText += `\n✅ Pulang dari Dinas (bebas lokasi)`;
+    updateGPSDisplay(displayText);
+    return;
+}
 
 
         if (!targetLocations) {
