@@ -1047,7 +1047,7 @@ async function refreshTargetLocation(callback) {
     try {
         isFetchingLocation = true;
 
-        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}`;
+        const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
         const response = await fetch(url);
 
         if (!response.ok) throw new Error("Response tidak OK");
