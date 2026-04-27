@@ -1022,34 +1022,34 @@ async function refreshTargetLocation(callback) {
     // ===============================
     // VALIDASI STATUS
     // ===============================
-    if (!currentStatus) {
-        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-        isLoading = false;
-        return;
-    }
+// VALIDASI STATUS
+if (!currentStatus) {
+    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+    isLoading = false;
+    return;
+}
 
-if (currentStatus && currentStatus.toLowerCase() !== "pulang") {
+// selalu simpan status awal ke sessionStorage (selain pulang)
+if (currentStatus.toLowerCase() !== "pulang") {
     lastStatusAwal = currentStatus.toLowerCase();
     sessionStorage.setItem("lastStatusAwal", lastStatusAwal);
 } else {
-    lastStatusAwal = sessionStorage.getItem("lastStatusAwal");
+    // ambil dari sessionStorage kalau status sekarang pulang
+    lastStatusAwal = (sessionStorage.getItem("lastStatusAwal") || "").toLowerCase();
 }
 
+// STATUS TANPA LOKASI
+if (["dinas", "izin", "sakit"].includes(currentStatus.toLowerCase())) {
+    if (tampil) tampil.value = "-";
+    if (hidden) hidden.value = "-";
 
-    // ===============================
-    // STATUS TANPA LOKASI
-    // ===============================
-    if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
-        if (tampil) tampil.value = "-";
-        if (hidden) hidden.value = "-";
+    targetLocations = null;
+    isLoading = false;
 
-        targetLocations = null;
+    forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+    return;
+}
 
-        isLoading = false;
-        
-        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
-        return;
-    }
 
     if (isFetchingLocation) return;
 
