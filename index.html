@@ -1008,7 +1008,7 @@ async function refreshTargetLocation(callback) {
         return;
     }
 
-    // Ambil status awal
+    // Ambil status awal (dari penyimpanan lokal sementara)
     const isAwalDinas = (userObj && userObj.status_absen_masuk === "Dinas");
 
     // STATUS TANPA LOKASI ATAU PULANG SETELAH DINAS
@@ -1034,6 +1034,13 @@ async function refreshTargetLocation(callback) {
         if (document.getElementById("status")?.value !== currentStatus) return;
 
         if (loc) {
+            // 🔥 UPDATE DATA USER DENGAN STATUS TERBARU DARI GAS
+            if (loc.status_absen_masuk) {
+                if (!userData) userData = userObj || {};
+                userData.status_absen_masuk = loc.status_absen_masuk;
+                sessionStorage.setItem('userData', JSON.stringify(userData));
+            }
+
             targetLocations = loc || { kantor: null, wan: null };
             const isValidCoord = (l) => l && typeof l.lat === "number" && !isNaN(l.lat) && typeof l.lon === "number" && !isNaN(l.lon);
 
