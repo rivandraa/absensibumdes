@@ -848,59 +848,47 @@ function stopGPSLoading() {
 // =====================================================
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
-async function forceUpdateDistanceUI(lat, lon, acc) {
+function forceUpdateDistanceUI(lat, lon, acc) {
+
     lat = Number(lat ?? gpsData?.[0] ?? 0);
     lon = Number(lon ?? gpsData?.[1] ?? 0);
+
     acc = Number(acc ?? gpsAccuracy ?? 0);
     if (isNaN(acc)) acc = 0;
 
     const status = (document.getElementById("status")?.value || "").toLowerCase();
+
     const currentLat = lat;
     const currentLon = lon;
 
+    // 🚫 GPS belum siap
     if (!currentLat || !currentLon || currentLat === 0 || currentLon === 0) {
         updateGPSDisplay("📡 Menunggu sinyal GPS...");
         return;
     }
 
+    // 🧾 Info dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
+	// Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
 
+    // ===============================
     // 🔥 LOGIKA HADIR
-    if (status === "pulang") {
-        try {
-            const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
-            const url = `${GAS_URL}?action=getStatusUI&username=${encodeURIComponent(userObj.username)}&spreadsheetId=${encodeURIComponent(userObj.spreadsheetId)}`;
-            const res = await fetch(url);
-            const data = await res.json();
+    // ===============================
+if (status === "hadir" || status === "pulang" || status === "wan") {
 
-            if (data.lastStatusRaw && data.lastStatusRaw.toLowerCase() === "dinas") {
-                lastInsideArea = true;
-                displayText += `\n✅ Pulang setelah Dinas (bebas lokasi)`;
-                updateGPSDisplay(displayText);
-                return; // langsung keluar
-            }
-        } catch (err) {
-            console.error("Gagal cek status UI:", err);
-        }
+    // ✅ KHUSUS: kalau sebelumnya DINAS dan sekarang PULANG → bebas lokasi
+    if (status === "pulang" && lastStatus.toLowerCase() === "dinas") {
+        lastInsideArea = true;
+        displayText += `\n✅ Pulang dari Dinas (bebas lokasi)`;
+        updateGPSDisplay(displayText);
+        return;
     }
 
-    // ===============================
-    // 🔥 LOGIKA HADIR
-    // ===============================
-    if (status === "hadir" || status === "pulang" || status === "wan") {
-
-        // === Tambahan khusus untuk Pulang setelah Dinas ===
-        if (status === "pulang" && lastStatusAwal === "dinas") {
-            lastInsideArea = true;
-            displayText += `\n✅ Pulang setelah Dinas (bebas lokasi)`;
-            updateGPSDisplay(displayText);
-            return;
-        }
 
         if (!targetLocations) {
             displayText += `\nSedang mengambil data lokasi...`;
@@ -1019,7 +1007,6 @@ async function forceUpdateDistanceUI(lat, lon, acc) {
 // REFRESH TARGET LOCATION
 // =====================================================
 let isFetchingLocation = false;
-let lastStatusAwal = null; // simpan status awal
 
 async function refreshTargetLocation(callback) {
     const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
@@ -1035,34 +1022,26 @@ async function refreshTargetLocation(callback) {
     // ===============================
     // VALIDASI STATUS
     // ===============================
-// VALIDASI STATUS
-if (!currentStatus) {
-    if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-    isLoading = false;
-    return;
-}
+    if (!currentStatus) {
+        if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+		isLoading = false;
+        return;
+    }
 
-// selalu simpan status awal ke sessionStorage (selain pulang)
-if (currentStatus.toLowerCase() !== "pulang") {
-    lastStatusAwal = currentStatus.toLowerCase();
-    sessionStorage.setItem("lastStatusAwal", lastStatusAwal);
-} else {
-    // ambil dari sessionStorage kalau status sekarang pulang
-    lastStatusAwal = (sessionStorage.getItem("lastStatusAwal") || "").toLowerCase();
-}
+    // ===============================
+    // STATUS TANPA LOKASI
+    // ===============================
+    if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
+        if (tampil) tampil.value = "-";
+        if (hidden) hidden.value = "-";
 
-// STATUS TANPA LOKASI
-if (["dinas", "izin", "sakit"].includes(currentStatus.toLowerCase())) {
-    if (tampil) tampil.value = "-";
-    if (hidden) hidden.value = "-";
+        targetLocations = null;
 
-    targetLocations = null;
-    isLoading = false;
-
-    forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
-    return;
-}
-
+		isLoading = false;
+		
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+        return;
+    }
 
     if (isFetchingLocation) return;
 
@@ -1130,12 +1109,11 @@ if (["dinas", "izin", "sakit"].includes(currentStatus.toLowerCase())) {
     } finally {
         isFetchingLocation = false;
 
-        isLoading = false;
-        
+		isLoading = false;
+		
         if (typeof callback === "function") callback();
     }
 }
-
 	
 // =====================================================
 // CALCULATION LOGIC
