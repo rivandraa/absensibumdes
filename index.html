@@ -300,35 +300,25 @@ function showPopup(msg, type = "success", duration = null, callback = null) {
     const popup = document.getElementById("popupNotif");
     if (!popup) return;
 
-    // 1. Bersihkan semua timeout aktif agar tidak tumpang tindih
+    console.log("POPUP:", msg, duration);
+
     if (popup._timeout) clearTimeout(popup._timeout);
     if (popup._hideTimeout) clearTimeout(popup._hideTimeout);
 
-    // 2. Reset keadaan (Remove show & types)
-    // Kita tidak pakai display: block/none karena CSS sudah pakai visibility
     popup.classList.remove("show", "success", "error", "warning", "loading");
-
-    // Trigger reflow agar browser sadar ada reset class (penting untuk Safari/iOS)
     void popup.offsetWidth;
 
-    // 3. Set Konten & Tipe
     popup.classList.add(type);
-    if (type === "loading") {
-        popup.innerHTML = `<div class="spinner"></div><div style="margin-top:8px;">${msg}</div>`;
-    } else {
-        popup.innerHTML = msg;
-    }
+    popup.innerHTML = msg;
 
-    // 4. Munculkan Popup
     popup.classList.add("show");
-    popupActive = true;
 
-    // 5. Logika Auto-Close
     if (type === "loading" || duration === false) return;
 
     const actualDuration = duration === null ? 3000 : duration;
 
     popup._timeout = setTimeout(() => {
+        console.log("AUTO CLOSE setelah", actualDuration);
         closePopupProcess(popup, callback);
     }, actualDuration);
 }
@@ -487,15 +477,13 @@ async function loginUser() {
             }
 
 showPopup(
-  "Login Berhasil! Selamat Datang<br><br>" +
-  "<table>" +
-  "<tr><td>Pegawai</td><td>:</td><td>" + res.nama + "</td></tr>" +
-  "<tr><td>Jabatan</td><td>:</td><td>" + res.jabatan + "</td></tr>" +
-  "</table>",
+  "<pre>Login Berhasil! Selamat Datang\n\n" +
+  "Pegawai  : " + res.nama + "\n" +
+  "Jabatan  : " + res.jabatan +
+  "</pre>",
   "success",
-  50000
+  5000
 );
-
 
 			updateStatusOptions();
             setTimeout(() => {
