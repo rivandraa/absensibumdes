@@ -919,6 +919,15 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             return;
         }
 
+	    // ===============================
+        // ✅ BEBAS LOKASI DINAS
+        // ===============================
+		if (status === "pulang" && !targetLocations) {
+		    displayText += `\n✅ Bebas lokasi karena Dinas Luar`;
+		    updateGPSDisplay(displayText);
+		    return;
+		}
+		
         // ===============================
         // ✅ BEBAS LOKASI (dua-duanya kosong & tidak diblokir)
         // ===============================
