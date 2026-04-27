@@ -919,24 +919,21 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             return;
         }
 
-	    // ===============================
-        // ✅ BEBAS LOKASI DINAS
-        // ===============================
-		if (status === "pulang" && !targetLocations) {
-		    displayText += `\n✅ Bebas lokasi karena Dinas Luar`;
-		    updateGPSDisplay(displayText);
-		    return;
-		}
-		
         // ===============================
         // ✅ BEBAS LOKASI (dua-duanya kosong & tidak diblokir)
         // ===============================
-        if (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked) {
-            lastInsideArea = true;
-            displayText += `\n✅ Bebas lokasi`;
-            updateGPSDisplay(displayText);
-            return;
-        }
+		if (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked) {
+		    lastInsideArea = true;
+		
+		    if (status === "pulang") {
+		        displayText += `\n✅ Bebas lokasi karena Status Dinas`;
+		    } else {
+		        displayText += `\n✅ Bebas lokasi`;
+		    }
+		
+		    updateGPSDisplay(displayText);
+		    return;
+		}
 
         // ===============================
         // 📏 HITUNG JARAK (hanya yang valid & tidak diblokir)
