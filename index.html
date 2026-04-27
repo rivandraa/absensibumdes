@@ -848,9 +848,6 @@ function stopGPSLoading() {
 // =====================================================
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
-// =====================================================
-// FUNGSI HITUNG INSTAN (ANTI-DELAY)
-// =====================================================
 function forceUpdateDistanceUI(lat, lon, acc) {
 
     lat = Number(lat ?? gpsData?.[0] ?? 0);
@@ -874,17 +871,21 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
     
-	// Baris Tambahan (Opsional): Animasi Akurasi
+    // Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
-	
+    
     // ===============================
     // 🔥 LOGIKA HADIR
     // ===============================
     if (status === "hadir" || status === "pulang" || status === "wan") {
 
-        if (!targetLocations) {
+        // --- CEK APAKAH USER DINAS PADA ABSEN MASUK ---
+        const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
+        const isAwalDinas = (userObj && userObj.status_absen_masuk === "Dinas");
+
+        if (!targetLocations && !isAwalDinas) {
             displayText += `\nSedang mengambil data lokasi...`;
             updateGPSDisplay(displayText);
             return;
@@ -903,11 +904,11 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             return loc && loc.blocked === true;
         }
 
-        const kantorValid = isValidCoord(targetLocations.kantor);
-        const wanValid = isValidCoord(targetLocations.wan);
+        const kantorValid = targetLocations ? isValidCoord(targetLocations.kantor) : false;
+        const wanValid = targetLocations ? isValidCoord(targetLocations.wan) : false;
 
-        const kantorBlocked = isBlocked(targetLocations.kantor);
-        const wanBlocked = isBlocked(targetLocations.wan);
+        const kantorBlocked = targetLocations ? isBlocked(targetLocations.kantor) : false;
+        const wanBlocked = targetLocations ? isBlocked(targetLocations.wan) : false;
 
         // ===============================
         // ⛔ BLOKIR TOTAL
@@ -920,20 +921,23 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         }
 
         // ===============================
-        // ✅ BEBAS LOKASI (dua-duanya kosong & tidak diblokir)
+        // ✅ BEBAS LOKASI 
+        // (Status Pulang jika Pagi Dinas OR Lokasi Kosong)
         // ===============================
-		if (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked) {
-		    lastInsideArea = true;
-		
-		    if (status === "pulang") {
-		        displayText += `\n✅ Bebas lokasi karena Status Dinas`;
-		    } else {
-		        displayText += `\n✅ Bebas lokasi`;
-		    }
-		
-		    updateGPSDisplay(displayText);
-		    return;
-		}
+        if ((status === "pulang" && isAwalDinas) || (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked)) {
+            lastInsideArea = true;
+        
+            if (status === "pulang" && isAwalDinas) {
+                displayText += `\n✅ Bebas lokasi karena pagi tadi Dinas Luar`;
+            } else if (status === "pulang") {
+                displayText += `\n✅ Bebas lokasi karena Status Dinas`;
+            } else {
+                displayText += `\n✅ Bebas lokasi`;
+            }
+        
+            updateGPSDisplay(displayText);
+            return;
+        }
 
         // ===============================
         // 📏 HITUNG JARAK (hanya yang valid & tidak diblokir)
@@ -1024,7 +1028,7 @@ async function refreshTargetLocation(callback) {
     // ===============================
     if (!currentStatus) {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
-		isLoading = false;
+        isLoading = false;
         return;
     }
 
@@ -1036,8 +1040,19 @@ async function refreshTargetLocation(callback) {
         if (hidden) hidden.value = "-";
 
         targetLocations = null;
-		isLoading = false;
-		
+        isLoading = false;
+        
+        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+        return;
+    }
+
+    // KHUSUS: Jika Pulang dan status awal adalah Dinas
+    const isAwalDinas = (userObj && userObj.status_absen_masuk === "Dinas");
+    if (currentStatus === "Pulang" && isAwalDinas) {
+        if (tampil) tampil.value = "✅ Bebas Lokasi (Pulang Dinas)";
+        if (hidden) hidden.value = "-";
+        targetLocations = null;
+        isLoading = false;
         forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         return;
     }
@@ -1107,8 +1122,8 @@ async function refreshTargetLocation(callback) {
 
     } finally {
         isFetchingLocation = false;
-		isLoading = false;
-		
+        isLoading = false;
+        
         if (typeof callback === "function") callback();
     }
 }
