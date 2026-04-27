@@ -295,12 +295,13 @@ updateTanggalWaktu();
 // Popup Notifikasi dan Getar (Sync with CSS)
 // ================================
 let popupActive = false;
+let isLocked = false;
 
 function showPopup(msg, type = "success", duration = null, callback = null) {
+    if (isLocked) return;
+
     const popup = document.getElementById("popupNotif");
     if (!popup) return;
-
-    console.log("POPUP:", msg, duration);
 
     if (popup._timeout) clearTimeout(popup._timeout);
     if (popup._hideTimeout) clearTimeout(popup._hideTimeout);
@@ -310,16 +311,19 @@ function showPopup(msg, type = "success", duration = null, callback = null) {
 
     popup.classList.add(type);
     popup.innerHTML = msg;
-
     popup.classList.add("show");
 
     if (type === "loading" || duration === false) return;
 
     const actualDuration = duration === null ? 3000 : duration;
 
+    isLocked = true;
+
     popup._timeout = setTimeout(() => {
-        console.log("AUTO CLOSE setelah", actualDuration);
-        closePopupProcess(popup, callback);
+        closePopupProcess(popup, () => {
+            isLocked = false;
+            if (callback) callback();
+        });
     }, actualDuration);
 }
 
@@ -477,13 +481,13 @@ async function loginUser() {
             }
 
 showPopup(
-  "<pre>Login Berhasil! Selamat Datang\n\n" +
-  "Pegawai  : " + res.nama + "\n" +
-  "Jabatan  : " + res.jabatan +
-  "</pre>",
+  "Login Berhasil! Selamat Datang<br><br>" +
+  "<div style='display:flex; gap:10px;'><div style='width:80px'>Pegawai</div><div>:</div><div>" + res.nama + "</div></div>" +
+  "<div style='display:flex; gap:10px;'><div style='width:80px'>Jabatan</div><div>:</div><div>" + res.jabatan + "</div></div>",
   "success",
   5000
 );
+
 
 			updateStatusOptions();
             setTimeout(() => {
