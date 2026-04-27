@@ -486,7 +486,7 @@ async function loginUser() {
                 lastTargetLocation = targetLocation;
             }
 
-            showPopup("Login berhasil!", "success");
+            showPopup("Login berhasil! Selamat datang " + res.nama, "success");
 			updateStatusOptions();
             setTimeout(() => {
                 startIdleTimer();
