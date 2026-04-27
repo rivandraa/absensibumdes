@@ -882,7 +882,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     if (status === "hadir" || status === "pulang" || status === "wan") {
 
         // === Tambahan khusus untuk Pulang setelah Dinas ===
-        if (lastStatusAwal === "dinas") {
+        if (status === "pulang" && lastStatusAwal === "dinas") {
             lastInsideArea = true;
             displayText += `\n✅ Pulang setelah Dinas (bebas lokasi)`;
             updateGPSDisplay(displayText);
@@ -1028,10 +1028,13 @@ async function refreshTargetLocation(callback) {
         return;
     }
 
-    // simpan status awal (hanya sekali, saat bukan pulang)
-    if (currentStatus && currentStatus.toLowerCase() !== "pulang") {
-        lastStatusAwal = currentStatus.toLowerCase();
-    }
+if (currentStatus && currentStatus.toLowerCase() !== "pulang") {
+    lastStatusAwal = currentStatus.toLowerCase();
+    sessionStorage.setItem("lastStatusAwal", lastStatusAwal);
+} else {
+    lastStatusAwal = sessionStorage.getItem("lastStatusAwal");
+}
+
 
     // ===============================
     // STATUS TANPA LOKASI
