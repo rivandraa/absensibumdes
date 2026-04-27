@@ -882,7 +882,7 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     if (status === "hadir" || status === "pulang" || status === "wan") {
 
         // === Tambahan khusus untuk Pulang setelah Dinas ===
-        if (status === "pulang" && lastStatusAwal === "dinas") {
+        if (lastStatusAwal === "dinas") {
             lastInsideArea = true;
             displayText += `\n✅ Pulang setelah Dinas (bebas lokasi)`;
             updateGPSDisplay(displayText);
