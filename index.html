@@ -871,7 +871,6 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
     
-    // Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
     }
@@ -881,19 +880,11 @@ function forceUpdateDistanceUI(lat, lon, acc) {
     // ===============================
     if (status === "hadir" || status === "pulang" || status === "wan") {
 
-        // --- CEK APAKAH USER DINAS PADA ABSEN MASUK ---
+        // --- AMBIL DATA USER UNTUK CEK STATUS AWAL ---
         const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
         const isAwalDinas = (userObj && userObj.status_absen_masuk === "Dinas");
 
-        if (!targetLocations && !isAwalDinas) {
-            displayText += `\nSedang mengambil data lokasi...`;
-            updateGPSDisplay(displayText);
-            return;
-        }
-
-        // ===============================
         // 🔧 HELPER
-        // ===============================
         function isValidCoord(loc) {
             return loc &&
                 typeof loc.lat === "number" && !isNaN(loc.lat) &&
@@ -906,14 +897,27 @@ function forceUpdateDistanceUI(lat, lon, acc) {
 
         const kantorValid = targetLocations ? isValidCoord(targetLocations.kantor) : false;
         const wanValid = targetLocations ? isValidCoord(targetLocations.wan) : false;
-
         const kantorBlocked = targetLocations ? isBlocked(targetLocations.kantor) : false;
         const wanBlocked = targetLocations ? isBlocked(targetLocations.wan) : false;
 
         // ===============================
-        // ⛔ BLOKIR TOTAL
+        // ✅ PRIORITAS 1: BEBAS LOKASI (Dinas / Pulang Dinas)
         // ===============================
-        if (kantorBlocked && wanBlocked) {
+        if ((status === "pulang" && isAwalDinas) || (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked && targetLocations)) {
+            lastInsideArea = true;
+            if (status === "pulang" && isAwalDinas) {
+                displayText += `\n✅ Bebas lokasi karena pagi tadi Dinas Luar`;
+            } else {
+                displayText += `\n✅ Bebas lokasi`;
+            }
+            updateGPSDisplay(displayText);
+            return;
+        }
+
+        // ===============================
+        // ⛔ PRIORITAS 2: BLOKIR TOTAL
+        // ===============================
+        if (targetLocations && kantorBlocked && wanBlocked) {
             lastInsideArea = false;
             displayText += `\n⛔ Semua lokasi absensi diblokir`;
             updateGPSDisplay(displayText);
@@ -921,26 +925,16 @@ function forceUpdateDistanceUI(lat, lon, acc) {
         }
 
         // ===============================
-        // ✅ BEBAS LOKASI 
-        // (Status Pulang jika Pagi Dinas OR Lokasi Kosong)
+        // ⏳ PRIORITAS 3: TUNGGU DATA (Jika bukan Dinas)
         // ===============================
-        if ((status === "pulang" && isAwalDinas) || (!kantorValid && !wanValid && !kantorBlocked && !wanBlocked)) {
-            lastInsideArea = true;
-        
-            if (status === "pulang" && isAwalDinas) {
-                displayText += `\n✅ Bebas lokasi karena pagi tadi Dinas Luar`;
-            } else if (status === "pulang") {
-                displayText += `\n✅ Bebas lokasi karena Status Dinas`;
-            } else {
-                displayText += `\n✅ Bebas lokasi`;
-            }
-        
+        if (!targetLocations) {
+            displayText += `\nSedang mengambil data lokasi...`;
             updateGPSDisplay(displayText);
             return;
         }
 
         // ===============================
-        // 📏 HITUNG JARAK (hanya yang valid & tidak diblokir)
+        // 📏 HITUNG JARAK
         // ===============================
         let dKantor = Infinity;
         let dWAN = Infinity;
@@ -961,9 +955,6 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             );
         }
 
-        // ===============================
-        // 🎯 PILIH TERDEKAT
-        // ===============================
         let lokasiTerdeteksi = null;
         let jarak = Math.min(dKantor, dWAN);
 
@@ -973,36 +964,25 @@ function forceUpdateDistanceUI(lat, lon, acc) {
             lokasiTerdeteksi = targetLocations.wan.nama;
         }
 
-        // ===============================
-        // 📊 HASIL
-        // ===============================
         if (lokasiTerdeteksi) {
             lastInsideArea = true;
             displayText += `\n✅ Hadir di ${lokasiTerdeteksi}`;
             displayText += `\n📏 Jarak ${Math.round(jarak)} Meter || (Max. ${RADIUS_LIMIT} Meter)`;
         } else {
             lastInsideArea = false;
-
             displayText += `\n❌ Di luar area absensi`;
-
-            // tampilkan detail hanya kalau valid
             let detail = [];
             if (isFinite(dKantor)) detail.push(`Kantor: ${Math.round(dKantor)} Meter`);
             if (isFinite(dWAN)) detail.push(`WAN: ${Math.round(dWAN)} Meter`);
-
             if (detail.length > 0) {
                 displayText += `\n📏 ${detail.join(" | ")} || (Max. ${RADIUS_LIMIT} Meter)`;
             }
         }
 
     } else {
-        // selain hadir → bebas
         lastInsideArea = true;
     }
 
-    // ===============================
-    // 🔥 UPDATE UI (WAJIB DI AKHIR)
-    // ===============================
     updateGPSDisplay(displayText);
 }
 
@@ -1019,41 +999,26 @@ async function refreshTargetLocation(callback) {
 
     const statusInput = document.getElementById("status");
     const currentStatus = statusInput ? statusInput.value : "";
-
     const tampil = document.getElementById("titikKoordinatTampil");
     const hidden = document.getElementById("titikKoordinat");
 
-    // ===============================
-    // VALIDASI STATUS
-    // ===============================
     if (!currentStatus) {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
         isLoading = false;
         return;
     }
 
-    // ===============================
-    // STATUS TANPA LOKASI
-    // ===============================
-    if (["Dinas", "Izin", "Sakit"].includes(currentStatus)) {
-        if (tampil) tampil.value = "-";
-        if (hidden) hidden.value = "-";
-
-        targetLocations = null;
-        isLoading = false;
-        
-        forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
-        return;
-    }
-
-    // KHUSUS: Jika Pulang dan status awal adalah Dinas
+    // Ambil status awal
     const isAwalDinas = (userObj && userObj.status_absen_masuk === "Dinas");
-    if (currentStatus === "Pulang" && isAwalDinas) {
-        if (tampil) tampil.value = "✅ Bebas Lokasi (Pulang Dinas)";
+
+    // STATUS TANPA LOKASI ATAU PULANG SETELAH DINAS
+    if (["Dinas", "Izin", "Sakit"].includes(currentStatus) || (currentStatus === "Pulang" && isAwalDinas)) {
+        if (tampil) tampil.value = (currentStatus === "Pulang") ? "✅ Bebas Lokasi (Pulang Dinas)" : "-";
         if (hidden) hidden.value = "-";
         targetLocations = null;
         isLoading = false;
         forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
+        if (typeof callback === "function") callback();
         return;
     }
 
@@ -1061,73 +1026,45 @@ async function refreshTargetLocation(callback) {
 
     try {
         isFetchingLocation = true;
-
         const url = `${GAS_URL}?action=getTargetLocation&username=${encodeURIComponent(userRequesting)}&status=${encodeURIComponent(currentStatus)}`;
         const response = await fetch(url);
-
         if (!response.ok) throw new Error("Response tidak OK");
-
         const loc = await response.json();
 
         if (document.getElementById("status")?.value !== currentStatus) return;
 
-        // ===============================
-        // IF / ELSE UTAMA
-        // ===============================
         if (loc) {
-
             targetLocations = loc || { kantor: null, wan: null };
-
-            const isValidCoord = (l) =>
-                l &&
-                typeof l.lat === "number" && !isNaN(l.lat) &&
-                typeof l.lon === "number" && !isNaN(l.lon);
+            const isValidCoord = (l) => l && typeof l.lat === "number" && !isNaN(l.lat) && typeof l.lon === "number" && !isNaN(l.lon);
 
             if (tampil) {
                 const kantorValid = isValidCoord(loc?.kantor);
                 const wanValid = isValidCoord(loc?.wan);
-
-                if (!kantorValid && !wanValid) {
-                    tampil.value = "-";
-                } else if (kantorValid && wanValid) {
-                    tampil.value = `${loc.kantor.nama} & ${loc.wan.nama}`;
-                } else if (kantorValid) {
-                    tampil.value = loc.kantor.nama;
-                } else if (wanValid) {
-                    tampil.value = loc.wan.nama;
-                }
+                if (!kantorValid && !wanValid) { tampil.value = "-"; }
+                else if (kantorValid && wanValid) { tampil.value = `${loc.kantor.nama} & ${loc.wan.nama}`; }
+                else if (kantorValid) { tampil.value = loc.kantor.nama; }
+                else if (wanValid) { tampil.value = loc.wan.nama; }
             }
-
             if (hidden) hidden.value = "MULTI";
-
-            // 🚀 UPDATE LANGSUNG TANPA DELAY
             if (gpsData[0] !== 0) {
                 forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
             }
-
         } else {
             targetLocations = null;
-
             if (tampil) tampil.value = "-";
-
             forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         }
-
     } catch (error) {
         console.error("Gagal refresh:", error);
-
         if (tampil) tampil.value = "❌ Gagal memuat lokasi";
-
         targetLocations = { kantor: null, wan: null };
-
     } finally {
         isFetchingLocation = false;
         isLoading = false;
-        
         if (typeof callback === "function") callback();
     }
 }
-
+	
 // =====================================================
 // CALCULATION LOGIC
 // =====================================================
