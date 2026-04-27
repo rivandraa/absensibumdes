@@ -1019,6 +1019,7 @@ async function refreshTargetLocation(callback) {
     // ===============================
     if (!currentStatus) {
         if (tampil) tampil.value = "⚠️ Status Absen belum dipilih.";
+		isLoading = false;
         return;
     }
 
@@ -1030,7 +1031,8 @@ async function refreshTargetLocation(callback) {
         if (hidden) hidden.value = "-";
 
         targetLocations = null;
-
+		isLoading = false;
+		
         forceUpdateDistanceUI(gpsData[0], gpsData[1], gpsAccuracy);
         return;
     }
@@ -1100,7 +1102,8 @@ async function refreshTargetLocation(callback) {
 
     } finally {
         isFetchingLocation = false;
-
+		isLoading = false;
+		
         if (typeof callback === "function") callback();
     }
 }
