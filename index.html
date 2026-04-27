@@ -295,35 +295,41 @@ updateTanggalWaktu();
 // Popup Notifikasi dan Getar (Sync with CSS)
 // ================================
 let popupActive = false;
-let isLocked = false;
 
 function showPopup(msg, type = "success", duration = null, callback = null) {
-    if (isLocked) return;
-
     const popup = document.getElementById("popupNotif");
     if (!popup) return;
 
+    // 1. Bersihkan semua timeout aktif agar tidak tumpang tindih
     if (popup._timeout) clearTimeout(popup._timeout);
     if (popup._hideTimeout) clearTimeout(popup._hideTimeout);
 
+    // 2. Reset keadaan (Remove show & types)
+    // Kita tidak pakai display: block/none karena CSS sudah pakai visibility
     popup.classList.remove("show", "success", "error", "warning", "loading");
+
+    // Trigger reflow agar browser sadar ada reset class (penting untuk Safari/iOS)
     void popup.offsetWidth;
 
+    // 3. Set Konten & Tipe
     popup.classList.add(type);
-    popup.innerHTML = msg;
-    popup.classList.add("show");
+    if (type === "loading") {
+        popup.innerHTML = `<div class="spinner"></div><div style="margin-top:8px;">${msg}</div>`;
+    } else {
+        popup.innerHTML = msg;
+    }
 
+    // 4. Munculkan Popup
+    popup.classList.add("show");
+    popupActive = true;
+
+    // 5. Logika Auto-Close
     if (type === "loading" || duration === false) return;
 
     const actualDuration = duration === null ? 3000 : duration;
 
-    isLocked = true;
-
     popup._timeout = setTimeout(() => {
-        closePopupProcess(popup, () => {
-            isLocked = false;
-            if (callback) callback();
-        });
+        closePopupProcess(popup, callback);
     }, actualDuration);
 }
 
@@ -368,7 +374,6 @@ function showTempPopup(msg, type = "warning", duration = 1500) {
         setTimeout(() => temp.remove(), 400);
     }, duration);
 }
-
 
 /**
  * Fungsi Getar Pendek (warning / error)
@@ -480,15 +485,7 @@ async function loginUser() {
                 lastTargetLocation = targetLocation;
             }
 
-showPopup(
-  "Login Berhasil! Selamat Datang<br><br>" +
-  "<div style='display:flex; gap:10px;'><div style='width:80px'>Pegawai</div><div>:</div><div>" + res.nama + "</div></div>" +
-  "<div style='display:flex; gap:10px;'><div style='width:80px'>Jabatan</div><div>:</div><div>" + res.jabatan + "</div></div>",
-  "success",
-  5000000
-);
-
-
+			showPopup("Login berhasil! Selamat datang " + res.nama, "success");
 			updateStatusOptions();
             setTimeout(() => {
                 startIdleTimer();
@@ -518,7 +515,7 @@ const FEATURE = {
 // 🔥 CEK JADWAL PULANG
 // ===============================
 function isPulangAllowed() {
-
+	return true; //hapus ini atau kasih tanda // untuk mengaktifkan fungsi ini
     if (!FEATURE.PULANG) return false;
 
     const now = new Date();
