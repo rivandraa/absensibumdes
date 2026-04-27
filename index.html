@@ -488,9 +488,12 @@ async function loginUser() {
 
 			showPopup(
 			  "Login Berhasil! Selamat Datang<br><br>" +
-			  "<b>Pegawai :</b> " + res.nama + "<br>" +
-			  "<b>Jabatan :</b> " + res.jabatan,
-			  "success"
+			  "<table>" +
+			  "<tr><td>Pegawai</td><td>: " + res.nama + "</td></tr>" +
+			  "<tr><td>Jabatan</td><td>: " + res.jabatan + "</td></tr>" +
+			  "</table>",
+			  "success",
+			  5000
 			);
 
 			updateStatusOptions();
