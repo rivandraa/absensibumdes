@@ -848,32 +848,45 @@ function stopGPSLoading() {
 // =====================================================
 // FUNGSI HITUNG INSTAN (ANTI-DELAY)
 // =====================================================
-function forceUpdateDistanceUI(lat, lon, acc) {
-
+async function forceUpdateDistanceUI(lat, lon, acc) {
     lat = Number(lat ?? gpsData?.[0] ?? 0);
     lon = Number(lon ?? gpsData?.[1] ?? 0);
-
     acc = Number(acc ?? gpsAccuracy ?? 0);
     if (isNaN(acc)) acc = 0;
 
     const status = (document.getElementById("status")?.value || "").toLowerCase();
-
     const currentLat = lat;
     const currentLon = lon;
 
-    // 🚫 GPS belum siap
     if (!currentLat || !currentLon || currentLat === 0 || currentLon === 0) {
         updateGPSDisplay("📡 Menunggu sinyal GPS...");
         return;
     }
 
-    // 🧾 Info dasar
     let displayText = `Lokasi Anda : ${currentLat.toFixed(6)},${currentLon.toFixed(6)}`;
     displayText += `\nTingkat Akurasi : ${acc.toFixed(0)} Meter | > ${MAX_ACCURACY} Meter`;
 
-    // Baris Tambahan (Opsional): Animasi Akurasi
     if (acc && acc > MAX_ACCURACY) {
         displayText += `\nSedang meningkatkan akurasi${".".repeat(accDots)}`;
+    }
+
+    // 🔥 LOGIKA HADIR
+    if (status === "pulang") {
+        try {
+            const userObj = userData || JSON.parse(sessionStorage.getItem('userData'));
+            const url = `${GAS_URL}?action=getStatusUI&username=${encodeURIComponent(userObj.username)}&spreadsheetId=${encodeURIComponent(userObj.spreadsheetId)}`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (data.lastStatusRaw && data.lastStatusRaw.toLowerCase() === "dinas") {
+                lastInsideArea = true;
+                displayText += `\n✅ Pulang setelah Dinas (bebas lokasi)`;
+                updateGPSDisplay(displayText);
+                return; // langsung keluar
+            }
+        } catch (err) {
+            console.error("Gagal cek status UI:", err);
+        }
     }
 
     // ===============================
