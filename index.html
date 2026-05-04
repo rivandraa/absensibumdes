@@ -1341,8 +1341,12 @@ let wajahTerdeteksi = false;
 let gpsSaatFoto = [0, 0];
 let fotoData = null;
 let isStarting = false; 
+let detectActive = false;
+let lastDetectTime = 0;
 
 function stopWebcam() {
+	detectActive = false;
+
   if (stream) {
     stream.getTracks().forEach(track => track.stop());
     stream = null;
@@ -1357,6 +1361,9 @@ function stopWebcam() {
 }
 
 async function startWebcam() {
+	detectActive = true;
+detectLoop();
+
         if (!useCamera) {
         $('#cameraContainer').hide(); // Sembunyikan kontainer kamera
                 $('#dokumentasi').hide(); // Sembunyikan tulisan dokumentasi kamera
@@ -1391,10 +1398,16 @@ async function startWebcam() {
       return;
     }
 
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user' },
-      audio: false
-    });
+stream = await navigator.mediaDevices.getUserMedia({
+  video: {
+    facingMode: 'user',
+    width: { ideal: 480 },
+    height: { ideal: 360 },
+    frameRate: { ideal: 15, max: 15 }
+  },
+  audio: false
+});
+
 
     video.srcObject = stream;
     await new Promise((resolve, reject) => {
@@ -1407,34 +1420,67 @@ async function startWebcam() {
 // INIT FACE DETECTION
 // ===============================
 faceDetector = new FaceDetection({
-  locateFile: (file) => {
-    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
-  }
+  locateFile: (file) =>
+    `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
 });
 
 faceDetector.setOptions({
   model: 'short',
-  minDetectionConfidence: 0.5
+  minDetectionConfidence: 0.6 // sedikit lebih ketat biar gak false
 });
 
 faceDetector.onResults(results => {
+  const indikator = document.getElementById("faceStatus");
+
   if (results.detections && results.detections.length > 0) {
-    wajahTerdeteksi = true;
+    const box = results.detections[0].boundingBox;
+
+    const MIN_SIZE = 0.25;
+    const MARGIN = 0.12;
+
+    const valid =
+      box.width > MIN_SIZE &&
+      box.xCenter > MARGIN &&
+      box.xCenter < (1 - MARGIN) &&
+      box.yCenter > MARGIN &&
+      box.yCenter < (1 - MARGIN);
+
+    wajahTerdeteksi = valid;
+
+    if (indikator) {
+      indikator.innerText = valid
+        ? "🟢 Wajah siap"
+        : "🟡 Posisikan wajah di tengah";
+    }
+
   } else {
     wajahTerdeteksi = false;
+    if (indikator) indikator.innerText = "🔴 Tidak ada wajah";
   }
 });
 
+
 // Loop deteksi
 async function detectLoop() {
-  if (!video || video.readyState < 2) return;
+  if (!detectActive) return;
 
-  await faceDetector.send({ image: video });
+  const now = Date.now();
 
-  requestAnimationFrame(detectLoop);
+  // 🔥 Batasi hanya tiap 400ms (~2.5 FPS)
+  if (now - lastDetectTime > 400) {
+    if (video.readyState >= 2) {
+      try {
+        await faceDetector.send({ image: video });
+      } catch (e) {
+        console.warn("Detect error:", e);
+      }
+    }
+    lastDetectTime = now;
+  }
+
+  setTimeout(detectLoop, 100); // loop ringan
 }
 
-detectLoop();
 
 	  
     video.style.display = 'block';
