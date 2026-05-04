@@ -223,6 +223,8 @@
 
 <!-- JQuery -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
 <script>
 /* =========================================================================================================
@@ -1334,6 +1336,8 @@ document.addEventListener("DOMContentLoaded", () => {
     BAGIAN KODE KAMERA & FOTO DOKUMENTASI (REVISI GITHUB PAGES)
 ========================================================================================================= */
 let stream = null; 
+let faceDetector = null;
+let wajahTerdeteksi = false;
 let gpsSaatFoto = [0, 0];
 let fotoData = null;
 let isStarting = false; 
@@ -1399,6 +1403,40 @@ async function startWebcam() {
       };
     });
 
+// ===============================
+// INIT FACE DETECTION
+// ===============================
+faceDetector = new FaceDetection({
+  locateFile: (file) => {
+    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
+  }
+});
+
+faceDetector.setOptions({
+  model: 'short',
+  minDetectionConfidence: 0.5
+});
+
+faceDetector.onResults(results => {
+  if (results.detections && results.detections.length > 0) {
+    wajahTerdeteksi = true;
+  } else {
+    wajahTerdeteksi = false;
+  }
+});
+
+// Loop deteksi
+async function detectLoop() {
+  if (!video || video.readyState < 2) return;
+
+  await faceDetector.send({ image: video });
+
+  requestAnimationFrame(detectLoop);
+}
+
+detectLoop();
+
+	  
     video.style.display = 'block';
     const aspect = video.videoHeight / video.videoWidth;
     if (aspect && isFinite(aspect)) {
@@ -1524,6 +1562,17 @@ document.getElementById('snap').addEventListener('click', async () => {
         return;
     }
 
+// ===============================
+// VALIDASI WAJAH (WAJIB ADA)
+// ===============================
+if (!wajahTerdeteksi) {
+    showPopup("❌ Wajah tidak terdeteksi! Hadapkan wajah ke kamera.", "error");
+    vibrateAlertShort();
+    isSnapping = false;
+    return;
+}
+
+	
     // ===============================
     // VALIDASI GPS MINIMAL
     // ===============================
